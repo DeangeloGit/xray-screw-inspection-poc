@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "model_id": "resnet-001",
+  "backend": "onnx",
+  "file": "model.onnx",
+  "sha256": "REPLACE_WITH_MODEL_SHA256",
+  "preprocessing": "source-gray-percentile-crop-v1",
+  "classes": ["screw", "cable", "structure", "uncertain"],
+  "input_size": [224, 224],
+  "mean": [0.485, 0.456, 0.406],
+  "std": [0.229, 0.224, 0.225],
+  "output": "logits",
+  "provider_policy": "require_cuda"
+}

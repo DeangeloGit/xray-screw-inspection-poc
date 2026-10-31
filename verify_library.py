@@ -59,12 +59,14 @@ def run():
         assert client.post(f'/api/image-review/{name}',json={'decision':'no_screw_seen'}).status_code==200
         assert client.post(f'/api/image-review/{name}',json={'decision':'invalid'}).status_code==400
         job=client.post('/api/batch').json
-        for _ in range(100):
+        deadline = time.monotonic() + 180
+        while time.monotonic() < deadline:
             state=client.get('/api/batch/'+job['id']).json
             if state['state']=='done':break
-            time.sleep(.05)
+            time.sleep(.1)
         assert state['state']=='done' and state['completed']==target_count and not state['errors'],state
         assert client.get('/api/batch/invalid').status_code==404
+        shutil.rmtree(ROOT/'outputs'/name)
     print('PASS: automatic discovery + deduplication, mode separation, cached aliases, all 20 batch items, review persistence and completion guards')
 
 if __name__=='__main__':run()

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "model_id": "noop-v1",
+  "backend": "noop",
+  "preprocessing": "source-gray-percentile-crop-v1",
+  "classes": ["screw", "cable", "structure", "uncertain"],
+  "action": "manual_review"
+}

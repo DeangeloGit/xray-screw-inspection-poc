@@ -1,6 +1,9 @@
-from flask import Flask, render_template, request, send_from_directory, jsonify
-from detector import ROOT
-from library import analyze_file, analyze_sample, select_sample, public_catalog, catalog, save_result
+from flask import Flask, render_template, request, send_from_directory, jsonify, Response
+from detector import ROOT, read
+from runtime_paths import RESOURCE_ROOT, DATA, OUTPUTS, SETTINGS
+from model_manager import manager
+from reports import export_csv
+from library import analyze_file, analyze_sample, select_sample, public_catalog, catalog, save_result, importer, latest_results
 import uuid
 import json
 import re
@@ -8,7 +11,7 @@ import threading
 import cv2
 from datetime import datetime, timezone
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder=str(RESOURCE_ROOT/'templates'), static_folder=str(RESOURCE_ROOT/'static'))
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['MAX_CONTENT_LENGTH'] = 40 * 1024 * 1024
 analysis_lock = threading.Lock()
@@ -19,7 +22,7 @@ jobs = {}
 
 @app.get('/api/health')
 def health():
-    return jsonify(service='xray-poc', version=3, detector_version=2)
+    return jsonify(service='xray-poc', version=4, detector_version=2)
 
 @app.get('/')
 def index():
@@ -43,8 +46,7 @@ def samples():
 def sample_result(sample_id):
     try:
         item = select_sample(sample_id)
-        from library import cached_result
-        result = cached_result(item)
+        result = latest_results().get(item['sha256'])
         return jsonify(result) if result else (jsonify(error='此照片尚未檢查'), 404)
     except ValueError as e:
         return jsonify(error=str(e)), 404
@@ -59,9 +61,20 @@ def analyze():
         with analysis_lock:
             if 'image' in request.files and request.files['image'].filename:
                 file = request.files['image']
-                upload = ROOT/'outputs'/f'{uuid.uuid4().hex[:12]}_upload.png'
-                file.save(upload)
-                result = analyze_file(upload, PathName(file.filename), threshold)
+                filename = PathName(file.filename)
+                if not filename or filename in ('.','..') or ':' in filename or filename.rsplit('.',1)[-1].lower() not in ('png','jpg','jpeg','tif','tiff'):
+                    raise ValueError('無效的照片檔名')
+                staging = OUTPUTS/(uuid.uuid4().hex + '.upload')
+                try:
+                    file.save(staging)
+                    read(staging)
+                    upload_dir = DATA/'uploads'/uuid.uuid4().hex[:12]
+                    upload_dir.mkdir(parents=True)
+                    upload = upload_dir/filename
+                    staging.replace(upload)
+                finally:
+                    staging.unlink(missing_ok=True)
+                result = analyze_sample(select_sample(upload.relative_to(DATA).as_posix()), threshold)
             else:
                 result = analyze_sample(select_sample(sample), threshold)
         return jsonify(result)
@@ -92,7 +105,7 @@ def review(name):
     if label not in ('screw', 'normal', 'uncertain') or type(candidate_id) is not int:
         return jsonify(error='無效的複核結果'), 400
     with review_lock:
-        result = json.loads(path.read_text())
+        result = json.loads(path.read_text(encoding='utf-8'))
         if candidate_id not in [c['id'] for c in result['candidates']]:
             return jsonify(error='未知候選'), 400
         result.setdefault('human_reviews', {})[str(candidate_id)] = label
@@ -111,7 +124,7 @@ def image_review(name):
     if decision not in ('screw', 'no_screw_seen', 'uncertain'):
         return jsonify(error='無效的整張照片複核結果'), 400
     with review_lock:
-        result = json.loads(path.read_text())
+        result = json.loads(path.read_text(encoding='utf-8'))
         labels = result.get('human_reviews', {})
         if len(labels) < len(result['candidates']):
             return jsonify(error='請先逐一確認所有疑似位置'), 400
@@ -161,8 +174,8 @@ def batch_status(job_id):
 
 @app.get('/api/benchmark')
 def benchmark():
-    path = ROOT/'review'/'comparison.json'
-    return jsonify(json.loads(path.read_text())) if path.exists() else jsonify(samples=[])
+    path = RESOURCE_ROOT/'review'/'comparison.json'
+    return jsonify(json.loads(path.read_text(encoding='utf-8'))) if path.exists() else jsonify(samples=[])
 
 @app.get('/outputs/<path:filename>')
 def output(filename):
@@ -172,5 +185,54 @@ def output(filename):
 def too_large(e):
     return jsonify(error='檔案超過 40 MB，請縮小後重試'), 413
 
+@app.get('/api/station')
+def station_status():
+    return jsonify(acquisition=importer.info(), model=manager.snapshot().info())
+
+
+@app.post('/api/reports/screws')
+def screw_report():
+    payload = request.get_json(silent=True) or {}
+    ids = payload.get('sample_ids')
+    if not isinstance(ids, list) or not ids or len(ids) != len(set(str(x) for x in ids)) or any(not isinstance(x,str) for x in ids):
+        return jsonify(error='請選擇要匯出的照片批次'), 400
+    with analysis_lock, review_lock:
+        items = {item['id']:item for item in catalog() if not item['is_reference']}
+        history = latest_results()
+        entries, unfinished = [], []
+        for sample_id in ids:
+            item = items.get(sample_id)
+            if item is None:
+                return jsonify(error='照片清單已變更，請重新選擇批次'), 409
+            result = history.get(item['sha256'])
+            decision = (result or {}).get('image_review',{}).get('decision')
+            if decision not in ('screw','no_screw_seen'):
+                unfinished.append(item.get('display_name',item['filename']))
+            else:
+                entries.append((item,result))
+        if unfinished:
+            return jsonify(error=f'尚有 {len(unfinished)} 張未完成複判或需再確認，請先完成本批次', files=unfinished), 409
+        content, count = export_csv(entries)
+        report_id = uuid.uuid4().hex[:12]
+        directory = ROOT/'reports'; directory.mkdir(exist_ok=True)
+        (directory/f'{report_id}.csv').write_bytes(content)
+        (directory/f'{report_id}.json').write_text(json.dumps(dict(
+            exported_at=datetime.now(timezone.utc).isoformat(), sample_ids=ids,
+            analysis_runs=[r['name'] for _,r in entries], screw_rows=count,
+            station_id=SETTINGS.get('station_id','未設定')),ensure_ascii=False,indent=2),encoding='utf-8')
+    return Response(content, mimetype='text/csv', headers={
+        'Content-Disposition':f'attachment; filename="loose-screws-{report_id}.csv"',
+        'X-Screw-Rows':str(count), 'X-Report-ID':report_id})
+
+
+def start_background():
+    def analyze_import(path, filename):
+        with analysis_lock:
+            return analyze_file(path, filename)
+    importer.analyze = analyze_import
+    importer.start()
+
+
 if __name__ == '__main__':
+    start_background()
     app.run(host='127.0.0.1', port=8765, debug=False)

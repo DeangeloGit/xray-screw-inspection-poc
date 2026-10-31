@@ -3,3 +3,13 @@ __pycache__/
 data/
 outputs/
 .DS_Store
+state/
+reports/
+workspace/
+config/station.json
+models/active.json
+*.onnx
+*.pth
+build/
+dist/
+build_fingerprint.txt

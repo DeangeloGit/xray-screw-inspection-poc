@@ -1,5 +1,6 @@
 """Regression checks use provisional visual labels, never detector inputs."""
 import json
+import shutil
 from pathlib import Path
 import io
 import cv2
@@ -17,6 +18,7 @@ def iou(a, b):
 
 
 def run():
+    uploads_before = set((ROOT/'data/uploads').glob('*'))
     annotations = json.loads((ROOT/'review/annotations.json').read_text())
     rows = []
     for name in ['ok_0', 'ng_5', 'ng_9']:
@@ -92,6 +94,8 @@ def run():
                           'uploaded 90-degree rotated normal image', 'invalid and blank input rejection',
                           'review persistence and result download', 'baseline audit preserved'])
     (ROOT/'review/comparison.json').write_text(json.dumps(report, ensure_ascii=False, indent=2))
+    for generated in set((ROOT/'data/uploads').glob('*')) - uploads_before:
+        shutil.rmtree(generated)
     print('PASS: regression, original coordinate mapping, upload, rejection, review persistence')
 
 if __name__ == '__main__':

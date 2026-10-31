@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "station_id": "IPC-01",
+  "workspace": "C:/XRayReviewData",
+  "acquisition": {
+    "enabled": false,
+    "source": "\\\\XRAY-PC\\Images",
+    "poll_seconds": 3,
+    "stable_seconds": 15,
+    "completion_mode": "stable_metadata",
+    "read_only": true
+  },
+  "model_root": "C:/XRayReview/models",
+  "review_mode": "shadow",
+  "allow_cpu_fallback": false
+}

@@ -4,11 +4,18 @@ import cv2
 import numpy as np
 import json
 
-ROOT = Path(__file__).resolve().parent
+from runtime_paths import WORK_ROOT as ROOT
+from model_manager import manager
+
+
+def write_image(path, image):
+    ok, encoded = cv2.imencode(Path(path).suffix, image)
+    if not ok: raise ValueError('無法儲存影像')
+    Path(path).write_bytes(encoded.tobytes())
 
 
 def read(path):
-    a = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+    a = cv2.imdecode(np.frombuffer(Path(path).read_bytes(), np.uint8), cv2.IMREAD_UNCHANGED)
     if a is None:
         raise ValueError('無法讀取影像，請使用 PNG、JPEG 或 TIFF')
     if a.ndim == 3:
@@ -224,7 +231,8 @@ def source_points(points, reg, flow, raw_shape):
     return result
 
 
-def detect(reference, target, name, threshold=.13):
+def detect(reference, target, name, threshold=.13, model_snapshot=None):
+    model_snapshot = model_snapshot or manager.snapshot()
     if not np.isfinite(threshold) or not .03 <= threshold <= .4:
         raise ValueError('門檻需介於 0.03 與 0.40')
     ref, raw = read(reference), read(target)
@@ -268,8 +276,8 @@ def detect(reference, target, name, threshold=.13):
         b0 = np.floor(p.min(axis=0)).astype(int)
         b1 = np.ceil(p.max(axis=0)).astype(int)+1
         crop = raw[b0[1]:b1[1], b0[0]:b1[0]]
-        cv2.imwrite(str(out/f'baseline_crop_{i}.png'), (crop*255).astype('uint8'))
-        cv2.imwrite(str(out/f'baseline_ref_{i}.png'),
+        write_image(str(out/f'baseline_crop_{i}.png'), (crop*255).astype('uint8'))
+        write_image(str(out/f'baseline_ref_{i}.png'),
                     (r[max(0,y-25):y+h+25, max(0,x-25):x+w+25]*255).astype('uint8'))
         matches = [z['id'] for z in candidates if
                    min(x+w+8, z['x']+z['w']) > max(x-8, z['x']) and
@@ -295,20 +303,21 @@ def detect(reference, target, name, threshold=.13):
         box = [max(0, x0-pad), max(0, y0-pad), min(raw.shape[1], x1+pad), min(raw.shape[0], y1+pad)]
         c['crop_box'] = list(map(int, box))
         crop = (raw[box[1]:box[3], box[0]:box[2]]*255).astype('uint8')
-        cv2.imwrite(str(out/f'crop_{i}.png'), crop)
+        write_image(str(out/f'crop_{i}.png'), crop)
+        c['classification'] = model_snapshot.classify(raw[box[1]:box[3], box[0]:box[2]])
         x, y, w, h = [c[k] for k in ('x', 'y', 'w', 'h')]
         patch = (r[max(0,y-25):y+h+25, max(0,x-25):x+w+25]*255).astype('uint8')
-        cv2.imwrite(str(out/f'reference_crop_{i}.png'), patch)
-    cv2.imwrite(str(out/'source.png'), source_preview)
-    cv2.imwrite(str(out/'overlay.png'), high)
-    cv2.imwrite(str(out/'all_overlay.png'), all_overlay)
+        write_image(str(out/f'reference_crop_{i}.png'), patch)
+    write_image(str(out/'source.png'), source_preview)
+    write_image(str(out/'overlay.png'), high)
+    write_image(str(out/'all_overlay.png'), all_overlay)
     for key, arr in [('aligned', corrected), ('reference', r)]:
-        cv2.imwrite(str(out/f'{key}.png'), (arr*255).astype('uint8'))
+        write_image(str(out/f'{key}.png'), (arr*255).astype('uint8'))
     heat = np.clip(residual/.3, 0, 1)
     heat[~mask] = 0
-    cv2.imwrite(str(out/'difference.png'), cv2.applyColorMap((heat*255).astype('uint8'), cv2.COLORMAP_INFERNO))
+    write_image(str(out/'difference.png'), cv2.applyColorMap((heat*255).astype('uint8'), cv2.COLORMAP_INFERNO))
     n_high = sum(c['priority'] == 'high' for c in candidates)
-    result = dict(version=2, name=name, status='需人工複核',
+    result = dict(model=model_snapshot.info(), version=2, name=name, status='需人工複核',
                   rotation_ccw=reg['rotation']*90, inliers=reg['inliers'], threshold=threshold,
                   source_shape=list(raw.shape), source_machine_bbox=machine_box, preview_scale=preview_scale,
                   coordinate_frame='x/y/w/h: reference preview; source_bbox/polygon: original target pixels',
@@ -318,7 +327,7 @@ def detect(reference, target, name, threshold=.13):
                   baseline_count=len(baseline), proposal_count=len(candidates),
                   high_count=n_high, review_count=len(candidates)-n_high, candidates=candidates,
                   warning='紅框為規則優先候選，不是 AI 確認螺絲；黃色候選仍需查看。無紅框不代表正常。')
-    (out/'result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2))
+    (out/'result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     return result
 
 
