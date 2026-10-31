@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, send_from_directory, jsonify,
 from detector import ROOT, read
 from runtime_paths import RESOURCE_ROOT, DATA, OUTPUTS, SETTINGS
 from model_manager import manager
+from settings_api import settings_api
 from reports import export_csv
 from library import analyze_file, analyze_sample, select_sample, public_catalog, catalog, save_result, importer, latest_results
 import uuid
@@ -12,6 +13,7 @@ import cv2
 from datetime import datetime, timezone
 
 app = Flask(__name__, template_folder=str(RESOURCE_ROOT/'templates'), static_folder=str(RESOURCE_ROOT/'static'))
+app.register_blueprint(settings_api)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['MAX_CONTENT_LENGTH'] = 40 * 1024 * 1024
 analysis_lock = threading.Lock()
@@ -20,6 +22,11 @@ jobs_lock = threading.Lock()
 jobs = {}
 (ROOT/'outputs').mkdir(exist_ok=True)
 
+@app.before_request
+def request_limits():
+    if request.path == '/api/settings/model':
+        request.max_content_length = 512 * 1024 * 1024
+
 @app.get('/api/health')
 def health():
     return jsonify(service='xray-poc', version=4, detector_version=2)
@@ -27,6 +34,10 @@ def health():
 @app.get('/')
 def index():
     return render_template('user.html')
+
+@app.get('/settings')
+def settings_page():
+    return render_template('settings.html')
 
 @app.get('/engineer')
 def engineer():
@@ -183,7 +194,7 @@ def output(filename):
 
 @app.errorhandler(413)
 def too_large(e):
-    return jsonify(error='檔案超過 40 MB，請縮小後重試'), 413
+    return jsonify(error='模型檔案超過 512 MB' if request.path == '/api/settings/model' else '檔案超過 40 MB，請縮小後重試'), 413
 
 @app.get('/api/station')
 def station_status():

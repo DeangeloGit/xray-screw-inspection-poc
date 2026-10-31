@@ -1,0 +1,2 @@
+-r requirements-cpu.txt
+onnx==1.23.2

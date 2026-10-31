@@ -7,6 +7,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from runtime_paths import MODEL_ROOT, SETTINGS
+from station_settings import cpu_allowed
 
 CLASSES = ['screw', 'cable', 'structure', 'uncertain']
 PREPROCESSING = 'source-gray-percentile-crop-v1'
@@ -52,8 +53,9 @@ def noop(error=None, requested=None):
     return Snapshot(m, fingerprint(m), error=error, requested=requested)
 
 class ModelManager:
-    def __init__(self, root=MODEL_ROOT):
+    def __init__(self, root=MODEL_ROOT, allow_cpu=None):
         self.root = Path(root)
+        self.allow_cpu = allow_cpu
         self.lock = threading.Lock()
         self.current = noop()
         self.signature = None
@@ -113,7 +115,7 @@ class ModelManager:
                     require_cuda = m.get('provider_policy', 'require_cuda') == 'require_cuda'
                     if m.get('provider_policy', 'require_cuda') not in ('require_cuda', 'cpu'):
                         raise ValueError('無效 provider_policy')
-                    if not require_cuda and not SETTINGS.get('allow_cpu_fallback', False):
+                    if not require_cuda and not (cpu_allowed() if self.allow_cpu is None else self.allow_cpu):
                         raise ValueError('站台未允許 CPU 模型')
                     if require_cuda and 'CUDAExecutionProvider' not in ort.get_available_providers():
                         raise ValueError('CUDA provider 不可用')
@@ -137,6 +139,6 @@ class ModelManager:
                 return self.current
             except Exception as exc:
                 # Keep the previous validated session, clearly reporting requested/effective versions.
-                return Snapshot(self.current.manifest, self.current.identity, self.current.session, str(exc), requested)
+                return Snapshot(self.current.manifest, self.current.identity, self.current.session, ('尚未安裝模型推論套件，請先安裝 onnxruntime（Mac／CPU）或 onnxruntime-gpu（IPC／GPU）' if isinstance(exc, ModuleNotFoundError) and exc.name == 'onnxruntime' else str(exc)), requested)
 
 manager = ModelManager()

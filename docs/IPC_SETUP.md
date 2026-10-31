@@ -8,9 +8,22 @@
 
 未設定時沿用原本專案下的 data、outputs，讀取舊紀錄；不會搬移或刪除既有照片與人工判定。新程式／模型會使用新快取指紋；重新分析可能建立待複判的新紀錄，舊分析仍保留於原 outputs。一般使用者開圖優先讀取最新已保存結果；工程模式的分析按鈕可要求目前版本重算。
 
+## 在 UI 設定取圖與模型
+
+重新啟動程式後，從使用者／工程模式的「取圖與模型設定」開啟 http://127.0.0.1:8765/settings。
+
+- 取圖：按「選擇資料夾…」瀏覽這台 Mac／IPC 的資料夾，也可直接貼上完整路徑；勾選自動取圖並儲存，下一次掃描會生效，不用重啟。Mac 的 SMB 分享先由 Finder 掛載，Windows 可填 UNC 路徑。取圖來源不能包含本機工作資料，以免將匯入照片再次匯入。
+- 模型：按「選擇檔案」選取單一 .onnx，再按「套用模型」。Mac 預設 CPU，IPC 可選 NVIDIA GPU；程式自動產生版本設定、檢查模型並載入，不用手動管理 JSON。模型不相容時顯示原因並保持原模型可用。
+- 「暫不使用 AI」會停用模型，繼續使用差分與人工複判。新模型只影響下一張新分析；已保存照片仍顯示原分析，工程模式可重新分析。
+- 「訓練規格與影像設定」中可選 ImageNet mean/std 或僅 0～1 灰階，須與訓練方式一致。單檔 ONNX 仍需符合既有輸入輸出契約，.pth 權重不能直接載入。
+
+UI 設定保存於 workspace/state/ui_settings.json；優先於站台檔中的取圖與 CPU 設定。模型本身會複製至 model_root，不依賴上傳原始檔的位置。
+
+Mac CPU 環境：`.venv/bin/python -m pip install -r requirements-cpu.txt`。此開發機已安裝並驗證 ONNX Runtime 1.31.1。建立模型測試檔另需 `requirements-model-test.txt`，實際操作不需要 onnx 套件。
+
 ## 設定 IPC 與取圖
 
-複製 config/station.example.json 為 config/station.json，或以環境變數 XRAY_CONFIG 指定外部設定檔。站台設定需重新啟動程式才生效；只有模型啟用設定支援動態更新。
+複製 config/station.example.json 為 config/station.json，或以環境變數 XRAY_CONFIG 指定外部設定檔。手動修改站台設定需重新啟動；UI 儲存的取圖設定與模型套用則會直接生效。
 
 - workspace：IPC 本機可寫資料夾，例如 C:/XRayReviewData。資料下含 data、outputs、state、reports。XRAY_WORKSPACE 可覆蓋 workspace，供測試／獨立環境使用。
 - reference：可額外指定正常參考完整路徑；未設定使用 workspace/data/ok_0.png。參考圖需由現有資料備份提供，沒有隨 Git 交付。
@@ -59,6 +72,7 @@ state/acquisition.sqlite3 保存等待、取圖與分析工作。斷網復線會
 
 ## 驗證
 
+- `.venv/bin/python verify_settings.py`：隔離 UI API、資料夾瀏覽、動態啟用取圖、真正 ONNX CPU 載入／推論、錯誤模型保持原版、模型上傳大小限制與設定重啟保存（測試模型未訓練）。
 - `.venv/bin/python verify_ipc.py`：隔離工作目錄、模型更新／回退、實際差分接入空模型、人工複判、CSV／SN、來源讀取穩定性、重啟、同名換圖、失敗重試及獨立掃描程序。
 - `.venv/bin/python verify.py`：原始三張與旋轉座標等回歸。
 - `.venv/bin/python verify_library.py`：照片管理、批次與人工複判完成條件。

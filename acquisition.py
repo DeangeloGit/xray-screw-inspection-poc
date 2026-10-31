@@ -12,12 +12,13 @@ import sys
 import cv2
 import numpy as np
 from runtime_paths import DATA, STATE, SETTINGS
+from station_settings import acquisition_config
 
 SUFFIXES = {'.png', '.jpg', '.jpeg', '.tif', '.tiff'}
 
 class Importer:
     def __init__(self, config=None, data=DATA, state=STATE, analyze=None, recover=True):
-        self.config = dict(config if config is not None else SETTINGS.get('acquisition', {}))
+        self.config = dict(config if config is not None else acquisition_config())
         self.data, self.state, self.analyze = Path(data), Path(state), analyze
         self.state.mkdir(parents=True, exist_ok=True)
         self.db_path = self.state / 'acquisition.sqlite3'
@@ -96,7 +97,7 @@ class Importer:
         with self.connect() as db:
             rows = db.execute("SELECT source,local FROM events WHERE state IN ('pending','analysis_error')").fetchall()
         for source, local in rows:
-            if self.stop_event.is_set(): break
+            if self.stop_event.is_set() or self.thread and not acquisition_config().get('enabled',False): break
             with self.connect() as db:
                 db.execute("UPDATE events SET state='analyzing' WHERE local=?", (local,))
             try:
@@ -130,18 +131,23 @@ class Importer:
 
     def run(self):
         while not self.stop_event.is_set():
+            self.config = acquisition_config()
             try:
-                self.isolated_scan()
+                if self.config.get('enabled',False):
+                    self.isolated_scan()
+                else:
+                    self.status.update(state='disabled',error=None)
             except Exception as exc:
                 self.status.update(state='offline',error=str(exc))
             try:
-                self.process_pending()
+                if self.config.get('enabled',False):
+                    self.process_pending()
             except Exception as exc:
                 self.status.update(error=str(exc))
             self.stop_event.wait(max(1,float(self.config.get('poll_seconds',3))))
 
     def start(self):
-        if not self.config.get('enabled',False) or self.thread and self.thread.is_alive(): return
+        if self.thread and self.thread.is_alive(): return
         self.thread = threading.Thread(target=self.run,daemon=True,name='xray-acquisition')
         self.thread.start()
 
