@@ -1,0 +1,21 @@
+file,candidate_id,source_bbox,visual_assessment,label_status,high_count,other_count,alignment_warning
+1.png,1,"[1875, 2398, 1922, 2478]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,3,False
+2.png,1,"[2388, 1165, 2467, 1215]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,3,False
+3-01.png,1,"[392, 1981, 429, 2017]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,2,False
+3-02.png,1,"[408, 1995, 447, 2030]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,2,False
+3-03.png,1,"[394, 1984, 431, 2020]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,2,False
+3-04.png,1,"[408, 1981, 445, 2016]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,2,False
+3-05.png,1,"[398, 1994, 435, 2029]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,2,False
+3-06.png,1,"[363, 1994, 402, 2031]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,2,False
+3-07.png,1,"[397, 1982, 434, 2017]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,2,False
+3-8.png,1,"[379, 1995, 418, 2030]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,2,False
+3-9.png,1,"[1994, 2639, 2029, 2676]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,2,False
+3.png,2,"[2253, 1146, 2331, 1196]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,2,2,False
+4.png,1,"[2321, 1190, 2410, 1234]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,3,False
+5.png,1,"[2357, 1159, 2441, 1228]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,3,False
+6.png,1,"[2357, 1167, 2447, 1219]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,3,False
+7.png,1,"[2397, 1162, 2476, 1211]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,3,True
+8.png,1,"[2396, 1149, 2477, 1196]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,3,False
+9.png,1,"[2398, 1158, 2474, 1205]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,1,4,True
+10.png,2,"[2398, 1158, 2477, 1207]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,2,2,False
+33.png,2,"[2398, 1158, 2477, 1207]",apparent loose screw in proposed crop,assistant visual review; not physical confirmation; not exhaustive,2,2,False

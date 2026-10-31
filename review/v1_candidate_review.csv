@@ -1,0 +1,49 @@
+sample,v1_id,visual_category,evidence,x,y,w,h,status
+ng_5,1,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1382,595,3,11,provisional visual review
+ng_5,2,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1398,427,12,4,provisional visual review
+ng_5,3,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,985,450,14,17,provisional visual review
+ng_5,4,wire,Wire route differs; visually not the isolated screw.,733,1103,7,30,provisional visual review
+ng_5,5,visible_screw,Distinct loose screw silhouette absent in normal crop.,914,1161,30,21,provisional visual review
+ng_5,6,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1410,1254,3,5,provisional visual review
+ng_5,7,wire,Wire route differs; visually not the isolated screw.,731,996,2,7,provisional visual review
+ng_5,8,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1416,376,3,9,provisional visual review
+ng_5,9,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1425,976,3,10,provisional visual review
+ng_5,10,wire,Wire route differs; visually not the isolated screw.,1394,477,3,16,provisional visual review
+ng_5,11,wire,Wire route differs; visually not the isolated screw.,1408,1271,4,38,provisional visual review
+ng_5,12,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1422,814,2,18,provisional visual review
+ng_5,13,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1379,1402,3,9,provisional visual review
+ng_5,14,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1424,928,3,25,provisional visual review
+ng_5,15,uncertain,Low contrast or broad shading; cause not confirmed.,862,573,3,5,provisional visual review
+ng_5,16,uncertain,Low contrast or broad shading; cause not confirmed.,862,587,5,79,provisional visual review
+ng_5,17,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,861,538,4,19,provisional visual review
+ng_5,18,uncertain,Low contrast or broad shading; cause not confirmed.,875,1185,2,11,provisional visual review
+ng_5,19,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1426,958,2,13,provisional visual review
+ng_5,20,uncertain,Low contrast or broad shading; cause not confirmed.,874,1146,2,6,provisional visual review
+ng_9,1,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1400,427,12,4,provisional visual review
+ng_9,2,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1382,595,4,11,provisional visual review
+ng_9,3,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,985,453,11,16,provisional visual review
+ng_9,4,wire,Wire route differs; visually not the isolated screw.,733,1101,7,32,provisional visual review
+ng_9,5,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1416,374,3,11,provisional visual review
+ng_9,6,wire,Wire route differs; visually not the isolated screw.,731,997,2,6,provisional visual review
+ng_9,7,visible_screw,Distinct loose screw silhouette absent in normal crop.,900,1179,30,11,provisional visual review
+ng_9,8,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1415,1246,5,5,provisional visual review
+ng_9,9,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1230,1405,8,8,provisional visual review
+ng_9,10,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1425,977,3,10,provisional visual review
+ng_9,11,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1325,1412,12,2,provisional visual review
+ng_9,12,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1367,1401,17,12,provisional visual review
+ng_9,13,wire,Wire route differs; visually not the isolated screw.,1409,1271,4,38,provisional visual review
+ng_9,14,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1080,1408,8,8,provisional visual review
+ng_9,15,wire,Wire route differs; visually not the isolated screw.,1394,477,4,16,provisional visual review
+ng_9,16,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1424,927,4,26,provisional visual review
+ng_9,17,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1184,1412,22,2,provisional visual review
+ng_9,18,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1422,817,3,15,provisional visual review
+ng_9,19,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1242,1404,13,2,provisional visual review
+ng_9,20,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1138,1413,14,2,provisional visual review
+ng_9,21,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1025,1416,6,2,provisional visual review
+ng_9,22,uncertain,Low contrast or broad shading; cause not confirmed.,863,618,4,48,provisional visual review
+ng_9,23,uncertain,Low contrast or broad shading; cause not confirmed.,862,573,3,5,provisional visual review
+ng_9,24,uncertain,Low contrast or broad shading; cause not confirmed.,862,587,4,6,provisional visual review
+ng_9,25,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1313,1413,6,2,provisional visual review
+ng_9,26,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,861,538,4,18,provisional visual review
+ng_9,27,uncertain,Low contrast or broad shading; cause not confirmed.,862,594,4,23,provisional visual review
+ng_9,28,normal_structure,Normal structure visible in both crops; mismatch may be alignment or assembly variation.,1096,1407,7,2,provisional visual review

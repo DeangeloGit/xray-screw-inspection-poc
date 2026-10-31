@@ -1,0 +1,45 @@
+{
+  "samples": [
+    {
+      "sample": "ok_0",
+      "v1_count": 0,
+      "v2_count": 0,
+      "high_count": 0,
+      "review_count": 0,
+      "known_screws": 0,
+      "high_hits": 0,
+      "output": "outputs/ok_0_v2/result.json"
+    },
+    {
+      "sample": "ng_5",
+      "v1_count": 20,
+      "v2_count": 4,
+      "high_count": 1,
+      "review_count": 3,
+      "known_screws": 1,
+      "high_hits": 1,
+      "output": "outputs/ng_5_v2/result.json"
+    },
+    {
+      "sample": "ng_9",
+      "v1_count": 28,
+      "v2_count": 5,
+      "high_count": 1,
+      "review_count": 4,
+      "known_screws": 1,
+      "high_hits": 1,
+      "output": "outputs/ng_9_v2/result.json"
+    }
+  ],
+  "threshold": 0.13,
+  "label_status": "provisional visual labels; only two known visible screws, not an exhaustive inventory",
+  "checks": [
+    "known visible screw retained in both high-priority lists",
+    "self comparison zero proposals",
+    "native coordinate mapping four rotations",
+    "uploaded 90-degree rotated normal image",
+    "invalid and blank input rejection",
+    "review persistence and result download",
+    "baseline audit preserved"
+  ]
+}

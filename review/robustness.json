@@ -1,0 +1,16 @@
+{
+  "check": "synthetic translation +24/-16px, 90deg rotation, intensity x0.9",
+  "source": "data/ng_5.png",
+  "expected_bbox": [
+    1134,
+    587,
+    1224,
+    687
+  ],
+  "high_hit_ids": [
+    1
+  ],
+  "candidates": 7,
+  "high_count": 1,
+  "limitation": "Same supplied image transformed; does not measure generalization or detection accuracy."
+}

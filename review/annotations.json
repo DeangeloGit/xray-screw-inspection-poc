@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "status": "assistant visual annotations; pending user/physical confirmation",
+  "complete_object_inventory": false,
+  "coordinate_frame": "original target pixel xyxy",
+  "note": "Only the clearly visible loose screw in each supplied image is annotated. This is not an exhaustive defect inventory. Annotations are never loaded by detector.py.",
+  "samples": {
+    "ng_5": {
+      "file": "data/ng_5.png",
+      "objects": [
+        {
+          "id": "visible_screw_1",
+          "label": "visually apparent loose screw",
+          "bbox": [
+            2360,
+            1150,
+            2460,
+            1240
+          ],
+          "verification": "visual only"
+        }
+      ]
+    },
+    "ng_9": {
+      "file": "data/ng_9.png",
+      "objects": [
+        {
+          "id": "visible_screw_1",
+          "label": "visually apparent loose screw",
+          "bbox": [
+            2390,
+            1150,
+            2495,
+            1230
+          ],
+          "verification": "visual only"
+        }
+      ]
+    }
+  }
+}
