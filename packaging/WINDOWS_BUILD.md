@@ -8,7 +8,7 @@
 
 1. `.venv/bin/python packaging/prepare_windows_cache.py`：官方下載與 SHA-256 驗證、Windows wheels 下載、解出 app-local C++ DLL。此準備腳本固定使用 macOS ARM64 Zig 0.17.0；Microsoft latest 連結若未來換版，雜湊不符時會停止，需審查並更新釘選值。
 2. `build/windows-cache/zig/zig-aarch64-macos-0.17.0/zig cc -target x86_64-windows-gnu -Os -s -municode packaging/windows_launcher.c -luser32 -o build/windows-cache/XRayReview.exe`
-3. `.venv/bin/python packaging/build_windows.py --variant cpu`
+3. 先以 ReportLab 環境執行 `docs/windows-cpu-manual/build_manual.py` 產生 PDF，再執行 `.venv/bin/python packaging/build_windows.py --variant cpu`；CPU 包根目錄會包含圖文手冊。手冊字型目前使用 macOS STHeiti TTC，其他主機需替換為可嵌入的繁中字型。
 4. `.venv/bin/python packaging/build_windows.py --variant gpu`
 5. `.venv/bin/python packaging/verify_windows_bundle.py dist/XRayReview-Windows-x64-CPU`
 6. `.venv/bin/python packaging/verify_windows_bundle.py dist/XRayReview-Windows-x64-GPU`

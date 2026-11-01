@@ -13,3 +13,5 @@ models/active.json
 build/
 dist/
 build_fingerprint.txt
+
+/tmp/

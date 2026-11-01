@@ -1,6 +1,6 @@
 # X-RAY 螺絲複檢 PoC
 
-IPC 分支新增：外部工作路徑、可更新空模型／ONNX 介面、共享資料夾自動取圖、人工複判批次 CSV（SN 留白）。取圖來源與模型可由網頁「取圖與模型設定」指定，儲存後直接生效。設定與操作見 [IPC_SETUP](docs/IPC_SETUP.md)。已新增 Windows x64 CPU／GPU 可攜測試包建置流程，見 [Windows 封裝與驗證](packaging/WINDOWS_BUILD.md)。Windows／NVIDIA IPC 尚待實機驗收。
+IPC 分支新增：外部工作路徑、可更新空模型／ONNX 介面、共享資料夾自動取圖、人工複判批次 CSV（SN 留白）。取圖來源與模型可由網頁「取圖與模型設定」指定，儲存後直接生效。設定與操作見 [IPC_SETUP](docs/IPC_SETUP.md)。已新增 Windows x64 CPU／GPU 可攜測試包建置流程，見 [Windows 封裝與驗證](packaging/WINDOWS_BUILD.md)。CPU 測試包另附 9 頁圖文 PDF 操作手冊與現場測試勾選表。Windows／NVIDIA IPC 尚待實機驗收。
 
 本機離線原型，目前為第三版介面與照片管理；偵測演算法維持第二版。尚未訓練 AI，所有照片均需人工確認。
 

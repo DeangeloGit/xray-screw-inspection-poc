@@ -78,7 +78,14 @@ def build(variant):
     (output/'config/station.json').write_text(json.dumps(config,indent=2),encoding='utf-8')
     fingerprint=hashlib.sha256(b''.join((app/name).read_bytes() for name in SOURCES)).hexdigest()
     (app/'build_fingerprint.txt').write_text(fingerprint,encoding='ascii')
+    if variant=='cpu':
+        manual=ROOT/'output/pdf/Windows-CPU-操作手冊.pdf'
+        if not manual.is_file():
+            raise FileNotFoundError('先執行 docs/windows-cpu-manual/build_manual.py 產生操作手冊')
+        shutil.copyfile(manual,output/manual.name)
     text=(ROOT/'packaging/WINDOWS_README.txt').read_text(encoding='utf-8').replace('{VARIANT}',variant.upper())
+    if variant=='cpu':
+        text='請先閱讀同資料夾的 Windows-CPU-操作手冊.pdf（圖文步驟與現場測試勾選表）。\n\n'+text
     (output/'READ-ME-FIRST.txt').write_text(text,encoding='utf-8-sig')
     (output/'DIAGNOSTICS.bat').write_text('@echo off\r\ncd /d "%~dp0"\r\nXRayReview.exe --self-test\r\necho.\r\necho Diagnostic report: logs\\windows-selftest.json\r\npause\r\n',encoding='ascii',newline='')
     commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
