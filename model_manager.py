@@ -119,6 +119,8 @@ class ModelManager:
                         raise ValueError('站台未允許 CPU 模型')
                     if require_cuda and 'CUDAExecutionProvider' not in ort.get_available_providers():
                         raise ValueError('CUDA provider 不可用')
+                    if require_cuda and hasattr(ort, 'preload_dlls'):
+                        ort.preload_dlls()
                     providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'] if require_cuda else ['CPUExecutionProvider']
                     # Load bytes so the validated file cannot change between hashing and session creation.
                     session = ort.InferenceSession(payload, providers=providers)

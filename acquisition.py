@@ -124,7 +124,8 @@ class Importer:
         # SMB calls can block inside the OS: bound the complete scan with a killable process.
         command = [sys.executable, '--acquisition-scan'] if getattr(sys, 'frozen', False) else [sys.executable, str(Path(__file__).resolve())]
         result = subprocess.run(command, capture_output=True, text=True, encoding='utf-8',
-                                timeout=float(self.config.get('scan_timeout_seconds',30)))
+                                timeout=float(self.config.get('scan_timeout_seconds',30)),
+                                env=dict(os.environ,PYTHONUTF8='1',PYTHONIOENCODING='utf-8'))
         if result.returncode:
             raise OSError(result.stderr.strip()[-1000:] or '取圖工作程序失敗')
         self.status.update(json.loads(result.stdout))

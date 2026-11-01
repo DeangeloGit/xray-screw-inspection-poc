@@ -1,0 +1,2 @@
+-r ../requirements-model-test.txt
+pefile==2024.8.26

@@ -8,7 +8,7 @@ import sys
 import threading
 import uuid
 from flask import Blueprint, jsonify, request
-from runtime_paths import DATA, OUTPUTS, WORK_ROOT, MODEL_ROOT, RESOURCE_ROOT, STATE
+from runtime_paths import DATA, OUTPUTS, WORK_ROOT, MODEL_ROOT, RESOURCE_ROOT, STATE, SETTINGS
 from station_settings import acquisition_config, update_settings, cpu_allowed
 from model_manager import CLASSES, PREPROCESSING, ModelManager, manager
 
@@ -34,7 +34,7 @@ def config_info():
     c = acquisition_config()
     return dict(acquisition=dict(enabled=c.get('enabled',False),source=c.get('source',''),
                                  stable_seconds=c.get('stable_seconds',15)),
-                model=manager.snapshot().info(),default_provider='cpu' if sys.platform=='darwin' else 'require_cuda')
+                model=manager.snapshot().info(),default_provider=SETTINGS.get('default_provider','cpu' if sys.platform=='darwin' else 'require_cuda'))
 
 @settings_api.get('/api/settings')
 def get_settings():
