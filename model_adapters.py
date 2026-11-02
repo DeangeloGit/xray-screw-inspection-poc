@@ -4,6 +4,24 @@ import numpy as np
 from PIL import Image
 
 TIGHT_PREPROCESSING = 'aligned-gray-tight12-v1'
+CLIP_DECISION_POLICY = 'non-screw-margin-abstention-v1'
+CLIP_REVIEW_MARGIN = .01
+
+
+def clip_decision(labels, scores):
+    """Do not turn a near-tie into non-screw evidence; scores are not probabilities."""
+    scores = np.asarray(scores, dtype=float)
+    if scores.shape != (len(labels),) or len(labels)<2 or labels[0]!='screw' or not np.isfinite(scores).all():
+        raise ValueError('CLIP 類別分數無效')
+    raw_label = labels[int(scores.argmax())]
+    margin = float(scores[0]-max(scores[1:]))
+    near_tie = raw_label != 'screw' and margin >= -CLIP_REVIEW_MARGIN - 1e-7
+    label = 'uncertain' if near_tie else raw_label
+    return dict(label=label, raw_label=raw_label, screw_margin=margin,
+                review_margin=CLIP_REVIEW_MARGIN, decision_policy=CLIP_DECISION_POLICY,
+                filter_recommendation='review' if near_tie else 'keep' if label=='screw' else 'non_screw_suggestion',
+                decision_reason='螺絲與其他類別分數接近，保留人工複核' if near_tie else '螺絲類別分數最高' if label=='screw' else '非螺絲類別分數較高，仍需確認')
+
 
 
 def validate(manifest, session):
@@ -59,9 +77,9 @@ def classify(manifest, session, crop):
             raise ValueError('CLIP 推論向量無效')
         vector=vector/np.linalg.norm(vector)
         scores=np.asarray(m['text_embeddings'],np.float32)@vector
-        return dict(label=m['classes'][int(scores.argmax())],probabilities=None,
+        return dict(**clip_decision(m['classes'], scores), probabilities=None,
                     similarities=dict(zip(m['classes'],map(float,scores))),
-                    score_kind='cosine_similarity',screw_margin=float(scores[0]-max(scores[1:])))
+                    score_kind='cosine_similarity')
     height,width=m['input_size']
     scale=min(width/crop.shape[1],height/crop.shape[0])
     resized=cv2.resize(crop,(round(crop.shape[1]*scale),round(crop.shape[0]*scale)))

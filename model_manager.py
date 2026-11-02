@@ -145,7 +145,14 @@ class ModelManager:
                     else:
                         from model_adapters import validate
                         validate(m, session)
-                identity = fingerprint([m, m.get('sha256'), session.get_providers() if session else []])
+                policy = None
+                if m['backend']=='clip_onnx':
+                    from model_adapters import CLIP_DECISION_POLICY, CLIP_REVIEW_MARGIN
+                    policy = [CLIP_DECISION_POLICY, CLIP_REVIEW_MARGIN]
+                identity_parts = [m, m.get('sha256'), session.get_providers() if session else []]
+                if policy is not None:
+                    identity_parts.append(policy)
+                identity = fingerprint(identity_parts)
                 self.current = Snapshot(m, identity, session, requested=requested)
                 self.signature = signature
                 return self.current
