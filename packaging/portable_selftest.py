@@ -8,11 +8,14 @@ import shutil
 import sys
 from tempfile import TemporaryDirectory
 import traceback
+import threading
+import subprocess
 
 
 def run(root):
     report=dict(platform=platform.platform(),python=sys.version,checks=[],success=False)
-    (root/'logs').mkdir(exist_ok=True)
+    log_root=Path(os.environ.get('XRAY_USER_ROOT',str(root)))
+    (log_root/'logs').mkdir(parents=True,exist_ok=True)
     try:
         with TemporaryDirectory(prefix='xray-selftest-') as temporary:
             temporary=Path(temporary)
@@ -24,6 +27,17 @@ def run(root):
             report['checks'].append('OpenCV, NumPy and ONNX Runtime imports')
             report['providers']=onnxruntime.get_available_providers()
             from app import app
+            from launch import bind_server,ready,workspace_identity
+            from runtime_paths import WORK_ROOT
+            server,failures=bind_server(app)
+            serving=threading.Thread(target=server.serve_forever,daemon=True);serving.start()
+            try:
+                url='http://127.0.0.1:'+str(server.port)
+                assert ready(url,workspace_identity(WORK_ROOT)),'本機 HTTP 就緒檢查未通過'
+                report['local_http']=dict(url=url,bind_failures=failures,proxy_free=True)
+                report['checks'].append('Actual local TCP bind and proxy-free HTTP health check')
+            finally:
+                server.shutdown();server.server_close()
             from runtime_paths import DATA
             for name in ('ok_0.png','ng_5.png','ng_9.png'):
                 shutil.copyfile(root/'workspace/data'/name,DATA/name)
@@ -46,7 +60,13 @@ def run(root):
             report['success']=True
     except Exception:
         report['error']=traceback.format_exc()
-    path=root/'logs/windows-selftest.json'
+    if sys.platform=='win32':
+        try:
+            ports=subprocess.run(['netsh','interface','ipv4','show','excludedportrange','protocol=tcp'],capture_output=True,timeout=5)
+            report['excluded_ports']=ports.stdout.decode('utf-8',errors='replace')
+        except Exception as exc:
+            report['excluded_ports_error']=str(exc)
+    path=log_root/'logs/windows-selftest.json'
     path.write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
     print(json.dumps(report,ensure_ascii=False,indent=2),flush=True)
     print('Saved: '+str(path),flush=True)

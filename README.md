@@ -1,5 +1,7 @@
 # X-RAY 螺絲複檢 PoC
 
+**2026-11-02 單檔啟動修正：**新增自解開 EXE、代理隔離與連接埠自動選擇，不需連線 Mac。見 [單檔 EXE 說明](docs/WINDOWS_STANDALONE.md)。
+
 **Windows 工程師接手：**請先讀 [Windows 開發交接說明](docs/WINDOWS_DEVELOPER.md)。本次 checkpoint 為 `checkpoint-2026-11-01-windows-cpu-manual`，main 提供目前完整 IPC 程式。
 
 [圖文操作 PDF](output/pdf/Windows-CPU-操作手冊.pdf) · [Checkpoint](CHECKPOINT.md) · [公開 Release](https://github.com/DeangeloGit/xray-screw-inspection-poc/releases/tag/checkpoint-2026-11-01-windows-cpu-manual)

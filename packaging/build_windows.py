@@ -43,6 +43,8 @@ def build(variant):
     app=output/'_app'; app.mkdir()
     for folder in ('config','models','workspace/data','logs','licenses','prerequisites'):
         (output/folder).mkdir(parents=True)
+    miniz_license=ROOT/'build/miniz/LICENSE'
+    if miniz_license.is_file():shutil.copyfile(miniz_license,output/'licenses/MINIZ-LICENSE.txt')
     embedded=CACHE/'python-3.14.10-embed-amd64.zip'
     assert sha(embedded)=='90905e64a840557d8c1bc4f5b74db3d7ee85e3ffb217611cac1c7813acea4159'
     with zipfile.ZipFile(embedded) as archive:archive.extractall(runtime)

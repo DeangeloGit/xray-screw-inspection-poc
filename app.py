@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, send_from_directory, jsonify, Response
 from detector import ROOT, read
-from runtime_paths import RESOURCE_ROOT, DATA, OUTPUTS, SETTINGS
+from runtime_paths import RESOURCE_ROOT, DATA, OUTPUTS, SETTINGS, WORK_ROOT
 from model_manager import manager
 from settings_api import settings_api
 from reports import export_csv
@@ -29,7 +29,8 @@ def request_limits():
 
 @app.get('/api/health')
 def health():
-    return jsonify(service='xray-poc', version=4, detector_version=2)
+    from launch import workspace_identity
+    return jsonify(service='xray-poc', version=5, detector_version=2, startup_protocol=2, workspace_id=workspace_identity(WORK_ROOT))
 
 @app.get('/')
 def index():
