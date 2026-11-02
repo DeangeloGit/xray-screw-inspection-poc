@@ -81,7 +81,7 @@ def register_tuning(app, analysis_lock):
 
     @app.get('/api/machines/<machine_id>/tuning/<token>/<filename>')
     def tuning_asset(machine_id, token, filename):
-        if not re.fullmatch('[a-f0-9]{32}', token) or not re.fullmatch(r'(?:reference|aligned|aligned_overlay|all_overlay|difference|source|overlay|crop_\d+|reference_crop_\d+|baseline_crop_\d+|baseline_ref_\d+)\.png|result\.json', filename):
+        if not re.fullmatch('[a-f0-9]{32}', token) or not re.fullmatch(r'(?:reference|aligned|aligned_overlay|all_overlay|difference|source|overlay|crop_\d+|reference_crop_\d+|baseline_crop_\d+|baseline_ref_\d+|structure_ref_\d+|structure_target_\d+)\.png|result\.json', filename):
             return jsonify(error='找不到預覽'), 404
         metadata = root / token / 'preview.json'
         if not metadata.is_file() or json.loads(metadata.read_text())['machine_id'] != machine_id:

@@ -7,7 +7,7 @@ import json
 from runtime_paths import WORK_ROOT as ROOT
 from model_manager import manager
 
-DETECTOR_VERSION = 5
+DETECTOR_VERSION = 6
 
 
 def write_image(path, image):
@@ -239,7 +239,66 @@ def matching_structure(ref, target, x, y, w, h):
     return float(cv2.matchTemplate(search, patch, cv2.TM_CCOEFF_NORMED).max())
 
 
-def proposals(ref, target, mask, threshold):
+def structure_change_evidence(ref, target, candidate, threshold):
+    """Explain a candidate with bounded translation and context-only exposure fit.
+
+    Similarity alone cannot reject an object: most positive residual must also
+    disappear, with no object-sized component left. This does not certify normality.
+    """
+    x, y, w, h = (candidate[k] for k in ('x', 'y', 'w', 'h'))
+    padding, radius = 12, 12
+    x0, y0 = max(radius, x-padding), max(radius, y-padding)
+    x1 = min(ref.shape[1]-radius, x+w+padding)
+    y1 = min(ref.shape[0]-radius, y+h+padding)
+    # A clipped candidate cannot support a complete explanation.
+    if x0 > x or y0 > y or x1 < x+w or y1 < y+h:
+        return {}
+    patch = target[y0:y1, x0:x1].astype('float32')
+    if patch.size == 0 or patch.std() < .015:
+        return {}
+    search = ref[y0-radius:y1+radius, x0-radius:x1+radius].astype('float32')
+    scores = cv2.matchTemplate(search, patch, cv2.TM_CCOEFF_NORMED)
+    _, similarity, _, point = cv2.minMaxLoc(scores)
+    dx, dy = point[0]-radius, point[1]-radius
+    normal = ref[y0+dy:y1+dy, x0+dx:x1+dx].astype('float32')
+    core = (slice(y-y0, y+h-y0), slice(x-x0, x+w-x0))
+    context = np.ones_like(patch)
+    context[core] = 0  # An extra object must not train its own brightness correction.
+    outside = context > 0
+    def context_similarity(image):
+        a, b = image[outside], patch[outside]
+        if a.std() < .015 or b.std() < .015:
+            return 0.0
+        return float(np.corrcoef(a, b)[0, 1])
+    context_match = context_similarity(normal)
+    context_before = context_similarity(ref[y0:y1, x0:x1])
+    # A nearby similar screw is not evidence that the surrounding structure moved.
+    supported = context_match >= .6 and (max(abs(dx), abs(dy)) <= 2
+                                         or context_match >= context_before + .03)
+    weights = context.copy()
+    for _ in range(4):
+        mass = max(float(weights.sum()), .001)
+        mx = (weights*normal).sum()/mass
+        my = (weights*patch).sum()/mass
+        covariance = (weights*(normal-mx)*(patch-my)).sum()
+        variance = (weights*(normal-mx)**2).sum()
+        gain = np.clip(covariance/max(float(variance), .001), .6, 1.6)
+        offset = np.clip(my-gain*mx, -.25, .25)
+        fitted = np.clip(gain*normal+offset, 0, 1)
+        error = np.abs(fitted-patch)
+        weights = context*np.minimum(1, .04/np.maximum(error, .0001))**2
+    difference = fitted[core]-patch[core]
+    original = ref[y:y+h, x:x+w]-target[y:y+h, x:x+w]
+    ratio = float(np.maximum(difference, 0).sum()) / max(float(np.maximum(original, 0).sum()), .001)
+    _, _, stats, _ = cv2.connectedComponentsWithStats((difference > threshold).astype('uint8'))
+    remaining = max(stats[1:, cv2.CC_STAT_AREA], default=0)
+    return dict(sim=float(similarity), context_similarity=context_match,
+                context_before=context_before, context_supported=bool(supported),
+                dx=dx, dy=dy, gain=float(gain),
+                offset=float(offset), ratio=ratio, remaining=int(remaining))
+
+
+def proposals(ref, target, mask, threshold, structure_changes=None):
     predicted = compensate_brightness(ref, target)
     residual = cv2.erode(predicted, np.ones((7, 7), np.uint8)) - target
     candidates, _ = candidates_from_residual(ref, target, mask, threshold, predicted, residual)
@@ -266,8 +325,20 @@ def proposals(ref, target, mask, threshold):
             candidates.append(c)
             x, y, w, h = (c[k] for k in ('x','y','w','h'))
             residual[y:y+h,x:x+w] = np.maximum(residual[y:y+h,x:x+w], tight_residual[y:y+h,x:x+w])
-    candidates.sort(key=lambda c:c['score'], reverse=True)
-    return candidates, residual
+    retained = []
+    for c in candidates:
+        evidence = structure_change_evidence(ref, target, c, threshold)
+        explained = bool(evidence and evidence['context_supported'] and evidence['sim'] >= .65
+                         and evidence['ratio'] <= .2 and evidence['remaining'] < 12)
+        c['change_evidence'] = evidence
+        c['change_type'] = 'existing_structure_change' if explained else 'unexplained_object_candidate'
+        if explained:
+            if structure_changes is not None:
+                structure_changes.append(c)
+        else:
+            retained.append(c)
+    retained.sort(key=lambda c:c['score'], reverse=True)
+    return retained, residual
 
 
 def candidates_from_residual(ref, target, mask, threshold, predicted, residual):
@@ -380,7 +451,8 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
         raise ValueError('待測影像未完整覆蓋正常參考機體，需重新拍攝／人工確認')
     baseline, _ = legacy_proposals(r, reg['aligned'], structure_mask(r) & reg['valid'], threshold)
     corrected, flow, regions = refine(r, reg['aligned'], structure_mask(r) & reg['valid'])
-    candidates, residual = proposals(r, corrected, mask, threshold)
+    structure_changes = []
+    candidates, residual = proposals(r, corrected, mask, threshold, structure_changes)
     for c in candidates:
         c['reasons'] = prioritize(c)
         c['priority'] = 'review' if c['reasons'] else 'high'
@@ -396,6 +468,12 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
         c['source_bbox'] = [int(x0), int(y0), int(x1), int(y1)]
     out = Path(output_directory) if output_directory is not None else ROOT/'outputs'/name
     out.mkdir(parents=True, exist_ok=True)
+    for i, c in enumerate(structure_changes, 1):
+        c['id'] = i
+        x, y, w, h = (c[k] for k in ('x', 'y', 'w', 'h'))
+        region = (slice(max(0, y-12), y+h+12), slice(max(0, x-12), x+w+12))
+        for prefix, image in [('structure_ref', r), ('structure_target', corrected)]:
+            write_image(str(out/f'{prefix}_{i}.png'), (image[region]*255).astype('uint8'))
     ys, xs = np.where(mask)
     machine_points = source_points([[xs.min(), ys.min()], [xs.max(), ys.min()],
                                     [xs.max(), ys.max()], [xs.min(), ys.max()]], reg, flow, raw.shape)
@@ -460,6 +538,7 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
                   alignment_warning=any(not z['reliable'] for z in regions),
                   coverage=round(coverage, 4), baseline_candidates=baseline,
                   baseline_count=len(baseline), proposal_count=len(candidates),
+                  structure_change_count=len(structure_changes), structure_changes=structure_changes,
                   high_count=n_high, review_count=len(candidates)-n_high, candidates=candidates,
                   warning='紅框為規則優先候選，不是 AI 確認螺絲；黃色候選仍需查看。無紅框不代表正常。')
     (out/'result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
