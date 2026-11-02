@@ -7,7 +7,7 @@ import json
 from runtime_paths import WORK_ROOT as ROOT
 from model_manager import manager
 
-DETECTOR_VERSION = 7
+DETECTOR_VERSION = 8
 
 
 def write_image(path, image):
@@ -31,6 +31,11 @@ def read(path):
 
 
 def register(ref, raw):
+    from registration_candidate import choose_registration
+    return choose_registration(ref, raw, _register_orientation, machine_mask, correlation)
+
+
+def _register_orientation(ref, raw):
     cv2.setRNGSeed(7)
     orb = cv2.ORB_create(nfeatures=7000)
     kr, dr = orb.detectAndCompute((ref * 255).astype('uint8'), None)
@@ -432,6 +437,8 @@ def source_points(points, reg, flow, raw_shape):
     elif k == 1: result = np.column_stack([w-1-y, x])
     elif k == 2: result = np.column_stack([w-1-x, h-1-y])
     else: result = np.column_stack([y, h-1-x])
+    if reg.get('mirrored', False):
+        result[:, 0] = w-1-result[:, 0]
     result[:, 0] = np.clip(result[:, 0], 0, w-1)
     result[:, 1] = np.clip(result[:, 1], 0, h-1)
     return result
@@ -538,7 +545,8 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
     write_image(str(out/'difference.png'), cv2.applyColorMap((heat*255).astype('uint8'), cv2.COLORMAP_INFERNO))
     n_high = sum(c['priority'] == 'high' for c in candidates)
     result = dict(model=model_snapshot.info(), version=DETECTOR_VERSION, name=name, status='需人工複核',
-                  rotation_ccw=reg['rotation']*90, inliers=reg['inliers'], threshold=threshold,
+                  rotation_ccw=reg['rotation']*90, mirrored_input=reg.get('mirrored',False),
+                  orientation_evidence=reg.get('orientation_evidence'), inliers=reg['inliers'], threshold=threshold,
                   source_shape=list(raw.shape), source_machine_bbox=machine_box, preview_scale=preview_scale,
                   coordinate_frame='x/y/w/h: reference preview; source_bbox/polygon: original target pixels',
                   matrix=reg['matrix'].tolist(), local_alignment=regions,
