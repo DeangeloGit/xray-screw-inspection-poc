@@ -3,7 +3,7 @@ import hashlib
 import uuid
 from pathlib import Path
 from runtime_paths import STATE, REFERENCE
-from station_settings import read_settings, update_settings, LOCK
+from station_settings import read_settings, update_settings, LOCK, detection_threshold
 
 REFERENCES = STATE / 'machine-references'
 
@@ -32,7 +32,7 @@ def public_profiles():
     for item in profiles():
         path = Path(item['reference'])
         items.append(dict(id=item['id'], name=item['name'], reference_name=item.get('reference_name',path.name if item['id']=='default' else item['name']+' 正常參考圖'),
-                          ready=path.is_file(), reference_url='/api/machines/'+item['id']+'/reference'))
+                          threshold=detection_threshold(item['id']), ready=path.is_file(), reference_url='/api/machines/'+item['id']+'/reference'))
     return dict(items=items, selected=selected)
 
 

@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request, send_from_directory, jsonify, Response
-from detector import ROOT, read
+from detector import ROOT, read, DETECTOR_VERSION
 from runtime_paths import RESOURCE_ROOT, DATA, OUTPUTS, SETTINGS, WORK_ROOT
 from model_manager import manager
 from settings_api import settings_api
-from station_settings import source_scope
+from station_settings import source_scope, detection_threshold, validate_threshold, update_settings
 from machine_profiles import public_profiles, selected_profile, save_profile, select_profile, profiles, matches
 from reports import export_csv, report_rows
 from review_workflow import effective_review, summarize_positions
@@ -25,6 +25,8 @@ analysis_lock = threading.Lock()
 review_lock = threading.Lock()
 jobs_lock = threading.Lock()
 jobs = {}
+from machine_tuning import register_tuning
+register_tuning(app, analysis_lock)
 (ROOT/'outputs').mkdir(exist_ok=True)
 
 @app.before_request
@@ -33,6 +35,9 @@ def request_limits():
         request.max_content_length = 512 * 1024 * 1024
 
 def require_machine_context():
+    threshold_token = request.headers.get('X-Inspection-Threshold')
+    if threshold_token is not None and float(threshold_token) != detection_threshold():
+        raise ValueError('此機型敏感度已變更，請更新照片清單後重新檢查')
     source_token = request.headers.get('X-Inspection-Source')
     if source_token and source_token != source_scope()['id']:
         raise ValueError('取圖資料夾已變更，請更新照片清單後重試')
@@ -42,10 +47,20 @@ def require_machine_context():
         if token != profile['id'] + ':' + profile['reference_sha256']:
             raise ValueError('本站檢測機型或參考圖已變更，請重新整理頁面')
 
+@app.get('/api/settings/detection')
+def get_detection_settings():
+    return jsonify(threshold=detection_threshold())
+
+
+@app.post('/api/settings/detection')
+def set_detection_settings():
+    return jsonify(error='請從機型旁的調校按鈕進入，預覽後套用至該機型'), 409
+
+
 @app.get('/api/health')
 def health():
     from launch import workspace_identity
-    return jsonify(service='xray-poc', version=5, detector_version=2, startup_protocol=2, workspace_id=workspace_identity(WORK_ROOT))
+    return jsonify(service='xray-poc', version=5, detector_version=DETECTOR_VERSION, startup_protocol=2, workspace_id=workspace_identity(WORK_ROOT))
 
 @app.get('/')
 def index():
@@ -157,12 +172,14 @@ def sample_result(sample_id):
 @app.post('/api/analyze')
 def analyze():
     try:
-        threshold = float(request.form.get('threshold', .13))
-        if not .03 <= threshold <= .4:
+        threshold = float(request.form['threshold']) if 'threshold' in request.form else None
+        if threshold is not None and not .03 <= threshold <= .4:
             raise ValueError('門檻需介於 0.03 與 0.40')
         sample = request.form.get('sample', 'ng_5')
         with analysis_lock:
             require_machine_context()
+            if threshold is not None and threshold != detection_threshold():
+                raise ValueError('請先儲存此機型敏感度，並重新整理頁面後檢查')
             if 'image' in request.files and request.files['image'].filename:
                 file = request.files['image']
                 filename = PathName(file.filename)
@@ -211,6 +228,10 @@ def review(name):
     with analysis_lock, review_lock:
         require_machine_context()
         result = json.loads(path.read_text(encoding='utf-8'))
+        if result.get('version') != DETECTOR_VERSION:
+            return jsonify(error='偵測版本已更新，請重新檢查此照片'), 409
+        if result.get('threshold', .13) != detection_threshold():
+            return jsonify(error='此機型敏感度已變更，請重新檢查此照片'), 409
         if not matches(result, selected_profile()):
             return jsonify(error='此紀錄不屬於目前機型／參考圖，請重新檢查'), 409
         if candidate_id not in [c['id'] for c in result['candidates']]:
@@ -232,6 +253,10 @@ def image_review(name):
     with analysis_lock, review_lock:
         require_machine_context()
         result = json.loads(path.read_text(encoding='utf-8'))
+        if result.get('version') != DETECTOR_VERSION:
+            return jsonify(error='偵測版本已更新，請重新檢查此照片'), 409
+        if result.get('threshold', .13) != detection_threshold():
+            return jsonify(error='此機型敏感度已變更，請重新檢查此照片'), 409
         if not matches(result, selected_profile()):
             return jsonify(error='此紀錄不屬於目前機型／參考圖，請重新檢查'), 409
         labels = result.get('human_reviews', {})

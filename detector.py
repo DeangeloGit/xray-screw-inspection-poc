@@ -7,6 +7,8 @@ import json
 from runtime_paths import WORK_ROOT as ROOT
 from model_manager import manager
 
+DETECTOR_VERSION = 5
+
 
 def write_image(path, image):
     ok, encoded = cv2.imencode(Path(path).suffix, image)
@@ -67,7 +69,7 @@ def register(ref, raw):
     return best
 
 
-def machine_mask(ref):
+def structure_mask(ref):
     mask = (ref < 0.65).astype('uint8')
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((31, 31), np.uint8))
     n, labels, stats, _ = cv2.connectedComponentsWithStats(mask)
@@ -75,6 +77,39 @@ def machine_mask(ref):
         raise ValueError('正常參考圖無法定位機體')
     mask = (labels == (1 + np.argmax(stats[1:, cv2.CC_STAT_AREA]))).astype('uint8')
     return cv2.erode(mask, np.ones((11, 11), np.uint8)).astype(bool)
+
+
+def machine_mask(ref):
+    """Inspect the main body envelope, including bright cavities and side recesses."""
+    structure = structure_mask(ref).astype('uint8')
+    contours, _ = cv2.findContours(structure, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        raise ValueError('正常參考圖無法定位機體')
+    filled = np.zeros_like(structure)
+    # Closing holes alone leaves open side recesses outside the contour. Use the
+    # convex envelope of the main body, not a hull of all objects in the image.
+    hull = cv2.convexHull(max(contours, key=cv2.contourArea))
+    cv2.fillConvexPoly(filled, hull, 1)
+    return filled.astype(bool)
+
+
+def compensate_brightness(ref, target):
+    """Robust local affine exposure fit; strong residuals cannot train away objects."""
+    weights = np.ones_like(ref, dtype=np.float32)
+    def average(a):
+        return cv2.boxFilter(a, -1, (101, 101), normalize=True, borderType=cv2.BORDER_REFLECT)
+    for _ in range(3):
+        mass = np.maximum(average(weights), .01)
+        mean_ref = average(weights * ref) / mass
+        mean_target = average(weights * target) / mass
+        variance = np.maximum(average(weights * ref * ref) / mass - mean_ref**2, 0)
+        covariance = average(weights * ref * target) / mass - mean_ref * mean_target
+        gain = np.clip((covariance + .002) / (variance + .002), .6, 1.6)
+        offset = np.clip(mean_target - gain * mean_ref, -.25, .25)
+        predicted = np.clip(gain * ref + offset, 0, 1)
+        error = np.abs(predicted - target)
+        weights = np.minimum(1, .04 / np.maximum(error, .0001)) ** 2
+    return predicted
 
 
 def correlation(a, b, mask):
@@ -152,7 +187,7 @@ def refine(ref, aligned, mask):
     return corrected, flow, regions
 
 
-def proposals(ref, target, mask, threshold):
+def legacy_proposals(ref, target, mask, threshold):
     residual = ((ref - cv2.GaussianBlur(ref, (0, 0), 15)) -
                 (target - cv2.GaussianBlur(target, (0, 0), 15)))
     edges = cv2.Canny((ref * 255).astype('uint8'), 40, 100)
@@ -191,10 +226,110 @@ def proposals(ref, target, mask, threshold):
     return candidates, residual
 
 
+def matching_structure(ref, target, x, y, w, h):
+    padding, radius = 6, 12
+    x0, y0 = max(radius, x-padding), max(radius, y-padding)
+    x1, y1 = min(ref.shape[1]-radius, x+w+padding), min(ref.shape[0]-radius, y+h+padding)
+    if x1 <= x0 or y1 <= y0:
+        return 0.0
+    patch = target[y0:y1, x0:x1].astype('float32')
+    if patch.std() < .015:
+        return 0.0
+    search = ref[y0-radius:y1+radius, x0-radius:x1+radius].astype('float32')
+    return float(cv2.matchTemplate(search, patch, cv2.TM_CCOEFF_NORMED).max())
+
+
+def proposals(ref, target, mask, threshold):
+    predicted = compensate_brightness(ref, target)
+    residual = cv2.erode(predicted, np.ones((7, 7), np.uint8)) - target
+    candidates, _ = candidates_from_residual(ref, target, mask, threshold, predicted, residual)
+    # Tight-tolerance recovery: small objects beside existing dark structures can
+    # be erased by the main 3px tolerance. Require compact, novel, predominantly
+    # one-sided evidence before retaining a 1px-tolerance candidate.
+    tight_residual = cv2.erode(predicted, np.ones((3, 3), np.uint8)) - target
+    recovered, _ = candidates_from_residual(ref, target, mask, threshold, predicted, tight_residual)
+    for candidate in recovered:
+        c = candidate
+        if not (25 <= c['area'] <= 600 and max(c['w'], c['h']) <= 50
+                and c['aspect'] <= 4 and c['fill'] >= .25
+                and c['score'] >= threshold + .05 and c['bipolar'] <= .5
+                and c['shape_similarity'] <= .55):
+            continue
+        duplicate = False
+        for existing in candidates:
+            overlap = max(0, min(c['x']+c['w'], existing['x']+existing['w'])-max(c['x'],existing['x'])) * max(0,min(c['y']+c['h'],existing['y']+existing['h'])-max(c['y'],existing['y']))
+            if overlap / max(1, min(c['w']*c['h'], existing['w']*existing['h'])) > .25:
+                duplicate = True
+                break
+        if not duplicate:
+            c['recovery'] = 'tight_spatial_tolerance'
+            candidates.append(c)
+            x, y, w, h = (c[k] for k in ('x','y','w','h'))
+            residual[y:y+h,x:x+w] = np.maximum(residual[y:y+h,x:x+w], tight_residual[y:y+h,x:x+w])
+    candidates.sort(key=lambda c:c['score'], reverse=True)
+    return candidates, residual
+
+
+def candidates_from_residual(ref, target, mask, threshold, predicted, residual):
+    binary = ((residual > threshold) & mask).astype('uint8')
+    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN,
+                              cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
+    # Separate a compact object from long connected residuals instead of dropping
+    # the entire oversized component. Keep ordinary small components intact.
+    _, component_labels, component_stats, _ = cv2.connectedComponentsWithStats(binary)
+    for index, (x, y, w, h, area) in enumerate(component_stats[1:], 1):
+        if area > 1800 or max(w, h) > 110:
+            region = (component_labels[y:y+h, x:x+w] == index).astype('uint8')
+            separated = cv2.morphologyEx(region, cv2.MORPH_OPEN,
+                                         cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)))
+            binary[y:y+h, x:x+w][region > 0] = separated[region > 0]
+
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
+    candidates = []
+    normal_nearby = cv2.erode(predicted, np.ones((15, 15), np.uint8))
+    signed_difference = predicted - target
+    for i in range(1, n):
+        x, y, w, h, area = map(int, stats[i])
+        if not (12 <= area <= 1800 and 4 <= max(w, h) <= 110):
+            continue
+        component = (labels[y:y+h, x:x+w] == i)
+        py, px = np.where(component)
+        points = np.column_stack([px, py]).astype('float32')
+        _, (a, b), _ = cv2.minAreaRect(points)
+        aspect = (max(a, b) + 1) / (min(a, b) + 1)
+        score = float(np.percentile(residual[y:y+h, x:x+w][component], 90))
+        # Normal-metal proximity and bipolar residual distinguish edge motion from extra objects.
+        nearby = (slice(max(0, y-5), min(ref.shape[0], y+h+5)),
+                  slice(max(0, x-5), min(ref.shape[1], x+w+5)))
+        diff = signed_difference[nearby]
+        negative = float(np.maximum(-diff, 0).sum())
+        positive = float(np.maximum(diff, 0).sum())
+        bipolar = negative / max(positive, 1e-6)
+        contrast = float(np.median(predicted[y:y+h, x:x+w][component] -
+                                   target[y:y+h, x:x+w][component]))
+        normal_support = float(np.mean((normal_nearby[y:y+h, x:x+w] <=
+                                        target[y:y+h, x:x+w] + .06)[component]))
+        shape_similarity = matching_structure(ref, target, x, y, w, h)
+        # Correlation ignores brightness offsets/gain; suppress a close existing
+        # shape only when the local template has a strong match.
+        if shape_similarity >= .85:
+            continue
+        if area < 40 and (shape_similarity > .55 or normal_support > .5):
+            continue
+        candidates.append(dict(shape_similarity=round(shape_similarity, 3), x=x, y=y, w=w, h=h, area=area, score=round(score, 4),
+                               normal_support=round(normal_support, 3),
+                               aspect=round(float(aspect), 2), fill=round(area/(w*h), 3),
+                               bipolar=round(bipolar, 3), contrast=round(contrast, 4)))
+    candidates.sort(key=lambda c: c['score'], reverse=True)
+    return candidates, residual
+
+
 def prioritize(candidate):
     """Conservative heuristic ranking, never deletes proposals; not a screw classifier."""
     c = candidate
     reasons = []
+    if c.get('shape_similarity', 0) > .65:
+        reasons.append('附近有相似輪廓，可能為既有結構的對齊或外觀差異')
     if c['normal_support'] > .5:
         reasons.append('正常圖鄰近有相似深色結構，可能為固定零件或線材偏移')
     if c['aspect'] > 8:
@@ -231,7 +366,7 @@ def source_points(points, reg, flow, raw_shape):
     return result
 
 
-def detect(reference, target, name, threshold=.13, model_snapshot=None):
+def detect(reference, target, name, threshold=.13, model_snapshot=None, output_directory=None):
     model_snapshot = model_snapshot or manager.snapshot()
     if not np.isfinite(threshold) or not .03 <= threshold <= .4:
         raise ValueError('門檻需介於 0.03 與 0.40')
@@ -243,8 +378,8 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None):
     coverage = int(mask.sum()) / total
     if coverage < .95:
         raise ValueError('待測影像未完整覆蓋正常參考機體，需重新拍攝／人工確認')
-    baseline, _ = proposals(r, reg['aligned'], mask, threshold)
-    corrected, flow, regions = refine(r, reg['aligned'], mask)
+    baseline, _ = legacy_proposals(r, reg['aligned'], structure_mask(r) & reg['valid'], threshold)
+    corrected, flow, regions = refine(r, reg['aligned'], structure_mask(r) & reg['valid'])
     candidates, residual = proposals(r, corrected, mask, threshold)
     for c in candidates:
         c['reasons'] = prioritize(c)
@@ -259,7 +394,7 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None):
         x0, y0 = np.floor(points.min(axis=0)).astype(int)
         x1, y1 = np.ceil(points.max(axis=0)).astype(int)
         c['source_bbox'] = [int(x0), int(y0), int(x1), int(y1)]
-    out = ROOT/'outputs'/name
+    out = Path(output_directory) if output_directory is not None else ROOT/'outputs'/name
     out.mkdir(parents=True, exist_ok=True)
     ys, xs = np.where(mask)
     machine_points = source_points([[xs.min(), ys.min()], [xs.max(), ys.min()],
@@ -283,7 +418,7 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None):
                    min(x+w+8, z['x']+z['w']) > max(x-8, z['x']) and
                    min(y+h+8, z['y']+z['h']) > max(y-8, z['y'])]
         c['v2_nearby_ids'] = matches
-        c['audit'] = '鄰近仍有第二版候選，請逐圖確認' if matches else '局部對齊後未達候選門檻；不代表正常'
+        c['audit'] = '鄰近仍有目前版本候選，請逐圖確認' if matches else '局部對齊後未達候選門檻；不代表正常'
     source_preview = cv2.cvtColor((raw*255).astype('uint8'), cv2.COLOR_GRAY2BGR)
     # Save natural-orientation preview at <=1536px; source coordinates remain native pixels.
     preview_scale = 1536/max(raw.shape)
@@ -317,7 +452,7 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None):
     heat[~mask] = 0
     write_image(str(out/'difference.png'), cv2.applyColorMap((heat*255).astype('uint8'), cv2.COLORMAP_INFERNO))
     n_high = sum(c['priority'] == 'high' for c in candidates)
-    result = dict(model=model_snapshot.info(), version=2, name=name, status='需人工複核',
+    result = dict(model=model_snapshot.info(), version=DETECTOR_VERSION, name=name, status='需人工複核',
                   rotation_ccw=reg['rotation']*90, inliers=reg['inliers'], threshold=threshold,
                   source_shape=list(raw.shape), source_machine_bbox=machine_box, preview_scale=preview_scale,
                   coordinate_frame='x/y/w/h: reference preview; source_bbox/polygon: original target pixels',

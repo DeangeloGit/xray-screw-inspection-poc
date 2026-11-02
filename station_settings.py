@@ -48,3 +48,24 @@ def in_source(path, root):
         return os.path.commonpath([path, root]) == root
     except ValueError:
         return False
+
+
+def validate_threshold(value):
+    if type(value) not in (int, float) or not .03 <= value <= .40:
+        raise ValueError('差分門檻需為 0.03 至 0.40 的數值')
+    return float(value)
+
+
+def detection_threshold(profile_id=None):
+    settings = read_settings()
+    profile_id = profile_id or settings.get('selected_machine', 'default')
+    # Keep the former shared value as the baseline for machines not yet tuned.
+    return validate_threshold(settings.get('machine_thresholds', {}).get(
+        profile_id, settings.get('detection_threshold', .13)))
+
+
+def save_machine_threshold(profile_id, threshold):
+    with LOCK:
+        values = dict(read_settings().get('machine_thresholds', {}))
+        values[profile_id] = validate_threshold(threshold)
+        update_settings(machine_thresholds=values)

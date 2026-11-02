@@ -5,13 +5,13 @@ import hashlib
 import json
 import re
 import sqlite3
-from detector import ROOT, detect
+from detector import ROOT, detect, DETECTOR_VERSION
 from runtime_paths import DATA, OUTPUTS, RESOURCE_ROOT, STATE
 from model_manager import manager
 from machine_profiles import selected_profile, matches, profiles
 from review_workflow import effective_review
 from acquisition import Importer
-from station_settings import source_scope, in_source
+from station_settings import source_scope, in_source, detection_threshold
 
 importer = Importer()
 SUFFIXES = {'.png', '.jpg', '.jpeg', '.tif', '.tiff'}
@@ -114,8 +114,9 @@ def record_analysis_failure(sha, profile, error=None):
                        (sha,profile['id'],profile['reference_sha256'],str(error),datetime.now(timezone.utc).isoformat()))
 
 
-def analyze_file(path, filename, threshold=.13, sample_id=None, profile=None):
+def analyze_file(path, filename, threshold=None, sample_id=None, profile=None):
     profile = profile or selected_profile()
+    threshold = detection_threshold(profile['id']) if threshold is None else threshold
     sha = digest(path)
     snapshot = manager.snapshot()
     key = analysis_key(sha, threshold, snapshot, profile)
@@ -138,7 +139,7 @@ def analyze_file(path, filename, threshold=.13, sample_id=None, profile=None):
     return result
 
 
-def analyze_sample(item, threshold=.13, profile=None):
+def analyze_sample(item, threshold=None, profile=None):
     return analyze_file(DATA/item['filename'], item['filename'], threshold, item['id'], profile)
 
 
@@ -160,13 +161,14 @@ def remember_result(result):
 def latest_results(profile=None):
     """Historical results remain reviewable after model/code updates; never reuse as new cache."""
     profile = profile or selected_profile()
+    threshold = detection_threshold(profile['id'])
     results = {}
     for path in OUTPUTS.glob('*/result.json'):
         try:
             result = json.loads(path.read_text(encoding='utf-8'))
             if result.get('cache_key', '')[:12] != result.get('name'):
                 continue
-            if not matches(result, profile):
+            if result.get('version') != DETECTOR_VERSION or not matches(result, profile) or result.get('threshold', .13) != threshold:
                 continue
             sha = result.get('source_sha256')
             if sha and result.get('analyzed_at', '') >= results.get(sha, {}).get('analyzed_at', ''):
@@ -181,15 +183,15 @@ def latest_results(profile=None):
                 continue
             try:
                 selected = json.loads((OUTPUTS/name/'result.json').read_text(encoding='utf-8'))
-                if selected.get('source_sha256') == sha and selected.get('cache_key','')[:12] == name and matches(selected, profile):
+                if selected.get('version') == DETECTOR_VERSION and selected.get('source_sha256') == sha and selected.get('cache_key','')[:12] == name and matches(selected, profile) and selected.get('threshold', .13) == threshold:
                     results[sha] = selected
             except (OSError, ValueError):
                 pass
     return results
 
 
-def public_catalog():
-    profile = selected_profile()
+def public_catalog(profile=None):
+    profile = profile or selected_profile()
     scope = source_scope()
     items = catalog(scope)
     history = latest_results(profile)
@@ -207,4 +209,4 @@ def public_catalog():
                                     reviewed=len(result.get('human_reviews', {})),
                                     image_review=review)
     return dict(items=items, file_count=sum(len(s['aliases']) for s in items),
-                unique_count=len(items), source=scope, reference=profile.get('reference_name',Path(profile['reference']).name if profile['id']=='default' else profile['name']+' 正常參考圖'), machine=profile)
+                unique_count=len(items), detector_version=DETECTOR_VERSION, detection_threshold=detection_threshold(profile['id']), source=scope, reference=profile.get('reference_name',Path(profile['reference']).name if profile['id']=='default' else profile['name']+' 正常參考圖'), machine=profile)
