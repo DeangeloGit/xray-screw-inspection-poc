@@ -7,7 +7,7 @@ import json
 from runtime_paths import WORK_ROOT as ROOT
 from model_manager import manager
 
-DETECTOR_VERSION = 8
+DETECTOR_VERSION = 9
 
 
 def write_image(path, image):
@@ -335,6 +335,12 @@ def proposals(ref, target, mask, threshold, structure_changes=None):
         evidence = structure_change_evidence(ref, target, c, threshold)
         explained = bool(evidence and evidence['context_supported'] and evidence['sim'] >= .65
                          and evidence['ratio'] <= .2 and evidence['remaining'] < 12)
+        if not explained:
+            from single_reference_evidence import explain
+            context_evidence = explain(ref, target, c, threshold)
+            if context_evidence:
+                c['single_reference_evidence'] = context_evidence
+                explained = True
         c['change_evidence'] = evidence
         c['change_type'] = 'existing_structure_change' if explained else 'unexplained_object_candidate'
         if explained:

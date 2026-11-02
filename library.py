@@ -79,7 +79,7 @@ def analysis_key(sha, threshold=.13, model_snapshot=None, profile=None):
     profile = profile or selected_profile()
     snapshot = model_snapshot or manager.snapshot()
     build = RESOURCE_ROOT/'build_fingerprint.txt'
-    engine = build.read_text(encoding='utf-8').strip() if build.is_file() else '|'.join(digest(RESOURCE_ROOT/p) for p in ('detector.py','registration_candidate.py','model_manager.py','model_adapters.py','library.py','machine_profiles.py'))
+    engine = build.read_text(encoding='utf-8').strip() if build.is_file() else '|'.join(digest(RESOURCE_ROOT/p) for p in ('detector.py','registration_candidate.py','single_reference_evidence.py','model_manager.py','model_adapters.py','library.py','machine_profiles.py'))
     ref = profile['reference_sha256'] + '|' + profile['id']
     return hashlib.sha256(f'{engine}|{ref}|{sha}|{float(threshold):.8f}|{snapshot.identity}|{snapshot.error}|{snapshot.requested}'.encode()).hexdigest()
 
