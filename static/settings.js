@@ -1,14 +1,14 @@
 (()=>{
 const $=id=>document.getElementById(id);
-let modelBusy=false;
+let modelBusy=false,activeModelDirectory=null;
 async function api(url,options={}){
  const response=await fetch(url,options);const result=await response.json();
  if(!response.ok)throw Error(result.error||'設定失敗');return result;
 }
 function message(id,text,error=false){$(id).textContent=text;$(id).className='message'+(error?' error':'')}
-function showModel(m){$('current-model').textContent=m.backend==='noop'?'未啟用 AI，目前使用差分與人工複判':m.model_id+' · '+(m.providers.includes('CUDAExecutionProvider')?'NVIDIA GPU':'CPU');if(m.error)message('model-message',m.error,true)}
+function showModel(m){activeModelDirectory=m.requested;$('current-model').textContent=m.backend==='noop'?'未啟用 AI，目前使用差分與人工複判':m.model_id+' · '+(m.providers.includes('CUDAExecutionProvider')?'NVIDIA GPU':'CPU');if(m.error)message('model-message',m.error,true)}
 async function loadSettings(){
- try{const s=await api('/api/settings');$('source-enabled').checked=s.acquisition.enabled;$('source-path').value=s.acquisition.source;$('stable-seconds').value=s.acquisition.stable_seconds;$('model-provider').value=s.default_provider;showModel(s.model)}
+ try{const s=await api('/api/settings');$('source-enabled').checked=s.acquisition.enabled;$('source-path').value=s.acquisition.source;$('stable-seconds').value=s.acquisition.stable_seconds;$('model-provider').value=s.default_provider;showModel(s.model);await loadModels()}
  catch(e){message('source-message',e.message,true)}
 }
 $('source-form').onsubmit=async e=>{
@@ -23,9 +23,12 @@ async function applyModel(disable){
  if(modelBusy)return;
  const file=$('model-file').files[0];if(!disable&&!file){message('model-message','請先選擇 .onnx 模型檔案。',true);return}
  modelBusy=true;$('apply-model').disabled=true;$('disable-model').disabled=true;message('model-message',disable?'正在停用 AI…':'模型檢查中，請稍候…');
- try{const data=new FormData();data.set('provider',$('model-provider').value);data.set('normalization',$('normalization').value);if(disable)data.set('disable','true');else data.set('model',file);const result=await api('/api/settings/model',{method:'POST',body:data});showModel(result.model);message('model-message',result.message)}
+ try{const data=new FormData();data.set('provider',$('model-provider').value);data.set('normalization',$('normalization').value);data.set('backend',$('model-backend').value);data.set('classes',$('model-classes').value);data.set('input_size',$('model-size').value);data.set('screw_class_id',$('screw-class-id').value);data.set('confidence',$('model-confidence').value);if(disable)data.set('disable','true');else data.set('model',file);const result=await api('/api/settings/model',{method:'POST',body:data});showModel(result.model);await loadModels();message('model-message',result.message)}
  catch(e){message('model-message',e.message,true)}finally{modelBusy=false;$('apply-model').disabled=false;$('disable-model').disabled=false}
 }
+async function loadModels(){const data=await api('/api/settings/models');$('installed-model').replaceChildren();for(const m of data.models){const o=document.createElement('option');o.value=m.directory;o.textContent=m.model_id+' · '+m.backend+(m.directory===activeModelDirectory?'（目前）':'');$('installed-model').append(o)}if(activeModelDirectory)$('installed-model').value=activeModelDirectory}
+$('model-backend').onchange=()=>{$('yolo-options').hidden=$('model-backend').value!=='yolo_onnx'};
+$('select-model').onclick=async()=>{if(modelBusy)return;modelBusy=true;$('select-model').disabled=true;message('model-message','正在驗證並切換模型…');try{const data=await api('/api/settings/models/select',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({directory:$('installed-model').value})});showModel(data.model);message('model-message',data.message)}catch(e){message('model-message',e.message,true)}finally{modelBusy=false;$('select-model').disabled=false}};
 $('model-form').onsubmit=e=>{e.preventDefault();applyModel(false)};
 $('disable-model').onclick=()=>applyModel(true);
 async function poll(){

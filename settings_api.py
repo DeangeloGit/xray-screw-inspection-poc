@@ -76,6 +76,62 @@ def set_acquisition():
     except (ValueError,OSError) as exc:
         return jsonify(error=str(exc)),400
 
+@settings_api.get('/api/settings/models')
+def installed_models():
+    models=[]
+    for directory in sorted(MODEL_ROOT.glob('*')):
+        if directory.name.startswith('.') or not directory.is_dir() or directory.resolve().parent!=MODEL_ROOT.resolve():
+            continue
+        try:
+            m=json.loads((directory/'manifest.json').read_text(encoding='utf-8'))
+            models.append(dict(directory=directory.name,model_id=m['model_id'],backend=m['backend']))
+        except (OSError,ValueError,KeyError):
+            continue
+    return jsonify(models=models)
+
+
+def commit_model(selection, candidate, signature, allow_cpu):
+    pointer=MODEL_ROOT/('.active-'+uuid.uuid4().hex+'.tmp')
+    old_cpu=cpu_allowed()
+    try:
+        pointer.write_text(json.dumps(selection),encoding='utf-8')
+        update_settings(allow_cpu_fallback=allow_cpu)
+        with manager.lock:
+            os.replace(pointer,MODEL_ROOT/'active.json')
+            manager.current=candidate
+            manager.signature=signature
+    except Exception:
+        update_settings(allow_cpu_fallback=old_cpu)
+        raise
+    finally:
+        pointer.unlink(missing_ok=True)
+
+
+@settings_api.post('/api/settings/models/select')
+def select_installed_model():
+    with apply_lock:
+        try:
+            body=request.get_json(silent=True)
+            if not isinstance(body,dict):
+                raise ValueError('無效的模型選擇')
+            value=body.get('directory')
+            if not isinstance(value,str) or not value or value.startswith('.') or Path(value).name!=value or '/' in value or '\\' in value:
+                raise ValueError('無效的模型目錄')
+            directory=(MODEL_ROOT/value).resolve()
+            if directory.parent!=MODEL_ROOT.resolve():
+                raise ValueError('無效的模型目錄')
+            m=json.loads((directory/'manifest.json').read_text(encoding='utf-8'))
+            allow=m.get('provider_policy')=='cpu'
+            validator=ModelManager(MODEL_ROOT,allow_cpu=allow)
+            candidate=validator.snapshot(value)
+            if candidate.error:
+                raise ValueError(candidate.error)
+            commit_model(dict(schema_version=1,version_directory=value),candidate,validator.signature,allow)
+            return jsonify(applied=True,model=candidate.info(),message='模型已切換；重新試算或重新檢查照片後可看到新的 AI 結果。')
+        except (OSError,ValueError,KeyError) as exc:
+            return jsonify(error='無法切換模型：'+str(exc)),400
+
+
 @settings_api.post('/api/settings/model')
 def apply_model():
     with apply_lock:
@@ -106,6 +162,17 @@ def apply_model():
                                 input_size=[224,224],mean=[0.485,0.456,0.406] if normalization=='imagenet' else [0,0,0],
                                 std=[0.229,0.224,0.225] if normalization=='imagenet' else [1,1,1],
                                 output='logits',provider_policy=provider)
+            if not disable:
+                backend=request.form.get('backend','onnx')
+                if backend not in ('onnx','yolo_onnx'):
+                    raise ValueError('請選擇支援的模型格式')
+                if backend=='yolo_onnx':
+                    labels=[x.strip() for x in request.form.get('classes','screw').split(',')]
+                    size=int(request.form.get('input_size','640'))
+                    manifest.update(backend=backend,preprocessing='aligned-gray-tight12-v1',
+                                    classes=labels,input_size=[size,size],output='yolo_raw',
+                                    screw_class_id=int(request.form.get('screw_class_id','0')),
+                                    confidence=float(request.form.get('confidence','.25')))
             (directory/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False),encoding='utf-8')
             selection=dict(schema_version=1,version_directory=token)
             (staging/'active.json').write_text(json.dumps(selection),encoding='utf-8')

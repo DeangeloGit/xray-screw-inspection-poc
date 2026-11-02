@@ -7,7 +7,7 @@ import json
 from runtime_paths import WORK_ROOT as ROOT
 from model_manager import manager
 
-DETECTOR_VERSION = 6
+DETECTOR_VERSION = 7
 
 
 def write_image(path, image):
@@ -517,7 +517,14 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
         c['crop_box'] = list(map(int, box))
         crop = (raw[box[1]:box[3], box[0]:box[2]]*255).astype('uint8')
         write_image(str(out/f'crop_{i}.png'), crop)
-        c['classification'] = model_snapshot.classify(raw[box[1]:box[3], box[0]:box[2]])
+        if model_snapshot.manifest.get('preprocessing') == 'aligned-gray-tight12-v1':
+            cx, cy, cw, ch = (c[k] for k in ('x','y','w','h'))
+            ai_crop = corrected[max(0,cy-12):cy+ch+12, max(0,cx-12):cx+cw+12]
+            # Match the previously evaluated PNG crop quantization exactly.
+            ai_crop = (np.clip(ai_crop,0,1)*255).astype('uint8').astype('float32')/255
+        else:
+            ai_crop = raw[box[1]:box[3], box[0]:box[2]]
+        c['classification'] = model_snapshot.classify(ai_crop)
         x, y, w, h = [c[k] for k in ('x', 'y', 'w', 'h')]
         patch = (r[max(0,y-25):y+h+25, max(0,x-25):x+w+25]*255).astype('uint8')
         write_image(str(out/f'reference_crop_{i}.png'), patch)
