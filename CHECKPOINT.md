@@ -1,3 +1,31 @@
+# Checkpoint：Windows CPU 單一 EXE 離線版
+
+日期：2026-11-02（Asia/Taipei）
+標籤：`checkpoint-2026-11-02-windows-single-exe`
+基準分支：`codex/v2-portable-flex-cable`；同步 main 供工程師預設下載。
+功能實作 commit：`2f2e473`；本次 checkpoint 另更新交接文件。
+
+本次完成：
+
+- 單一 Windows x64 自解開 EXE，內含 CPU 執行環境，不需安裝 Python或連到 Mac。
+- 固定版本 miniz、CRC 驗證、完成標記、失敗重試與版本快取。
+- 設定、模型、工作照片與紀錄保存在 `%LOCALAPPDATA%\XRayReview`，更新程式保留既有資料。
+- 本機連接埠自動回退、健康檢查略過代理、工作區識別，並保存啟動診斷。
+- `--self-test` 產出 CPU 推論、資源與本機 TCP／HTTP 檢查報告。
+- 已交付私人下載 ZIP（EXE 與啟動說明），原始碼與建置工具同步公開 GitHub。
+
+驗證：Mac 啟動回歸（包含模擬 Windows 10013、實際連接埠占用與代理隔離）、IPC／設定回歸、實際 ONNX CPU 流程模型、Windows PE／依賴靜態檢查、嵌入 ZIP 全檔 CRC 與 SHA-256。這些檢查不等於 Windows 實機驗證。
+
+尚待：乾淨 Windows 原生解開／啟動、現場權限、SMB 與 IPC GPU 驗收。未取得現場完整錯誤，不能斷言原先連線失敗的根因。尚無訓練完成的螺絲模型；模型建議不自動放行。
+
+交接入口：[Windows 工程師接手開發](docs/WINDOWS_DEVELOPER.md)、[單一 EXE 使用與建置](docs/WINDOWS_STANDALONE.md)。
+
+公開 Git 與 Release 不含原始照片、人工資料、真模型權重、共享帳密或完整執行檔。私人 EXE／ZIP 含三張原始測試照，請由專案擁有者另行交接。
+
+前次 checkpoint：`checkpoint-2026-11-01-windows-cpu-manual`；V1：`checkpoint-2026-11-01-ui-manuals`，均保留。
+
+---
+
 # Checkpoint：Windows CPU 圖文手冊與 IPC 開發交接
 
 日期：2026-11-01（Asia/Taipei）

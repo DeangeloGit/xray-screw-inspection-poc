@@ -1,6 +1,6 @@
 # Windows 工程師接手開發
 
-本文件對應 `checkpoint-2026-11-01-windows-cpu-manual`。此 checkpoint 包含 IPC 架構、取圖／模型 UI、人工複判、批次 CSV，以及 Windows CPU 圖文手冊。正式取圖與 GPU 功能仍需目標設備驗證。
+本文件對應 `checkpoint-2026-11-02-windows-single-exe`。此 checkpoint 包含 IPC 架構、取圖／模型 UI、人工複判、批次 CSV，以及 Windows CPU 圖文手冊、單一 EXE 封裝與本機啟動修正。單檔使用、資料保存與建置方式見 [WINDOWS_STANDALONE.md](WINDOWS_STANDALONE.md)。正式取圖與 GPU 功能仍需目標設備驗證。
 
 ## 1. 取得程式碼
 
@@ -13,7 +13,7 @@ git switch -c engineer/windows-integration
 預設 main 提供本次 checkpoint 的最新程式。需要重現這次交接時，可另以以下方式切分支：
 
 ```powershell
-git switch -c engineer/checkpoint-test checkpoint-2026-11-01-windows-cpu-manual
+git switch -c engineer/checkpoint-test checkpoint-2026-11-02-windows-single-exe
 ```
 
 沒有 Git 的電腦可從 GitHub 的 Code > Download ZIP，或 Release 的 Source code ZIP 下載。
@@ -33,7 +33,7 @@ py -3.14 -m venv .venv
 
 不必啟用虛擬環境，也不必變更 PowerShell 執行原則。`requirements-model-test.txt` 包含 CPU 推論與測試模型產生所需套件；只執行應用程式可安裝 `requirements-cpu.txt`。
 
-啟動網址：http://127.0.0.1:8765
+預設啟動網址：http://127.0.0.1:8765；連接埠不可用時會自動回退，請使用啟動視窗顯示的實際網址。
 
 - `/`：逐位置與整張照片人工複判、批次 CSV。
 - `/settings`：資料夾瀏覽、啟用自動取圖、選取並套用 ONNX 檔。
@@ -68,6 +68,7 @@ py -3.14 -m venv .venv
 完成三張影像的私下交接後執行：
 
 ```powershell
+.\.venv\Scripts\python.exe verify_startup.py
 .\.venv\Scripts\python.exe verify_settings.py
 .\.venv\Scripts\python.exe verify_ipc.py
 .\.venv\Scripts\python.exe verify.py
