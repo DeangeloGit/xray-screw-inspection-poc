@@ -12,7 +12,7 @@ import sys
 import cv2
 import numpy as np
 from runtime_paths import DATA, STATE, SETTINGS
-from station_settings import acquisition_config
+from station_settings import acquisition_config, source_scope, in_source
 
 SUFFIXES = {'.png', '.jpg', '.jpeg', '.tif', '.tiff'}
 
@@ -90,13 +90,16 @@ class Importer:
                         partial.unlink(missing_ok=True)
                         db.execute("UPDATE files SET state='retry',error=?,stable_since=? WHERE source=?", (str(exc), now, key))
                 db.commit()
-            self.status.update(state='online', error=None, last_scan=now)
+            self.status.update(state='online', error=None, last_scan=now, source_id=source_scope(self.config)['id'])
 
     def process_pending(self):
         if self.analyze is None: return
         with self.connect() as db:
             rows = db.execute("SELECT source,local FROM events WHERE state IN ('pending','analysis_error')").fetchall()
         for source, local in rows:
+            config = acquisition_config() if self.thread else self.config
+            if not in_source(source, source_scope(config)['path']):
+                continue
             if self.stop_event.is_set() or self.thread and not acquisition_config().get('enabled',False): break
             with self.connect() as db:
                 db.execute("UPDATE events SET state='analyzing' WHERE local=?", (local,))
@@ -114,11 +117,22 @@ class Importer:
                     for row in db.execute('SELECT local,source,acquired_at,state,error FROM events')}
 
     def info(self):
+        config = acquisition_config() if self.thread else self.config
+        scope = source_scope(config)
         with self.connect() as db:
-            counts = dict(db.execute('SELECT state,COUNT(*) FROM files GROUP BY state'))
-        with self.connect() as db:
-            event_counts = dict(db.execute('SELECT state,COUNT(*) FROM events GROUP BY state'))
-        return dict(self.status, events=len(self.metadata()), enabled=self.config.get('enabled',False), counts=counts, event_counts=event_counts)
+            files = db.execute('SELECT source,state FROM files').fetchall()
+            events = db.execute('SELECT source,state FROM events').fetchall()
+        counts, event_counts = {}, {}
+        for rows, target in ((files, counts), (events, event_counts)):
+            for source, state in rows:
+                if in_source(source, scope['path']):
+                    target[state] = target.get(state, 0) + 1
+        status = dict(self.status)
+        # A successful scan of A does not imply that a newly selected B is online.
+        if status.get('source_id') != scope['id'] and config.get('enabled',False):
+            status.update(state='waiting',error=None,last_scan=None)
+        return dict(status, source=scope, events=sum(event_counts.values()),
+                    enabled=config.get('enabled',False), counts=counts, event_counts=event_counts)
 
     def isolated_scan(self):
         # SMB calls can block inside the OS: bound the complete scan with a killable process.

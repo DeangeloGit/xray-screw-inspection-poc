@@ -1,3 +1,27 @@
+# Checkpoint：Windows CPU 新版 UI 與異常匯出
+
+日期：2026-11-02（Asia/Taipei）
+標籤：`checkpoint-2026-11-02-ui-partial-export`
+分支：`codex/v2-portable-flex-cable`；同步 main。
+
+本次完成：
+
+- 現場複判／工程設定新版 UI、資料夾選擇與表單預覽。
+- 各機型正常參考圖與現場機型切換，參考圖版本與複判隔離。
+- 照片清單、批次及匯出依目前來源，不混入其他來源或內附測試照。
+- 逐位置人工判定完成後直接彙整照片結果，無需最後確認；零候選保留一次人工判定。
+- 無法分析、未完成、需再確認不阻擋匯出，表單另列待處理異常及原因，SN 留白。
+- 匯出預覽版本檢查、持久分析失敗原因與成功重試恢復。
+- 可公開下載的 Windows CPU 單一 EXE ZIP，不含原始測試影像、現場紀錄或真模型。
+
+驗證：隔離 UI／CSV、部分匯出、機型、來源、IPC、設定、啟動回歸；瀏覽器實測複判、參考圖上傳、預覽與 CSV、窄螢幕；原有 20 張批次相容性通過。封裝另做 Windows PE／依賴與嵌入 ZIP 完整性檢查。
+
+限制：Windows 原生啟動、設備 SMB 與 NVIDIA GPU 仍需實機驗收；尚無量產辨識率結論。公開包首次須自行加入正常參考圖；既有使用者資料不會因更新 EXE 被覆寫。舊 PDF 截圖僅供判讀參考，當前操作以 `docs/UI_WORKFLOW.md` 為準。
+
+前次：`checkpoint-2026-11-02-windows-single-exe`。以下歷史 checkpoint 保留。
+
+---
+
 # Checkpoint：Windows CPU 單一 EXE 離線版
 
 日期：2026-11-02（Asia/Taipei）

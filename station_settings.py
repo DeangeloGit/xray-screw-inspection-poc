@@ -29,3 +29,22 @@ def acquisition_config():
 
 def cpu_allowed():
     return read_settings().get('allow_cpu_fallback', SETTINGS.get('allow_cpu_fallback',False))
+
+
+def source_scope(config=None):
+    """A lexical identity: do not contact SMB just to identify the saved source."""
+    import hashlib
+    config = acquisition_config() if config is None else config
+    source = config.get('source', '')
+    source = os.path.normcase(os.path.abspath(os.path.expanduser(source))) if source else ''
+    return dict(path=source, id=hashlib.sha256(source.encode('utf-8')).hexdigest()[:16] if source else 'local')
+
+
+def in_source(path, root):
+    if not root:
+        return True
+    path = os.path.normcase(os.path.abspath(os.path.expanduser(str(path))))
+    try:
+        return os.path.commonpath([path, root]) == root
+    except ValueError:
+        return False

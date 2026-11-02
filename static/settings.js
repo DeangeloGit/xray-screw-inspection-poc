@@ -1,5 +1,6 @@
+(()=>{
 const $=id=>document.getElementById(id);
-let folderPath='',folderParent='',modelBusy=false,folderSequence=0;
+let modelBusy=false;
 async function api(url,options={}){
  const response=await fetch(url,options);const result=await response.json();
  if(!response.ok)throw Error(result.error||'設定失敗');return result;
@@ -15,17 +16,8 @@ $('source-form').onsubmit=async e=>{
  try{const result=await api('/api/settings/acquisition',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:$('source-enabled').checked,source:$('source-path').value,stable_seconds:Number($('stable-seconds').value)})});message('source-message',result.message)}
  catch(e){message('source-message',e.message,true)}finally{$('save-source').disabled=false}
 };
-async function browse(path){
- const sequence=++folderSequence;
- message('folder-message','正在讀取資料夾…');$('confirm-folder').disabled=true;
- try{const data=await api('/api/settings/folders'+(path?'?path='+encodeURIComponent(path):''),{signal:AbortSignal.timeout(12000)});if(sequence!==folderSequence)return;folderPath=data.path;folderParent=data.parent;$('folder-location').value=folderPath;$('folder-list').replaceChildren();for(const folder of data.directories){const button=document.createElement('button');button.textContent='📁 '+folder.name;button.onclick=()=>browse(folder.path);$('folder-list').append(button)}message('folder-message',data.directories.length?'點選資料夾進入，或選用目前資料夾。':'這個資料夾沒有其他子資料夾。');$('confirm-folder').disabled=false}
- catch(e){if(sequence!==folderSequence)return;message('folder-message',e.name==='TimeoutError'?'資料夾讀取逾時，請確認網路分享已連線。':e.message,true)}
-}
-$('browse-source').onclick=()=>{$('folder-dialog').showModal();browse($('source-path').value)};
-$('folder-navigation').onsubmit=e=>{e.preventDefault();browse($('folder-location').value)};
-$('folder-parent').onclick=()=>browse(folderParent);
-$('confirm-folder').onclick=()=>{$('source-path').value=folderPath;folderSequence++;$('folder-dialog').close()};
-$('cancel-folder').onclick=()=>{folderSequence++;$('folder-dialog').close()};
+$('browse-source').onclick=async()=>{const path=await window.pickXRayFolder($('source-path').value);if(path)$('source-path').value=path};
+$('test-source').onclick=async()=>{message('source-message','正在測試來源連線…');try{if(!$('source-path').value.trim())throw Error('請先指定取圖資料夾');await api('/api/settings/folders?path='+encodeURIComponent($('source-path').value),{signal:AbortSignal.timeout(12000)});message('source-message','連線成功，可讀取此資料夾。')}catch(error){message('source-message',error.message,true)}};
 $('model-file').onchange=()=>{$('selected-model').textContent=$('model-file').files[0]?.name||'尚未選擇檔案'};
 async function applyModel(disable){
  if(modelBusy)return;
@@ -40,3 +32,5 @@ async function poll(){
  try{const s=await api('/api/station'),a=s.acquisition;$('source-state').textContent=!a.enabled?'自動取圖已關閉':a.state==='online'?'已連線，正在等待新照片':a.state==='offline'?'暫時無法讀取來源：'+a.error:'等待下一次掃描…';const settings=await api('/api/settings');$('saved-source').textContent=settings.acquisition.source?'已儲存來源：'+settings.acquisition.source:'';if(!modelBusy)showModel(s.model)}catch(e){$('source-state').textContent='狀態讀取失敗：'+e.message}setTimeout(poll,5000)
 }
 loadSettings();poll();
+
+})();

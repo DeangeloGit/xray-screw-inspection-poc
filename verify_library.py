@@ -26,7 +26,7 @@ def run():
         engineer=client.get('/engineer').text
         assert 'static/user.js' in user
         assert '差分門檻' not in user and 'benchmark' not in user
-        assert '差分門檻' in engineer and '工程模式' in engineer
+        assert '差分門檻' in engineer and '工程設定' in engineer
         assert client.get('/static/user.js').status_code==200
         listing=client.get('/api/samples').json
         assert listing['file_count']>=23 and listing['unique_count']>=21
@@ -55,7 +55,7 @@ def run():
         assert client.post(f'/api/image-review/{name}',json={'decision':'uncertain'}).status_code==200
         assert client.get(f'/outputs/{name}/result.json').json['image_review']['decision']=='uncertain'
         assert client.post(f'/api/review/{name}',json={'id':1,'label':'normal'}).status_code==200
-        assert 'image_review' not in client.get(f'/outputs/{name}/result.json').json
+        assert client.get(f'/outputs/{name}/result.json').json['image_review']['decision']=='no_screw_seen'
         assert client.post(f'/api/image-review/{name}',json={'decision':'no_screw_seen'}).status_code==200
         assert client.post(f'/api/image-review/{name}',json={'decision':'invalid'}).status_code==400
         job=client.post('/api/batch').json

@@ -39,17 +39,22 @@ def run(root):
             finally:
                 server.shutdown();server.server_close()
             from runtime_paths import DATA
-            for name in ('ok_0.png','ng_5.png','ng_9.png'):
-                shutil.copyfile(root/'workspace/data'/name,DATA/name)
+            samples_present=all((root/'workspace/data'/name).is_file() for name in ('ok_0.png','ng_5.png','ng_9.png'))
+            if samples_present:
+                for name in ('ok_0.png','ng_5.png','ng_9.png'):
+                    shutil.copyfile(root/'workspace/data'/name,DATA/name)
             with app.test_client() as client:
                 for url in ('/','/settings','/engineer','/help/user','/static/settings.js'):
                     assert client.get(url).status_code==200,url
                 report['checks'].append('Web UI, settings and manuals')
-                for sample in ('ok_0','ng_5','ng_9'):
-                    result=client.post('/api/analyze',data={'sample':sample})
-                    assert result.status_code==200,result.json
-                    assert (result.json['proposal_count']==0) == (sample=='ok_0')
-                report['checks'].append('Normal reference and two sample image analyses')
+                if samples_present:
+                    for sample in ('ok_0','ng_5','ng_9'):
+                        result=client.post('/api/analyze',data={'sample':sample})
+                        assert result.status_code==200,result.json
+                        assert (result.json['proposal_count']==0) == (sample=='ok_0')
+                    report['checks'].append('Normal reference and two sample image analyses')
+                else:
+                    report['skipped']=['Original X-ray sample analyses: public package contains no input photos']
                 model=Path(__file__).with_name('selftest.onnx').read_bytes()
                 response=client.post('/api/settings/model',data={'model':(io.BytesIO(model),'diagnostic-only.onnx'),'provider':'cpu'})
                 assert response.status_code==200,response.json

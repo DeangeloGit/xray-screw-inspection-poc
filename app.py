@@ -3,9 +3,14 @@ from detector import ROOT, read
 from runtime_paths import RESOURCE_ROOT, DATA, OUTPUTS, SETTINGS, WORK_ROOT
 from model_manager import manager
 from settings_api import settings_api
-from reports import export_csv
-from library import analyze_file, analyze_sample, select_sample, public_catalog, catalog, save_result, importer, latest_results
+from station_settings import source_scope
+from machine_profiles import public_profiles, selected_profile, save_profile, select_profile, profiles, matches
+from reports import export_csv, report_rows
+from review_workflow import effective_review, summarize_positions
+from library import analyze_file, analyze_sample, select_sample, public_catalog, catalog, save_result, importer, latest_results, analysis_failures
 import uuid
+import hashlib
+from functools import lru_cache
 import json
 import re
 import threading
@@ -27,6 +32,16 @@ def request_limits():
     if request.path == '/api/settings/model':
         request.max_content_length = 512 * 1024 * 1024
 
+def require_machine_context():
+    source_token = request.headers.get('X-Inspection-Source')
+    if source_token and source_token != source_scope()['id']:
+        raise ValueError('取圖資料夾已變更，請更新照片清單後重試')
+    token = request.headers.get('X-Inspection-Machine')
+    if token:
+        profile = selected_profile()
+        if token != profile['id'] + ':' + profile['reference_sha256']:
+            raise ValueError('本站檢測機型或參考圖已變更，請重新整理頁面')
+
 @app.get('/api/health')
 def health():
     from launch import workspace_identity
@@ -38,7 +53,7 @@ def index():
 
 @app.get('/settings')
 def settings_page():
-    return render_template('settings.html')
+    return render_template('engineer.html', initial_tab='source')
 
 @app.get('/engineer')
 def engineer():
@@ -50,6 +65,82 @@ def manual(mode):
         return jsonify(error='找不到這份使用說明'), 404
     return render_template('help.html', mode=mode)
 
+@app.get('/api/machines')
+def machines():
+    return jsonify(public_profiles())
+
+@app.post('/api/machines')
+def machine_save():
+    try:
+        with analysis_lock:
+            item = save_profile(request.form.get('name'), request.files.get('reference'), request.form.get('id') or None)
+        return jsonify(saved=True, machine_id=item['id'], **public_profiles())
+    except (ValueError, OSError, cv2.error) as e:
+        return jsonify(error=str(e)), 400
+
+@app.post('/api/machines/select')
+def machine_select():
+    try:
+        if not (request.get_json(silent=True) or {}).get('id'):
+            raise ValueError('請指定檢測機型')
+        with analysis_lock:
+            profile = select_profile((request.get_json(silent=True) or {}).get('id'))
+        return jsonify(machine=profile, **public_profiles())
+    except (ValueError, OSError) as e:
+        return jsonify(error=str(e)), 400
+
+@app.post('/api/inspection/context')
+def inspection_context():
+    from settings_api import absolute_folder, validate_source
+    from station_settings import acquisition_config, update_settings, LOCK
+    body = request.get_json(silent=True) or {}
+    try:
+        if not isinstance(body, dict) or not isinstance(body.get('id'), str) or not body['id'] or type(body.get('enabled')) is not bool:
+            raise ValueError('請指定檢測機型與取圖設定')
+        with analysis_lock, LOCK:
+            profile = selected_profile(body['id'])
+            value = body.get('source', '')
+            if not isinstance(value, str):
+                raise ValueError('請指定完整取圖路徑')
+            source = ''
+            if value.strip() or body['enabled']:
+                path = absolute_folder(value)
+                validate_source(path)
+                source = str(path)
+            config = dict(acquisition_config(), source=source, enabled=body['enabled'])
+            update_settings(selected_machine=profile['id'], acquisition=config)
+        return jsonify(saved=True, machine=profile, source=source_scope(config))
+    except (ValueError, OSError) as error:
+        return jsonify(error=str(error)), 400
+
+@lru_cache(maxsize=32)
+def reference_thumbnail(path, modified, size):
+    image = read(path)
+    h, w = image.shape
+    image = cv2.resize(image, (max(1, round(w*160/max(h,w))), max(1, round(h*160/max(h,w)))))
+    ok, encoded = cv2.imencode('.png', (image*255).astype('uint8'))
+    if not ok:
+        raise ValueError('參考圖預覽失敗')
+    return encoded.tobytes()
+
+@app.get('/api/machines/<machine_id>/reference')
+def machine_reference(machine_id):
+    for item in profiles():
+        if item['id'] == machine_id:
+            from pathlib import Path
+            path = Path(item['reference'])
+            if request.args.get('preview') == '1' and path.is_file():
+                stat = path.stat()
+                response = Response(reference_thumbnail(str(path), stat.st_mtime_ns, stat.st_size), mimetype='image/png')
+                response.cache_control.no_cache = True
+                return response
+            return send_from_directory(path.parent, path.name)
+    return jsonify(error='找不到機型'), 404
+
+@app.errorhandler(ValueError)
+def invalid_input(error):
+    return jsonify(error=str(error)), 400
+
 @app.get('/api/samples')
 def samples():
     return jsonify(public_catalog())
@@ -59,7 +150,7 @@ def sample_result(sample_id):
     try:
         item = select_sample(sample_id)
         result = latest_results().get(item['sha256'])
-        return jsonify(result) if result else (jsonify(error='此照片尚未檢查'), 404)
+        return jsonify(dict(result, image_review=effective_review(result))) if result else (jsonify(error='此照片尚未檢查'), 404)
     except ValueError as e:
         return jsonify(error=str(e)), 404
 
@@ -71,6 +162,7 @@ def analyze():
             raise ValueError('門檻需介於 0.03 與 0.40')
         sample = request.form.get('sample', 'ng_5')
         with analysis_lock:
+            require_machine_context()
             if 'image' in request.files and request.files['image'].filename:
                 file = request.files['image']
                 filename = PathName(file.filename)
@@ -80,7 +172,7 @@ def analyze():
                 try:
                     file.save(staging)
                     read(staging)
-                    upload_dir = DATA/'uploads'/uuid.uuid4().hex[:12]
+                    upload_dir = DATA/'uploads'/source_scope()['id']/uuid.uuid4().hex[:12]
                     upload_dir.mkdir(parents=True)
                     upload = upload_dir/filename
                     staging.replace(upload)
@@ -116,15 +208,17 @@ def review(name):
     candidate_id = payload.get('id')
     if label not in ('screw', 'normal', 'uncertain') or type(candidate_id) is not int:
         return jsonify(error='無效的複核結果'), 400
-    with review_lock:
+    with analysis_lock, review_lock:
+        require_machine_context()
         result = json.loads(path.read_text(encoding='utf-8'))
+        if not matches(result, selected_profile()):
+            return jsonify(error='此紀錄不屬於目前機型／參考圖，請重新檢查'), 409
         if candidate_id not in [c['id'] for c in result['candidates']]:
             return jsonify(error='未知候選'), 400
         result.setdefault('human_reviews', {})[str(candidate_id)] = label
-        # Candidate edits invalidate prior whole-photo completion.
-        result.pop('image_review', None)
+        summarize_positions(result, datetime.now(timezone.utc).isoformat())
         save_result(result)
-    return jsonify(saved=True, id=candidate_id, label=label)
+    return jsonify(saved=True, id=candidate_id, label=label, image_review=result.get('image_review'))
 
 @app.post('/api/image-review/<name>')
 def image_review(name):
@@ -135,8 +229,11 @@ def image_review(name):
     decision = payload.get('decision')
     if decision not in ('screw', 'no_screw_seen', 'uncertain'):
         return jsonify(error='無效的整張照片複核結果'), 400
-    with review_lock:
+    with analysis_lock, review_lock:
+        require_machine_context()
         result = json.loads(path.read_text(encoding='utf-8'))
+        if not matches(result, selected_profile()):
+            return jsonify(error='此紀錄不屬於目前機型／參考圖，請重新檢查'), 409
         labels = result.get('human_reviews', {})
         if len(labels) < len(result['candidates']):
             return jsonify(error='請先逐一確認所有疑似位置'), 400
@@ -149,20 +246,28 @@ def image_review(name):
 
 @app.post('/api/batch')
 def batch():
+    with analysis_lock:
+        require_machine_context()
+        profile = selected_profile()
+        scope = source_scope()
     with jobs_lock:
         for job_id, job in jobs.items():
             if job['state'] == 'running':
+                if (job.get('source',{}).get('id') != scope['id'] or
+                        job.get('machine',{}).get('id') != profile['id'] or
+                        job.get('machine',{}).get('reference_sha256') != profile['reference_sha256']):
+                    return jsonify(error='其他機型或來源的批次正在完成，請稍後再檢查目前批次'), 409
                 return jsonify(id=job_id, **job), 202
         job_id = uuid.uuid4().hex[:12]
-        items = [s for s in catalog() if not s['is_reference']]
-        jobs[job_id] = dict(state='running', total=len(items), completed=0, errors=[], current=None)
+        items = [s for s in catalog(scope) if not s['is_reference']]
+        jobs[job_id] = dict(source=scope, machine=profile, state='running', total=len(items), completed=0, errors=[], current=None)
     def work():
         for item in items:
             with jobs_lock:
                 jobs[job_id]['current'] = item['filename']
             try:
                 with analysis_lock:
-                    analyze_sample(item)
+                    analyze_sample(item, profile=profile)
             except (ValueError, cv2.error, OSError) as e:
                 with jobs_lock:
                     jobs[job_id]['errors'].append(dict(file=item['filename'], message=str(e)))
@@ -202,6 +307,7 @@ def station_status():
     return jsonify(acquisition=importer.info(), model=manager.snapshot().info())
 
 
+@app.post('/api/reports/screws/preview')
 @app.post('/api/reports/screws')
 def screw_report():
     payload = request.get_json(silent=True) or {}
@@ -209,32 +315,58 @@ def screw_report():
     if not isinstance(ids, list) or not ids or len(ids) != len(set(str(x) for x in ids)) or any(not isinstance(x,str) for x in ids):
         return jsonify(error='請選擇要匯出的照片批次'), 400
     with analysis_lock, review_lock:
+        require_machine_context()
         items = {item['id']:item for item in catalog() if not item['is_reference']}
         history = latest_results()
+        profile = selected_profile()
+        failures = analysis_failures(profile)
         entries, unfinished = [], []
         for sample_id in ids:
             item = items.get(sample_id)
             if item is None:
                 return jsonify(error='照片清單已變更，請重新選擇批次'), 409
             result = history.get(item['sha256'])
+            if result:
+                result = dict(result, image_review=effective_review(result))
             decision = (result or {}).get('image_review',{}).get('decision')
             if decision not in ('screw','no_screw_seen'):
-                unfinished.append(item.get('display_name',item['filename']))
-            else:
-                entries.append((item,result))
-        if unfinished:
-            return jsonify(error=f'尚有 {len(unfinished)} 張未完成複判或需再確認，請先完成本批次', files=unfinished), 409
+                result = dict(result or {}, machine=(result or {}).get('machine',profile))
+                failure = failures.get(item['sha256']) if not result.get('name') else None
+                if failure:
+                    issue = dict(status='無法分析', reason=failure['error'])
+                elif decision == 'uncertain':
+                    issue = dict(status='需再確認', reason='人工判定仍有不確定位置或照片需再確認')
+                elif result.get('name'):
+                    remaining = sum(str(c['id']) not in result.get('human_reviews',{}) for c in result.get('candidates',[]))
+                    issue = dict(status='未完成複判', reason=f'尚有 {remaining} 個標記位置未判定' if remaining else '尚待人工檢查照片')
+                else:
+                    issue = dict(status='尚未檢查', reason='尚未完成分析或人工複判')
+                result['report_issue'] = issue
+                unfinished.append(dict(sample_id=sample_id, filename=item.get('display_name',item['filename']), **issue))
+            entries.append((item,result))
+        rows = report_rows(entries)
+        screw_rows = sum(row['kind']=='螺絲結果' for row in rows)
+        unresolved_rows = sum(row['kind']=='待處理異常' for row in rows)
+        signature = hashlib.sha256(json.dumps(dict(ids=ids,rows=rows,
+            reviews=[r.get('image_review',{}) for _,r in entries]),sort_keys=True,ensure_ascii=False).encode()).hexdigest()
+        if request.path.endswith('/preview'):
+            return jsonify(rows=rows, photo_count=len(entries), completed_count=len(entries)-len(unfinished),
+                           screw_rows=screw_rows, unresolved_count=len(unfinished), unresolved_rows=unresolved_rows,
+                           machine=profile['name'], preview_token=signature)
+        if payload.get('preview_token') and payload['preview_token'] != signature:
+            return jsonify(error='複判結果已更新，請重新預覽再匯出'), 409
         content, count = export_csv(entries)
         report_id = uuid.uuid4().hex[:12]
         directory = ROOT/'reports'; directory.mkdir(exist_ok=True)
         (directory/f'{report_id}.csv').write_bytes(content)
         (directory/f'{report_id}.json').write_text(json.dumps(dict(
             exported_at=datetime.now(timezone.utc).isoformat(), sample_ids=ids,
-            analysis_runs=[r['name'] for _,r in entries], screw_rows=count,
+            analysis_runs=[r['name'] for _,r in entries if r.get('name')], screw_rows=count,
+            unresolved=unfinished, unresolved_rows=unresolved_rows, completed_count=len(entries)-len(unfinished),
             station_id=SETTINGS.get('station_id','未設定')),ensure_ascii=False,indent=2),encoding='utf-8')
     return Response(content, mimetype='text/csv', headers={
         'Content-Disposition':f'attachment; filename="loose-screws-{report_id}.csv"',
-        'X-Screw-Rows':str(count), 'X-Report-ID':report_id})
+        'X-Screw-Rows':str(count), 'X-Unresolved-Rows':str(unresolved_rows), 'X-Report-ID':report_id})
 
 
 def start_background():

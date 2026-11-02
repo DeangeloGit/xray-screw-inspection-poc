@@ -1,6 +1,10 @@
 # Windows 工程師接手開發
 
-本文件對應 `checkpoint-2026-11-02-windows-single-exe`。此 checkpoint 包含 IPC 架構、取圖／模型 UI、人工複判、批次 CSV，以及 Windows CPU 圖文手冊、單一 EXE 封裝與本機啟動修正。單檔使用、資料保存與建置方式見 [WINDOWS_STANDALONE.md](WINDOWS_STANDALONE.md)。正式取圖與 GPU 功能仍需目標設備驗證。
+本文件對應 `checkpoint-2026-11-02-ui-partial-export`。此 checkpoint 包含 IPC 架構、取圖／模型 UI、人工複判、批次 CSV，以及 Windows CPU 圖文手冊、單一 EXE 封裝與本機啟動修正。單檔使用、資料保存與建置方式見 [WINDOWS_STANDALONE.md](WINDOWS_STANDALONE.md)。正式取圖與 GPU 功能仍需目標設備驗證。
+
+新版介面操作見 [UI_WORKFLOW.md](UI_WORKFLOW.md)：現場複判與工程設定兩個入口，`/settings` 保留為取圖分頁入口。
+
+公開 Windows CPU 包不含原始測試照片。首次請先新增機型與正常參考圖，再切換機型與取圖來源。
 
 ## 1. 取得程式碼
 
@@ -13,7 +17,7 @@ git switch -c engineer/windows-integration
 預設 main 提供本次 checkpoint 的最新程式。需要重現這次交接時，可另以以下方式切分支：
 
 ```powershell
-git switch -c engineer/checkpoint-test checkpoint-2026-11-02-windows-single-exe
+git switch -c engineer/checkpoint-test checkpoint-2026-11-02-ui-partial-export
 ```
 
 沒有 Git 的電腦可從 GitHub 的 Code > Download ZIP，或 Release 的 Source code ZIP 下載。
@@ -51,8 +55,20 @@ py -3.14 -m venv .venv
 
 ## 4. 取圖與模型
 
+### 檢測機型與正常參考圖
+
+1. 工程模式的「機型與正常參考圖」區塊，選新增機型、填入名稱並上傳正常參考圖，再按儲存。也可選既有機型，重新指定參考圖。
+2. 使用者模式左上方選「檢測機型」。這是本站共用設定，重啟會保留，自動取圖與新分析均依此選擇。
+3. 每一批次固定使用開始時的機型與參考圖。現階段未依照片自動辨認機型，請一次處理同機型，切換前完成當前批次。
+4. 切換機型或更新參考圖後，該機型／參考圖版本的分析與人工紀錄分開；回到原機型可繼續既有複判。更新參考圖後要重新檢查，舊紀錄保留。
+5. 原 V1 參考圖保留為「預設機型（原 V1）」。新增參考圖存於工作區 `state/machine-references/`，不會混入待測照片清單；請連同 `state/ui_settings.json` 備份。
+6. CSV 新增檢測機型與參考圖 SHA-256；SN 仍留白。
+
+
+
 從 UI 指定專案工作資料夾以外的來源，例如 `C:\XRayIncoming` 或 `\\XRAY-PC\Images`。SMB 帳號由 Windows 管理，先確認執行程式的帳號可以讀取分享，不把密碼寫入程式或 Git。
 
+- 使用者與工程模式照片清單僅顯示目前已儲存來源的本機快照；指定來源後不混入內附測試照與其他來源。手動上傳歸在當時來源。來源變更後先清空舊選取，照片等待掃描與穩定後顯示；停用自動取圖仍可檢查該來源已取得的照片。舊快照與複判紀錄保留，切回原來源可繼續；重試狀態、全部檢查及匯出同樣依目前來源。
 - UI 設定儲存在 `state/ui_settings.json`，會保留到下次啟動。
 - 自動取圖預設等待 15 秒穩定，再複製本機快照並分析。
 - 來源不會刪除或更名；取圖佇列存於 SQLite。
@@ -68,6 +84,10 @@ py -3.14 -m venv .venv
 完成三張影像的私下交接後執行：
 
 ```powershell
+.\.venv\Scripts\python.exe verify_partial_export.py
+.\.venv\Scripts\python.exe verify_ui_workflow.py
+.\.venv\Scripts\python.exe verify_source_scope.py
+.\.venv\Scripts\python.exe verify_machines.py
 .\.venv\Scripts\python.exe verify_startup.py
 .\.venv\Scripts\python.exe verify_settings.py
 .\.venv\Scripts\python.exe verify_ipc.py

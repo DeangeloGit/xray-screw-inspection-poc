@@ -72,7 +72,7 @@ def set_acquisition():
         if type(stable) not in (int,float) or not 0 <= stable <= 3600:
             raise ValueError('寫入等待秒數需介於 0 與 3600')
         update_settings(acquisition=dict(config,enabled=enabled,source=source,stable_seconds=stable))
-        return jsonify(saved=True,acquisition=acquisition_config(),message='已儲存，下一次掃描自動生效；已開始的照片會先處理完。')
+        return jsonify(saved=True,acquisition=acquisition_config(),message='已儲存，照片清單已切換至此來源；新照片於下一次掃描並等待寫入穩定後顯示，已開始的照片會先處理完。')
     except (ValueError,OSError) as exc:
         return jsonify(error=str(exc)),400
 

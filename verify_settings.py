@@ -34,7 +34,7 @@ def checks(root):
     shutil.copyfile(RESOURCE_ROOT/'data/ok_0.png',DATA/'ok_0.png')
     with app.test_client() as client:
         assert client.get('/settings').status_code==200
-        assert '取圖與模型設定' in client.get('/').text
+        assert '切換機型／來源' in client.get('/').text
         assert client.get('/static/settings.js').status_code==200
         listing=client.get('/api/settings/folders',query_string={'path':str(share)}).json
         assert listing['path']==str(share) and listing['directories'][0]['name']=='子資料夾'

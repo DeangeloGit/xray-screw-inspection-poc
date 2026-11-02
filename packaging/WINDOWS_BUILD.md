@@ -34,3 +34,7 @@ Windows 使用者雙擊 DIAGNOSTICS.bat 後會產生 logs/windows-selftest.json�
 - Zig 官方下載：https://ziglang.org/download/
 - Microsoft VC++ runtime：https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist
 - CUDA 相容要求：https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html
+
+## 公開下載版（不含原始影像）
+
+執行 `python packaging/build_windows.py --variant cpu --without-samples` 後再執行 `python packaging/build_single_exe.py`。首次由工程模式新增機型與正常參考圖。單檔自我診斷仍檢查原生套件、本機 HTTP、頁面及 ONNX CPU 推論；沒有原始影像時明確略過三張照片分析。

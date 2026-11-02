@@ -73,20 +73,21 @@ def checks(root):
         assert client.get('/static/user.js').status_code == 200
         item = next(x for x in library.catalog() if not x['is_reference'])
         ids = [item['id']]
-        assert client.post('/api/reports/screws',json={'sample_ids':ids}).status_code==409
+        assert client.post('/api/reports/screws',json={'sample_ids':ids}).headers['X-Unresolved-Rows']=='1'
         for candidate in result['candidates']:
             assert client.post('/api/review/'+result['name'],json={'id':candidate['id'],'label':'normal'}).status_code==200
         assert client.post('/api/image-review/'+result['name'],json={'decision':'uncertain'}).status_code==200
-        assert client.post('/api/reports/screws',json={'sample_ids':ids}).status_code==409
+        assert client.post('/api/reports/screws',json={'sample_ids':ids}).headers['X-Unresolved-Rows']=='1'
         assert client.post('/api/image-review/'+result['name'],json={'decision':'screw'}).status_code==200
         report = client.post('/api/reports/screws',json={'sample_ids':ids})
         rows = list(csv.reader(io.StringIO(report.data.decode('utf-8-sig'))))
         assert report.status_code==200 and len(rows)==2 and rows[1][1]=='' and rows[1][2]=='test.png'
         assert rows[1][5]=='人工確認有掉落螺絲'
         assert list((WORK_ROOT/'reports').glob('*.json'))
-        # Candidate edits invalidate completion and block export again.
+        # An uncertain position remains unresolved and is exported as an exception, never a screw.
+        client.post('/api/review/'+result['name'],json={'id':1,'label':'uncertain'})
+        assert client.post('/api/reports/screws',json={'sample_ids':ids}).headers['X-Unresolved-Rows']=='1'
         client.post('/api/review/'+result['name'],json={'id':1,'label':'normal'})
-        assert client.post('/api/reports/screws',json={'sample_ids':ids}).status_code==409
         client.post('/api/image-review/'+result['name'],json={'decision':'no_screw_seen'})
         empty = client.post('/api/reports/screws',json={'sample_ids':ids})
         assert empty.status_code==200 and empty.headers['X-Screw-Rows']=='0'

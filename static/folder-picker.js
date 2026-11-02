@@ -1,0 +1,8 @@
+(()=>{
+ const $=id=>document.getElementById(id),dialog=$('folder-dialog');let sequence=0,path='',parent='',resolve=null;
+ const message=(text,error=false)=>{$('folder-message').textContent=text;$('folder-message').className='message'+(error?' error':'')};
+ async function browse(value){const token=++sequence;$('confirm-folder').disabled=true;message('正在讀取資料夾…');try{const response=await fetch('/api/settings/folders'+(value?'?path='+encodeURIComponent(value):''),{signal:AbortSignal.timeout(12000)}),data=await response.json();if(token!==sequence)return;if(!response.ok)throw Error(data.error);path=data.path;parent=data.parent;$('folder-location').value=path;$('folder-list').replaceChildren();for(const item of data.directories){const button=document.createElement('button');button.type='button';button.textContent='📁 '+item.name;button.onclick=()=>browse(item.path);$('folder-list').append(button)}$('confirm-folder').disabled=false;message(data.directories.length?'點選資料夾進入，或選用目前資料夾。':'此資料夾沒有其他子資料夾。')}catch(error){if(token===sequence)message(error.name==='TimeoutError'?'讀取逾時，請確認共享路徑可連線。':error.message,true)}}
+ function finish(value){++sequence;dialog.close();const callback=resolve;resolve=null;if(callback)callback(value)}
+ window.pickXRayFolder=initial=>new Promise(callback=>{if(resolve)resolve(null);resolve=callback;dialog.showModal();browse(initial)});
+ $('folder-navigation').onsubmit=event=>{event.preventDefault();browse($('folder-location').value)};$('folder-parent').onclick=()=>browse(parent);$('confirm-folder').onclick=()=>finish(path);$('cancel-folder').onclick=()=>finish(null);dialog.addEventListener('cancel',event=>{event.preventDefault();finish(null)});
+})();

@@ -13,8 +13,8 @@ import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
 CACHE=ROOT/'build/windows-cache'
-SOURCES=['app.py','acquisition.py','detector.py','library.py','model_manager.py','reports.py',
-         'runtime_paths.py','settings_api.py','station_settings.py','launch.py']
+SOURCES=['app.py','acquisition.py','detector.py','library.py','model_manager.py','reports.py','review_workflow.py',
+         'runtime_paths.py','machine_profiles.py','settings_api.py','station_settings.py','launch.py']
 
 
 def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
@@ -35,7 +35,7 @@ def unpack_wheel(path,destination):
             target.write_bytes(archive.read(name))
 
 
-def build(variant):
+def build(variant, include_samples=True):
     name='XRayReview-Windows-x64-'+variant.upper()
     output=ROOT/'dist'/name
     if output.exists(): shutil.rmtree(output)
@@ -63,11 +63,12 @@ def build(variant):
         shutil.copyfile(ROOT/'packaging'/filename,app/filename)
     shutil.copytree(ROOT/'templates',app/'templates')
     shutil.copytree(ROOT/'static',app/'static')
-    for filename in ('IPC_SETUP.md','V2_IPC_DESIGN.md'):
+    for filename in ('IPC_SETUP.md','V2_IPC_DESIGN.md','UI_WORKFLOW.md'):
         shutil.copyfile(ROOT/'docs'/filename,output/filename)
     shutil.copytree(ROOT/'models/noop-v1',output/'models/noop-v1')
-    for filename in ('ok_0.png','ng_5.png','ng_9.png'):
-        shutil.copyfile(ROOT/'data'/filename,output/'workspace/data'/filename)
+    if include_samples:
+        for filename in ('ok_0.png','ng_5.png','ng_9.png'):
+            shutil.copyfile(ROOT/'data'/filename,output/'workspace/data'/filename)
     # This is an explicit diagnostic fixture, never an enabled screw classifier.
     import sys
     sys.path.insert(0,str(ROOT))
@@ -86,12 +87,15 @@ def build(variant):
             raise FileNotFoundError('先執行 docs/windows-cpu-manual/build_manual.py 產生操作手冊')
         shutil.copyfile(manual,output/manual.name)
     text=(ROOT/'packaging/WINDOWS_README.txt').read_text(encoding='utf-8').replace('{VARIANT}',variant.upper())
+    if not include_samples:
+        text='公開交付版：不含原始測試照片。首次請開啟「工程設定 → 機型與參考圖」新增機型及正常參考圖，再到現場頁面選取機型與來源。最新操作請依 UI_WORKFLOW.md；PDF 的舊版畫面僅供判讀參考。\n\n'+text
+        text=text.replace('workspace\\data\\ok_0.png：正常參考\nworkspace\\data\\ng_5.png、ng_9.png：既有兩張測試照片','本公開包不含原始測試照片；請使用現場自行提供的正常參考圖與待測照。')
     if variant=='cpu':
-        text='請先閱讀同資料夾的 Windows-CPU-操作手冊.pdf（圖文步驟與現場測試勾選表）。\n\n'+text
+        text='最新介面請先閱讀 UI_WORKFLOW.md；Windows-CPU-操作手冊.pdf 為舊版圖文參考及現場勾選表。\n\n'+text
     (output/'READ-ME-FIRST.txt').write_text(text,encoding='utf-8-sig')
     (output/'DIAGNOSTICS.bat').write_text('@echo off\r\ncd /d "%~dp0"\r\nXRayReview.exe --self-test\r\necho.\r\necho Diagnostic report: logs\\windows-selftest.json\r\npause\r\n',encoding='ascii',newline='')
     commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
-    manifest=dict(variant=variant,source_commit=commit,python='3.14.10',architecture='AMD64',
+    manifest=dict(variant=variant,include_samples=include_samples,source_commit=commit,python='3.14.10',architecture='AMD64',
                   windows_execution_verified=False,model='noop until the operator applies a trained model',
                   inputs=[dict(file=p.name,sha256=sha(p)) for p in [embedded,CACHE/'VC_redist.x64.exe',CACHE/'XRayReview.exe',*wheels]],
                   file_sha256={str(p.relative_to(output)).replace('\\','/'):sha(p) for p in sorted(output.rglob('*')) if p.is_file()})
@@ -109,4 +113,6 @@ def build(variant):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(); parser.add_argument('--variant',choices=['cpu','gpu'],required=True)
-    build(parser.parse_args().variant)
+    parser.add_argument('--without-samples',action='store_true',help='Public distribution without original X-ray input photos')
+    args=parser.parse_args()
+    build(args.variant,include_samples=not args.without_samples)
