@@ -33,7 +33,7 @@ def main():
             tile=tile.resize((230,230));canvas.paste(tile,(j*330,i*300+55));draw.text((j*330,i*300+28),label,font=font,fill='black')
     if changed:canvas.save(ROOT/'transport-examples.png')
     body='''<!doctype html><meta charset="utf-8"><title>單張參照誤報研究</title><style>body{font:18px/1.7 sans-serif;max-width:1100px;margin:40px auto;color:#183641}td,th{border:1px solid #cbd5d9;padding:12px}table{border-collapse:collapse;width:100%}img{max-width:100%}</style>
-<h1>單張參照：剩餘誤報研究</h1><p>2026-11-03。正式版維持 V9，以下五種方法均為離線實驗，未部署刪框。每次推論僅讀同機種的一張參照圖及一張待測圖。資料集只用來評估，不參與當次判斷。</p>
+<h1>單張參照：剩餘誤報研究</h1><p><strong>後續更新：</strong>本頁使用原參照的研究結果，不能概括為演算法無法改善。<a href="replacement-reference-report.html">更換單張參照的控制實驗</a>顯示共同 48 張候選由 662 降至 56，原參照選擇是大量誤報的主要因素。</p><p>2026-11-03。正式版維持 V9，以下五種方法均為離線實驗，未部署刪框。每次推論僅讀同機種的一張參照圖及一張待測圖。資料集只用來評估，不參與當次判斷。</p>
 <h2>五種方法的實測</h2><p>固定門檻 0.13、185 張；表格為相對 V9 額外排除數，沒有把 V9 已改善的四個重複計算。</p><table><tr><th>方法</th><th>額外排除的 OK 候選</th><th>排除的 NG 候選</th></tr>'''+''.join(table)+'''</table>
 <p>初版物體配對曾排除額外 2 個良品候選，但新增遮擋測試發現誤刪風險。禁止物體本身參與亮度擬合後，額外改善歸零。因此五個方向目前都沒有可部署的額外收益。這批資料已多次用於演算法探索，不視為全新獨立測試集。沒有完整螺絲框標註，因此無法計算真實 precision / recall；NG 候選全部保留也不代表所有螺絲已找到。</p>
 <h2>剩餘誤報的兩種情況</h2><p><a href="mpt12-151-gallery.html">查看 MPT12 151 個候選的完整 49 張逐圖對照</a></p><p>MPT10 以線材、細邊緣與深淺變化為主。MPT12 的部分誤報呈現真實局部輪廓差異，不能全歸因於亮度。151 個候選集中於同一小零件區域，遍及 49 張良品；另外兩組位置各有 92、84 個候選。這是資料診斷，沒有把座標做成忽略區，也沒有讓其他良品進入推論。</p>
