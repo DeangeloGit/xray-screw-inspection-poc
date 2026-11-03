@@ -28,7 +28,7 @@ def main():
 <h2>使用的證據</h2><p>候選位於長而細的連續線條、兩側能接回參照圖中同一條結構、原位置有線條消退、線寬與深淺在保守範圍內。深色零件邊角不使用這條規則。一般零件差異沒有可靠解釋時維持原判斷，沒有依座標忽略區域。</p>
 <h2>為何不自動刪框</h2><p>測試在這些位置加入螺絲頭、小頭與細桿，涵蓋四種深淺。原型若拿線材提示直接刪除，會漏掉 {unsafe} 個較淡的小物體。因此正式版採用提示與排序，保留所有候選。</p>
 <p>驗證：{total} 個合成案例，V9 找到 {detected} 個、V10 保留 {preserved} 個，候選座標與數量逐一比對相同；49 張原始 MPT12 測試圖的候選框也與 V9 完全相同。先前 8 個使用者標記的真實區域仍保留優先候選。合成測試不等於完整真實螺絲召回率，MPT12 尚缺真實 NG 標註。</p>
-<h2>15 個提示的逐項對照</h2><p>編號沿用先前 56 個候選對照頁。</p>{cards}
+<p><a href="priority-six-gallery.html">查看剩餘 6 個優先紅框的參照／待測對照</a></p><h2>15 個提示的逐項對照</h2><p>編號沿用先前 56 個候選對照頁。</p>{cards}
 <p>重跑：evaluate_wire.py、verify_wire.py、report_wire_review.py（位於 experiments/single_reference_precision）。</p>'''
     (ROOT/'wire-review-report.html').write_text(body,encoding='utf-8')
     print(json.dumps(summary,ensure_ascii=False))
