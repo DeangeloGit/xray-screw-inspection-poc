@@ -27,7 +27,9 @@ def main():
     assert all(digest(PROJECT/name)==sha for name,sha in plan['code'].items())
     assert all(digest(r['path'])==r['sha256'] for r in rows)
     checked_links=0
-    for file in list(OUT.glob('*.html'))+list((OUT/'photos').glob('*/report.html')):
+    primary_pages=[OUT/name for name in ('index.html','good.html','bad.html')]+list((OUT/'photos').glob('*/report.html'))
+    archived_pages=list(OUT.glob('technical-*.html'))+list((OUT/'photos').glob('*/technical.html'))
+    for file in primary_pages+archived_pages:
         parser=Links();parser.feed(file.read_text(encoding='utf-8'))
         for link in parser.links:
             parts=urlsplit(link)
@@ -47,7 +49,7 @@ def main():
                 assert row['ai_screw']+row['ai_uncertain']+row['ai_non_screw']+row['ai_error']==row['count']
                 assert all(c['classification']['action']=='manual_review' for c in result['candidates'])
     validation=dict(passed=True,images=190,non_reference_tests=186,reference_self_checks=4,
-                    reports=193,validated_local_links=checked_links,
+                    reports=len(primary_pages),archived_reports=len(archived_pages),validated_local_links=checked_links,
                     frozen_code_unchanged=True,original_inputs_unchanged=True)
     (OUT/'validation.json').write_text(json.dumps(validation,indent=2))
     print(json.dumps(validation))
