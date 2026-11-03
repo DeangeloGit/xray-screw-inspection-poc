@@ -1,0 +1,56 @@
+[
+  {
+    "relative": "MPT11/NG/CND6440DTD_2026_11_02_17_17_45_102.tiff",
+    "sha256": "ef8ed53aa88cf992fd90cbb3572771588fb7051c3322b269091c229b55f2ff44",
+    "candidate_id": 15,
+    "reason": "參照圖沒有，待測圖出現圓形／圓環狀螺絲外觀；AI 卻判為非螺絲並刪除。",
+    "verification": "visual review; not physically confirmed",
+    "ai_label": "circuit_board",
+    "retained_overlapping_ids": []
+  },
+  {
+    "relative": "MPT11/NG/CND6440DTD_2026_11_02_17_18_20_103.tiff",
+    "sha256": "6211d5e413277c5f76d4006fff37a70a6a7e58e5b20fca1b0ecd0eefdfca01dd",
+    "candidate_id": 16,
+    "reason": "參照圖沒有，待測圖出現圓形／圓環狀螺絲外觀；AI 卻判為非螺絲並刪除。",
+    "verification": "visual review; not physically confirmed",
+    "ai_label": "circuit_board",
+    "retained_overlapping_ids": []
+  },
+  {
+    "relative": "MPT11/NG/CND6440DTD_2026_11_02_17_18_20_103.tiff",
+    "sha256": "6211d5e413277c5f76d4006fff37a70a6a7e58e5b20fca1b0ecd0eefdfca01dd",
+    "candidate_id": 17,
+    "reason": "參照圖沒有，待測圖出現圓形／圓環狀螺絲外觀；AI 卻判為非螺絲並刪除。",
+    "verification": "visual review; not physically confirmed",
+    "ai_label": "circuit_board",
+    "retained_overlapping_ids": []
+  },
+  {
+    "relative": "MPT11/NG/CND6440DTD_2026_11_02_17_19_26_105.tiff",
+    "sha256": "83fe489862e6f415025797c71dc86459143c27118ab583777c4cfd975d871c5d",
+    "candidate_id": 12,
+    "reason": "參照圖沒有，待測圖出現圓形／圓環狀螺絲外觀；AI 卻判為非螺絲並刪除。",
+    "verification": "visual review; not physically confirmed",
+    "ai_label": "circuit_board",
+    "retained_overlapping_ids": []
+  },
+  {
+    "relative": "MPT11/NG/CND6440DTD_2026_11_02_17_22_56_110.tiff",
+    "sha256": "1b32118f6c9df69fb4907f2be4d01a6389f64e80a297e3828e25be971799d641",
+    "candidate_id": 26,
+    "reason": "參照圖沒有，待測圖出現圓形／圓環狀螺絲外觀；AI 卻判為非螺絲並刪除。",
+    "verification": "visual review; not physically confirmed",
+    "ai_label": "background",
+    "retained_overlapping_ids": []
+  },
+  {
+    "relative": "MPT11/NG/CND6440DTD_2026_11_02_17_23_27_111.tiff",
+    "sha256": "20ab23aeb94dd9fed6f1016221e060b35636f9afbe9bd16d2155c51e14b05e64",
+    "candidate_id": 20,
+    "reason": "參照圖沒有，待測圖出現圓形／圓環狀螺絲外觀；AI 卻判為非螺絲並刪除。",
+    "verification": "visual review; not physically confirmed",
+    "ai_label": "hole",
+    "retained_overlapping_ids": []
+  }
+]
