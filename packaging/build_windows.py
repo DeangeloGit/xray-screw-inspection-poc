@@ -13,7 +13,7 @@ import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
 CACHE=ROOT/'build/windows-cache'
-SOURCES=['app.py','acquisition.py','detector.py','registration_candidate.py','single_reference_evidence.py','wire_review.py','library.py','model_manager.py','model_adapters.py','reports.py','review_workflow.py',
+SOURCES=['app.py','acquisition.py','detector.py','registration_candidate.py','single_reference_evidence.py','wire_review.py','library.py','model_manager.py','model_adapters.py','dino_adapter.py','dino_examples.py','reports.py','review_workflow.py',
          'runtime_paths.py','machine_tuning.py','machine_profiles.py','settings_api.py','station_settings.py','launch.py']
 
 

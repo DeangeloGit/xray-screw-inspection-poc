@@ -26,18 +26,23 @@ class Snapshot:
     def info(self):
         return dict(model_id=self.manifest['model_id'], fingerprint=self.identity,
                     backend=self.manifest['backend'], requested=self.requested,
-                    error=self.error, mode='auto_filter' if self.manifest.get('backend') in ('clip_onnx','yolo_onnx') else 'shadow',
-                    providers=self.session.get_providers() if self.session else [])
+                    error=self.error, mode='auto_filter' if self.manifest.get('backend') in ('clip_onnx','yolo_onnx','dino_onnx') else 'shadow',
+                    providers=self.session.get_providers() if self.session else [],
+                    decision_policy=self.manifest.get('decision_policy'))
 
-    def classify(self, crop, candidate_box=None):
+    def classify(self, crop, candidate_box=None, reference_crop=None):
         base = dict(model_id=self.manifest['model_id'], action='manual_review')
         if self.session is None:
             return dict(base, status='error' if self.error else 'disabled', label='uncertain', probabilities=None)
         try:
             m = self.manifest
-            if m['backend'] in ('clip_onnx','yolo_onnx'):
+            if m['backend'] in ('clip_onnx','yolo_onnx','dino_onnx'):
                 from model_adapters import classify
-                prediction = classify(m, self.session, crop, candidate_box=candidate_box)
+                from dino_adapter import PAIRED_POLICY, classify_pair
+                if m['backend'] == 'dino_onnx' and m.get('decision_policy') == PAIRED_POLICY:
+                    prediction = classify_pair(m, self.session, crop, reference_crop)
+                else:
+                    prediction = classify(m, self.session, crop, candidate_box=candidate_box)
                 base['action'] = 'discard' if prediction['filter_recommendation'] in ('non_screw_suggestion','exclude') else 'manual_review'
                 return dict(base, status='active', **prediction)
             image = cv2.resize(crop.astype(np.float32), (224, 224), interpolation=cv2.INTER_LINEAR)
@@ -88,13 +93,13 @@ class ModelManager:
                     raise ValueError('模型目錄不可指向外部路徑')
                 manifest_bytes = (directory / 'manifest.json').read_bytes()
                 m = json.loads(manifest_bytes)
-                if m.get('schema_version') != 1 or (m.get('backend') in ('noop','onnx') and (m.get('preprocessing') != PREPROCESSING or m.get('classes') != CLASSES)) or (m.get('backend') in ('clip_onnx','yolo_onnx') and m.get('preprocessing') != 'aligned-gray-tight12-v1'):
+                if m.get('schema_version') != 1 or (m.get('backend') in ('noop','onnx') and (m.get('preprocessing') != PREPROCESSING or m.get('classes') != CLASSES)) or (m.get('backend') in ('clip_onnx','yolo_onnx','dino_onnx') and m.get('preprocessing') != 'aligned-gray-tight12-v1'):
                     raise ValueError('不支援的模型契約或類別')
                 if not isinstance(m.get('model_id'), str) or not m['model_id']:
                     raise ValueError('缺少 model_id')
                 session = None
                 signature = fingerprint([pointer.hex(), manifest_bytes.hex()])
-                if m['backend'] in ('onnx','clip_onnx','yolo_onnx'):
+                if m['backend'] in ('onnx','clip_onnx','yolo_onnx','dino_onnx'):
                     filename = m['file']
                     path = (directory / filename).resolve()
                     if path.parent != directory or path.suffix.lower() != '.onnx':
@@ -106,7 +111,7 @@ class ModelManager:
                     raise ValueError('不支援的模型 backend')
                 if signature == self.signature:
                     return self.current
-                if m['backend'] in ('onnx','clip_onnx','yolo_onnx'):
+                if m['backend'] in ('onnx','clip_onnx','yolo_onnx','dino_onnx'):
                     payload = path.read_bytes()
                     if hashlib.sha256(payload).hexdigest() != m['sha256']:
                         raise ValueError('模型 SHA-256 不符')
@@ -151,6 +156,9 @@ class ModelManager:
                 if m['backend']=='clip_onnx':
                     from model_adapters import CLIP_DECISION_POLICY, CLIP_REVIEW_MARGIN
                     policy = [CLIP_DECISION_POLICY, CLIP_REVIEW_MARGIN]
+                elif m['backend']=='dino_onnx':
+                    from dino_adapter import POLICY, PAIRED_POLICY
+                    policy = [PAIRED_POLICY if m.get('decision_policy') == PAIRED_POLICY else POLICY]
                 elif m['backend']=='yolo_onnx':
                     policy = ['yolo-candidate-filter-v1', .25]
                 identity_parts = [m, m.get('sha256'), session.get_providers() if session else []]

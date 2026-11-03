@@ -1,3 +1,24 @@
+# 最新 Checkpoint：r2 DINO 雙圖可攜版
+
+日期：2026-11-03（Asia/Taipei）
+
+標籤：`checkpoint-2026-11-03-dino-paired-r2`
+
+分支：`codex/next-development-20261103`
+
+**47 張螺絲＋65 張正常範例，以及參照圖＋待測圖判斷，已同時啟用於 r2 可攜版。** 工程頁面含範例管理；新增範例保留原版並繼承雙圖方式。既有 2,793 個候選逐框重播與完整報告一致：良品 0 框、不良品 386 框保留；另通過 4 例實際推論及 Windows EXE／搬移驗證。
+
+- 接續開發必讀：[r2 完整交接](docs/CHECKPOINT_DINO_PAIRED_R2_20261103.md)。
+- 對應交付與校驗碼：[r2 release record](docs/checkpoints/dino-paired-r2-20261103.json)。
+- 私人資料備份：`workspace/checkpoints/2026-11-03-dino-paired-r2`。
+- 正確交付：`XRayReview-DINO-Paired-20261103-r2-Windows-x64.zip` 及 `XRayReview-DINO-Paired-20261103-r2-完整報告.zip`。
+
+公開 Git 保存原始碼與交接文件；私人模型、範例、完整報告、可攜包及現場設定留在本機 checkpoint。原開發站台的啟用指標仍保留舊模型，r2 包則預設雙圖；接手時請依交接文件確認，不混用舊服務與新版本。已知疑似誤刪風險保留說明，不能自行關閉使用者要求的雙圖功能。
+
+以下歷史 checkpoint 保留。
+
+---
+
 # Checkpoint：V5，新增物體／既有結構判斷改版前
 
 日期：2026-11-02（Asia/Taipei）

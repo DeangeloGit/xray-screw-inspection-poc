@@ -1,0 +1,10 @@
+<div id="dino-examples-root">
+
+<section class="panel"><label for="version">要查看或修改哪個版本？</label><select id="version"></select><p id="active"></p><p class="hint">DINO 各找最像的 3 張螺絲、3 張非螺絲來比較。範例標示正確、外觀貼近現場，才有機會改善；不是加得越多越好。</p></section>
+<div class="bar"><strong id="counts">讀取中…</strong><p id="message" role="status" aria-live="polite"></p></div>
+<div class="tabs"><button type="button" data-category="screw" aria-pressed="true">螺絲範例</button><button type="button" data-category="normal" aria-pressed="false">非螺絲範例</button></div>
+<section class="panel"><h2 id="category-title">螺絲範例</h2><p>打勾＝新版會使用；取消勾選＝新版停用這張。舊版不受影響。</p><div class="toolbar"><button id="all" type="button">全部勾選此類</button><button id="none" type="button">全部取消此類</button></div><div id="gallery" class="grid"></div></section>
+<section class="panel"><h2>加入你的範例</h2><p>請提供裁好的單一物件圖片，避免紅框、文字與多餘背景。保留螺絲頭與桿；不同角度、明暗與重疊情況可分別提供。每張最多 8 MB，每次最多 100 張、合計 40 MB。</p><label for="screw-upload">新增螺絲範例（確實有螺絲）</label><input id="screw-upload" type="file" multiple accept=".png,.jpg,.jpeg,.tif,.tiff,.bmp"><label for="normal-upload">新增非螺絲範例（線材、板件等，沒有螺絲）</label><input id="normal-upload" type="file" multiple accept=".png,.jpg,.jpeg,.tif,.tiff,.bmp"><p class="hint">上傳圖片會轉成灰階。下方顯示實際送入 DINO 的範圍；如果螺絲被截斷，請先調整原圖再加入。重新選檔會追加；尚未建立的修改重新整理後不保留。</p><div id="uploads" class="grid"></div></section>
+<section class="panel"><h2>存成新版，保留舊版</h2><label for="new-name">新版名稱</label><input id="new-name" type="text" maxlength="80" placeholder="例如：DINO 現場螺絲範例第 2 版"><p class="hint">兩類各至少保留 3 張。螺絲和非螺絲不能使用同一張圖片。請另留一批沒有當範例的照片，日後比較誤報與漏檢。</p><button id="build" class="primary" type="button">建立新版範例庫（不切換）</button><div id="built" hidden><p id="built-message"></p><button id="inspect" type="button">查看剛建立的版本</button></div><hr><h3>使用目前查看的版本</h3><p>按下後才切換正式模型。舊版可從上方清單選回；既有檢測結果不會自動重跑。</p><button id="activate" type="button">切換使用此版本</button></section>
+
+</div>

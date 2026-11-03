@@ -129,6 +129,9 @@ def validate(manifest, session):
                 vectors=np.asarray(group.get('embeddings'),np.float32);ids=group.get('ids',[])
                 if vectors.ndim!=2 or vectors.shape[1]!=512 or not bank['neighbors']<=len(ids)==len(vectors)<=2000 or not np.isfinite(vectors).all() or not np.allclose(np.linalg.norm(vectors,axis=1),1,atol=.001):
                     raise ValueError('CLIP 螺絲範例特徵無效')
+    elif m['backend']=='dino_onnx':
+        from dino_adapter import validate as validate_dino
+        validate_dino(m, output)
     elif m['backend']=='yolo_onnx':
         yolo_predictions(m,output)
         index=m.get('screw_class_id')
@@ -138,6 +141,9 @@ def validate(manifest, session):
 
 def classify(manifest, session, crop, candidate_box=None):
     m=manifest
+    if m['backend']=='dino_onnx':
+        from dino_adapter import classify as classify_dino
+        return classify_dino(m, session, crop)
     if m['backend']=='clip_onnx':
         image=Image.fromarray(np.rint(np.clip(crop,0,1)*255).astype('uint8')).convert('RGB')
         w,h=image.size

@@ -19,6 +19,8 @@ from datetime import datetime, timezone
 
 app = Flask(__name__, template_folder=str(RESOURCE_ROOT/'templates'), static_folder=str(RESOURCE_ROOT/'static'))
 app.register_blueprint(settings_api)
+from dino_examples import dino_examples
+app.register_blueprint(dino_examples)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['MAX_CONTENT_LENGTH'] = 40 * 1024 * 1024
 analysis_lock = threading.Lock()

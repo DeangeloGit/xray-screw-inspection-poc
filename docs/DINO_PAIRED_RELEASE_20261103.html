@@ -1,0 +1,15 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>X-RAY DINO 雙圖修正版 r2</title>
+<style>body{font:18px/1.8 "Microsoft JhengHei",sans-serif;color:#173d4b;background:#f4f7f8;max-width:1050px;margin:40px auto;padding:0 24px}h1{font-size:32px}section{background:white;padding:22px;border-left:5px solid #00838c}table{border-collapse:collapse;width:100%;background:white;margin:24px 0}th,td{border:1px solid #ccd8dd;text-align:left;padding:12px}th{background:#e8f0f3}</style>
+<h1>X-RAY DINO 雙圖修正版 r2｜2026-11-03</h1>
+<section><strong>這次執行版同時啟用兩個條件：</strong><br>① 47 張螺絲＋65 張正常範例。<br>② DINO 同時判斷參照小圖與待測小圖。<br>採用的範例、取圖方式與判斷規則，均對應完整報告的「新範例＋雙圖」版本。</section>
+<h2>更正前次交付</h2><p>前次可攜版只啟用了新範例，沒有啟用雙圖判斷，與使用者要求及報告不一致。請改用檔名包含 <strong>DINO-Paired-20261103-r2</strong> 的版本。前一包保留供追溯，不應當作雙圖版本使用。</p>
+<h2>現在的流程</h2><ol><li>差分找出可疑位置，保留原本的找框方式。</li><li>在同一位置分別取出待測小圖、參照小圖。</li><li>每張小圖都從 47 張螺絲裡找最像的 3 張、從 65 張正常範例裡找最像的 3 張，分別比較。</li><li>待測圖像螺絲、參照圖不像螺絲：保留。兩張都像螺絲，或待測圖不像螺絲：排除。</li></ol>
+<p>若參照小圖缺失或模型失敗，保留候選並顯示錯誤，不會默默改用單圖判斷。upper-green 補完整框的方法仍未套用。</p>
+<h2>與完整報告核對</h2><table><tr><th>資料</th><th>原差分候選</th><th>雙圖保留</th><th>雙圖排除</th></tr><tr><td>139 張良品</td><td>128</td><td>0</td><td>128</td></tr><tr><td>47 張不良品</td><td>2,665</td><td>386</td><td>2,279</td></tr></table>
+<p>另有 4 張正常參照圖，共 190 張圖資。這些是候選框數，不是真正螺絲顆數。核對方式：將原有 2,793 個候選送入正式程式的取圖與雙圖判斷路徑，沿用已保存的影像特徵，逐框比較原報告；另以 4 個案例實際執行 ONNX 判斷。沒有重跑整批差分找框。</p>
+<h2>保留已知風險，但兩項功能照要求開啟</h2><ul><li>2 處已標記螺絲都保留。</li><li>58 個目視原有結構的框被排除。</li><li>9 個疑似新增螺絲風險框也被排除；14 處先前疑似誤刪案例只保留 3 處，仍待確認與改善。</li></ul><p>雙圖規則只能比較各自像不像螺絲，還不能確定兩張圖中是同一顆。此限制不會再被用來自行停用使用者已要求開啟的功能。</p>
+<h2>使用方式</h2><p>完整解壓縮後雙擊 <strong>XRayReview.exe</strong>，不用另裝 Python。工程頁面應顯示 <strong>「DINO 雙圖：47 張螺絲＋65 張正常」及「參照圖＋待測圖」</strong>。DINO 範例管理已整合其中，新增範例存成新版後仍沿用雙圖方式；舊版 DINO 與 CLIP 保留供切換。</p>
+<p>本包含四機種正常參照圖，差分門檻 0.13，自動取圖預設關閉，請先選擇此電腦的來源資料夾。資料與設定留在包內，搬移請複製整個資料夾。</p>
+<p>完整報告資料與圖片沿用原本「新範例＋雙圖」報告；本次修正的是執行程式，沒有改報告答案來配合程式。</p>
+</html>

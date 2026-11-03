@@ -538,6 +538,8 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
         if model_snapshot.manifest.get('backend')=='yolo_onnx':
             x0,y0=max(0,cx-12),max(0,cy-12)
             c['classification'] = model_snapshot.classify(ai_crop, candidate_box=[cx-x0,cy-y0,cx-x0+cw,cy-y0+ch])
+        elif model_snapshot.manifest.get('backend') == 'dino_onnx':
+            c['classification'] = classify_dino_candidate(model_snapshot, corrected, r, c)
         else:
             c['classification'] = model_snapshot.classify(ai_crop)
         x, y, w, h = [c[k] for k in ('x', 'y', 'w', 'h')]
@@ -579,6 +581,15 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
                   warning='紅框為規則優先候選，不是 AI 確認螺絲；黃色候選仍需查看。無紅框不代表正常。')
     (out/'result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     return result
+
+
+def classify_dino_candidate(snapshot, target, reference, candidate):
+    """Same coordinates, padding and PNG quantization as the frozen report."""
+    x, y, w, h = (candidate[k] for k in ('x', 'y', 'w', 'h'))
+    region = (slice(max(0, y-12), y+h+12), slice(max(0, x-12), x+w+12))
+    crops = [(np.clip(im[region], 0, 1)*255).astype('uint8').astype('float32')/255
+             for im in (target, reference)]
+    return snapshot.classify(crops[0], reference_crop=crops[1])
 
 
 if __name__ == '__main__':

@@ -1,0 +1,41 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>X-RAY DINO 版本總結｜2026-11-03</title>
+<style>body{font:18px/1.8 "Microsoft JhengHei",sans-serif;color:#173d4b;background:#f4f7f8;max-width:1050px;margin:40px auto;padding:0 24px}h1{font-size:32px}h2{font-size:24px;margin-top:36px}section{background:white;padding:20px 26px;margin:20px 0;border-left:5px solid #00838c}table{border-collapse:collapse;width:100%;background:white}th,td{border:1px solid #ccd8dd;text-align:left;padding:12px}th{background:#e8f0f3}.risk{border-color:#c86825}small{font-size:15px}</style>
+<h1>X-RAY DINO 版本總結｜2026-11-03</h1>
+<section><strong>這版完成了 DINO 模型選擇、工程頁面的範例管理，以及加入現場螺絲的新範例庫。</strong><br>
+Windows 可攜包預設使用 47 張螺絲＋65 張正常範例。雙圖判斷仍是實驗，尚未套入執行程式。</section>
+<h2>程式現在怎麼判斷？</h2>
+<p>正常參照圖與待測圖先對齊、做差分，找出可疑位置。再把待測圖的候選小圖交給 DINO：從 47 張螺絲範例挑最像的 3 張，從 65 張正常範例挑最像的 3 張，比較兩邊平均相似程度。比較像正常範例的候選會被排除，其餘留下讓使用者查看。</p>
+<p>這六張是「螺絲 3 張＋正常 3 張」，不是把全部範例混在一起取前六名。DINO 在此步驟仍只看待測小圖；差分步驟則本來就會使用參照圖。</p>
+<h2>已完成的功能</h2>
+<ul><li>工程頁面可以切換 DINO、CLIP，也保留上傳 YOLO ONNX 模型的功能。</li>
+<li>DINO 範例管理整合進工程頁面，可看原圖與模型實際輸入、勾選保留範例、上傳螺絲或正常範例。</li>
+<li>新增範例會建立另一個版本，原版保留；建立完成後可選擇啟用或切回舊版。</li>
+<li>原本 31 張螺絲，加上使用者確認的 16 張現場螺絲，成為 47 張；65 張正常範例保留。</li>
+<li>完整報告按「機種 → 誤報類型 → 相近位置」瀏覽，包含所有照片、保留與排除位置。</li></ul>
+<h2>這批完整圖資的結果</h2>
+<p>共 190 張：139 張良品、47 張不良品、4 張參照圖。沿用既有差分候選，沒有重跑差分找框。下表是 <strong>AI 留下的候選框數，不是正確找到的螺絲顆數</strong>。</p>
+<table><tr><th>版本</th><th>良品：128 個候選剩多少</th><th>不良品：2,665 個候選剩多少</th></tr>
+<tr><td>原版 DINO：31＋65，只看待測圖</td><td>0 框</td><td>330 框</td></tr>
+<tr><td><strong>可攜包預設：47＋65，只看待測圖</strong></td><td>0 框</td><td>601 框</td></tr>
+<tr><td>離線實驗：47＋65，看參照圖＋待測圖</td><td>0 框</td><td>386 框</td></tr></table>
+<h2>新增範例有沒有幫助？</h2>
+<p>固定核對的 2 處已標記螺絲，原版都排除，新增範例後 2 處都保留。另有 14 處先前目視懷疑被誤刪的位置，原版保留 0 處，新增範例後保留 5 處。這 14 處仍待逐一確認，不能直接當成 14 顆真螺絲。</p>
+<h2>為什麼雙圖判斷還沒放進執行程式？</h2>
+<section class="risk"><strong>它能減少部分誤報，但也可能刪掉應該保留的位置。</strong><br>
+實驗規則是：待測圖像螺絲、參照圖不像螺絲才保留；兩張都像螺絲就排除。這並不能確認兩張圖中是同一顆物件。</section>
+<ul><li>58 個已目視判斷為原有結構的框，雙圖規則全部排除，這是改善。</li>
+<li>9 個疑似新增螺絲的風險框，也全部被排除，需要釐清。</li>
+<li>14 處疑似誤刪案例，新增範例原本救回 5 處，加入雙圖規則後只剩 3 處。</li></ul>
+<p>因此不能只看「601 框降為 386 框」就說更準。新範例與這批測試照片可能重疊，結果只能用來比較開發版本，不能當成對新圖資的準確率。</p>
+<h2>尚未解決與下一步</h2>
+<ul><li>部分差分框仍只涵蓋螺絲的一小部分；upper-green 補完整框的方法沒有套用。</li>
+<li>新增範例仍救不回所有漏掉的螺絲；需要先確認疑似誤刪案例，再針對外觀與小圖範圍改善。</li>
+<li>雙圖比較需要能分清楚「本來就有的同一顆」和「附近多出一顆」，再驗證有沒有誤刪。</li>
+<li>後續應使用沒有拿來當範例的新照片，驗證真正辨識效果。</li></ul>
+<h2>Windows 交付包</h2>
+<p>解壓縮後雙擊 <strong>XRayReview.exe</strong>，不需另裝 Python 或 NVIDIA 顯示卡。保留整個資料夾，設定、模型與工作資料存放在包內；首次自動監看關閉，請選擇現場來源後再啟用。</p>
+<p>包內預載 MPT10、MPT11、MPT12、KPH33 的正常參照圖，差分門檻 0.13。原版 DINO 與 CLIP 同時保留供切換；本機開發專案的啟用模型、設定與測試資料未被覆寫。</p>
+<p>另附完整報告壓縮檔，解壓縮後開啟「開啟完整報告.html」。報告首頁展示的是雙圖實驗結果，執行包採用的是上表第二列，兩者已清楚區分。</p>
+<small>分支：codex/next-development-20261103；交付包含尚未提交的開發修改，檔案雜湊記錄於包內 BUILD-MANIFEST.json。此交付未自動上傳 GitHub。</small>
+</html>
