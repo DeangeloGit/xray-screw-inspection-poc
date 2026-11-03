@@ -39,6 +39,27 @@ def refine_cable_shape(manifest, vector, decision, scores):
     return dict(decision, shape_evidence=evidence)
 
 
+def refine_screw_examples(manifest, vector, decision):
+    """Positive visual evidence can retain a screw; unfamiliar examples never delete it."""
+    bank = manifest.get('screw_examples')
+    if not bank:
+        return decision
+    evidence = dict(method='clip-visual-screw-bank-v1')
+    for label in ('screw', 'normal'):
+        scores = np.asarray(bank[label]['embeddings'], np.float32) @ vector
+        indexes = np.argsort(scores)[-bank['neighbors']:][::-1]
+        evidence[label+'_similarity'] = float(scores[indexes].mean())
+        evidence[label+'_neighbors'] = [bank[label]['ids'][i] for i in indexes]
+    evidence['margin'] = evidence['screw_similarity']-evidence['normal_similarity']
+    evidence['supported'] = (evidence['margin'] >= bank['margin'] and
+                             evidence['screw_similarity'] >= bank['minimum_similarity'])
+    if evidence['supported'] and decision['label'] != 'screw':
+        return dict(decision, label='screw', filter_recommendation='keep',
+                    screw_example_evidence=evidence,
+                    decision_reason='CLIP 外型更接近已標記螺絲範例，保留候選')
+    return dict(decision, screw_example_evidence=evidence)
+
+
 
 def validate(manifest, session):
     m = manifest
@@ -71,6 +92,15 @@ def validate(manifest, session):
             shape=m['cable_shape']; vector=np.asarray(shape.get('embedding'),np.float32)
             if shape.get('method')!='clip-cable-shape-v1' or 'cable' not in labels or vector.shape!=(512,) or not np.isfinite(vector).all() or not np.isclose(np.linalg.norm(vector),1,atol=.001):
                 raise ValueError('CLIP 線材外型向量無效')
+        if 'screw_examples' in m:
+            bank=m['screw_examples']
+            if bank.get('method')!='clip-visual-screw-bank-v1' or type(bank.get('neighbors')) is not int or not 1<=bank['neighbors']<=10 or not .001<=bank.get('margin',0)<=1 or not 0<=bank.get('minimum_similarity',-1)<=1:
+                raise ValueError('CLIP 螺絲範例設定無效')
+            for label in ('screw','normal'):
+                group=bank.get(label,{})
+                vectors=np.asarray(group.get('embeddings'),np.float32);ids=group.get('ids',[])
+                if vectors.ndim!=2 or vectors.shape[1]!=512 or not bank['neighbors']<=len(ids)==len(vectors)<=2000 or not np.isfinite(vectors).all() or not np.allclose(np.linalg.norm(vectors,axis=1),1,atol=.001):
+                    raise ValueError('CLIP 螺絲範例特徵無效')
     elif m['backend']=='yolo_onnx':
         if output.ndim!=3 or output.shape[0]!=1 or output.shape[1]!=4+len(labels) or output.shape[2]<1:
             raise ValueError('目前支援 YOLO 原始偵測輸出 [1,4+類別數,N]，不支援分割或 end-to-end 輸出')
@@ -98,6 +128,7 @@ def classify(manifest, session, crop):
         vector=vector/np.linalg.norm(vector)
         scores=np.asarray(m['text_embeddings'],np.float32)@vector
         decision=refine_cable_shape(m, vector, clip_decision(m['classes'], scores), scores)
+        decision=refine_screw_examples(m, vector, decision)
         return dict(**decision, probabilities=None,
                     similarities=dict(zip(m['classes'],map(float,scores))),
                     score_kind='cosine_similarity')
