@@ -120,5 +120,7 @@ def main():
  (OUT/'report-rows.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2),encoding='utf-8')
  from experiments.current_dataset_review.good_review import main as grouped_good_review
  grouped_good_review()
+ from experiments.current_dataset_review.bad_review import main as grouped_bad_review
+ grouped_bad_review()
  print(json.dumps(summary,ensure_ascii=True))
 if __name__=='__main__':main()

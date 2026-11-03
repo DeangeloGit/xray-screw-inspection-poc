@@ -19,7 +19,8 @@ def main():
  assert all(digest(r['path'])==r['sha256'] for r in rows)
  baseline={r['sha256']:r for r in read(ROOT/'workspace/windows-check/diagnostics/v10-full-evaluation-20261103/results.json')}
  review=read(OUT/'good-review-index.json')
- extra=[OUT/n for n in review['pages'] if n!='good.html']
+ ngreview=read(OUT/'bad-review-index.json')
+ extra=[OUT/n for n in review['pages'] if n!='good.html']+[OUT/n for n in ngreview['pages'] if n!='bad.html']
  checked=0;pages=[OUT/n for n in ('index.html','good.html','bad.html','issues.html')]+extra
  for row in rows:
   folder=OUT/'photos'/row['sha256'];result=read(folder/'result.json');pages.append(folder/'report.html')
@@ -49,6 +50,12 @@ def main():
   name=f'good-{item["machine"]}-{item["category"]}.html'
   text=(OUT/name).read_text(encoding='utf-8')
   assert text.count(f'id="case-{item["sha"]}-{item["id"]}"')==1
+ assert ngreview['total']==len(ngreview['items'])==sum(ngreview['categories'].values())==2665
+ assert len({(z['sha'],z['id']) for z in ngreview['items']})==2665
+ texts={n:(OUT/n).read_text(encoding='utf-8') for n in ngreview['pages']}
+ for z in ngreview['items']:
+  text=texts[f'bad-{z["machine"]}-{z["category"]}.html']
+  assert text.count(f'id="case-{z["sha"]}-{z["id"]}"')==1
  issues=read(OUT/'visual-issues.json')
  assert len(issues)==6
  for issue in issues:
