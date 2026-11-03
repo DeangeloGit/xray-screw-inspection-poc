@@ -73,7 +73,7 @@ def main():
 <h2>新參照完整 49 張測試</h2><p>成功 49、失敗 0；候選總數 {summary['new_all_count']}，其中 {summary['new_all_zero']} 張零候選。原參照現在作為待測圖，產生 {summary['old_reference_as_target']} 個候選。新參照在舊測試中原有 {summary['new_reference_as_old_target']} 個候選。</p>
 <h2>原反覆候選區域的對照</h2><img src="replacement-reference-comparison.png"><p>局部統計由舊參照座標映射至新參照附近 22 像素範圍，是區域對照，不是逐物件真值標註。結果支持原參照的局部外觀與多數圖資不同，但不能僅憑此判定它是錯誤機種、不同板本或不良品。</p>
 <h2>準確度的解讀</h2><p>依資料夾良品標籤，候選可作為誤報負擔比較。MPT12 沒有真實 NG 標註，因此此結果不能宣稱螺絲辨識準確率或證明換參照後不會漏掉螺絲。此次改善來自參照選擇，不能歸功於算法更新。</p>
-<h2>逐張結果（點候選數查看標記圖）</h2><table><tr><th>照片</th><th>舊參照候選</th><th>新參照候選</th><th>原反覆區域</th></tr>{''.join(tiles)}</table>'''
+<p><a href="remaining-56-gallery.html">逐一查看剩餘 56 個候選：參照／待測局部對照</a></p><h2>逐張結果（點候選數查看標記圖）</h2><table><tr><th>照片</th><th>舊參照候選</th><th>新參照候選</th><th>原反覆區域</th></tr>{''.join(tiles)}</table>'''
     (ROOT/'replacement-reference-report.html').write_text(body,encoding='utf-8')
     print(json.dumps(summary,ensure_ascii=False,indent=2))
 
