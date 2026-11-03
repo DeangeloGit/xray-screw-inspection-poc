@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 
 TIGHT_PREPROCESSING = 'aligned-gray-tight12-v1'
-CLIP_DECISION_POLICY = 'non-screw-margin-abstention-v1'
+CLIP_DECISION_POLICY = 'non-screw-auto-filter-v2'
 CLIP_REVIEW_MARGIN = .01
 
 
@@ -20,7 +20,7 @@ def clip_decision(labels, scores):
     return dict(label=label, raw_label=raw_label, screw_margin=margin,
                 review_margin=CLIP_REVIEW_MARGIN, decision_policy=CLIP_DECISION_POLICY,
                 filter_recommendation='review' if near_tie else 'keep' if label=='screw' else 'non_screw_suggestion',
-                decision_reason='螺絲與其他類別分數接近，保留人工複核' if near_tie else '螺絲類別分數最高' if label=='screw' else '非螺絲類別分數較高，仍需確認')
+                decision_reason='螺絲與其他類別分數接近，保留候選' if near_tie else '螺絲類別分數最高' if label=='screw' else '非螺絲類別分數領先超過門檻，自動排除候選')
 
 
 

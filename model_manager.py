@@ -26,7 +26,7 @@ class Snapshot:
     def info(self):
         return dict(model_id=self.manifest['model_id'], fingerprint=self.identity,
                     backend=self.manifest['backend'], requested=self.requested,
-                    error=self.error, mode='shadow',
+                    error=self.error, mode='auto_filter' if self.manifest.get('backend')=='clip_onnx' else 'shadow',
                     providers=self.session.get_providers() if self.session else [])
 
     def classify(self, crop):
@@ -37,7 +37,10 @@ class Snapshot:
             m = self.manifest
             if m['backend'] in ('clip_onnx','yolo_onnx'):
                 from model_adapters import classify
-                return dict(base, status='shadow', **classify(m, self.session, crop))
+                prediction = classify(m, self.session, crop)
+                if m['backend']=='clip_onnx':
+                    base['action'] = 'discard' if prediction['filter_recommendation']=='non_screw_suggestion' else 'manual_review'
+                return dict(base, status='active' if m['backend']=='clip_onnx' else 'shadow', **prediction)
             image = cv2.resize(crop.astype(np.float32), (224, 224), interpolation=cv2.INTER_LINEAR)
             image = np.repeat(image[None], 3, axis=0)
             image = (image - np.asarray(m['mean'], np.float32)[:, None, None]) / np.asarray(m['std'], np.float32)[:, None, None]

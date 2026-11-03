@@ -7,7 +7,7 @@ import json
 from runtime_paths import WORK_ROOT as ROOT
 from model_manager import manager
 
-DETECTOR_VERSION = 10
+DETECTOR_VERSION = 11
 
 
 def write_image(path, image):
@@ -520,16 +520,8 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
     # Save natural-orientation preview at <=1536px; source coordinates remain native pixels.
     preview_scale = 1536/max(raw.shape)
     source_preview = cv2.resize(source_preview, None, fx=preview_scale, fy=preview_scale)
-    high = source_preview.copy()
-    all_overlay = source_preview.copy()
     for c in candidates:
         i = c['id']
-        points = np.rint(np.asarray(c['source_polygon'])*preview_scale).astype('int32')
-        color = (60, 65, 245) if c['priority'] == 'high' else (0, 185, 245)
-        for canvas in ([high, all_overlay] if c['priority'] == 'high' else [all_overlay]):
-            cv2.polylines(canvas, [points], True, color, 2)
-            cv2.putText(canvas, str(i), tuple(points.min(axis=0)-[0, 6]),
-                        cv2.FONT_HERSHEY_SIMPLEX, .6, color, 2)
         x0, y0, x1, y1 = c['source_bbox']
         pad = max(45, (x1-x0)//2, (y1-y0)//2)
         box = [max(0, x0-pad), max(0, y0-pad), min(raw.shape[1], x1+pad), min(raw.shape[0], y1+pad)]
@@ -547,6 +539,17 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
         x, y, w, h = [c[k] for k in ('x', 'y', 'w', 'h')]
         patch = (r[max(0,y-25):y+h+25, max(0,x-25):x+w+25]*255).astype('uint8')
         write_image(str(out/f'reference_crop_{i}.png'), patch)
+    pre_ai_count = len(candidates)
+    filtered_candidates = [c for c in candidates if c['classification'].get('action') == 'discard']
+    candidates = [c for c in candidates if c['classification'].get('action') != 'discard']
+    # Render only retained candidates. Preserve original IDs and crops for the audit.
+    high, all_overlay = source_preview.copy(), source_preview.copy()
+    for c in candidates:
+        points = np.rint(np.asarray(c['source_polygon'])*preview_scale).astype('int32')
+        color = (60, 65, 245) if c['priority'] == 'high' else (0, 185, 245)
+        for canvas in ([high, all_overlay] if c['priority'] == 'high' else [all_overlay]):
+            cv2.polylines(canvas, [points], True, color, 2)
+            cv2.putText(canvas, str(c['id']), tuple(points.min(axis=0)-[0, 6]), cv2.FONT_HERSHEY_SIMPLEX, .6, color, 2)
     write_image(str(out/'source.png'), source_preview)
     write_image(str(out/'overlay.png'), high)
     write_image(str(out/'all_overlay.png'), all_overlay)
@@ -565,6 +568,7 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
                   alignment_warning=any(not z['reliable'] for z in regions),
                   coverage=round(coverage, 4), baseline_candidates=baseline,
                   baseline_count=len(baseline), proposal_count=len(candidates),
+                  pre_ai_count=pre_ai_count, filtered_count=len(filtered_candidates), filtered_candidates=filtered_candidates,
                   structure_change_count=len(structure_changes), structure_changes=structure_changes,
                   high_count=n_high, review_count=len(candidates)-n_high, candidates=candidates,
                   wire_review_count=sum(bool(c.get('wire_review')) for c in candidates),
