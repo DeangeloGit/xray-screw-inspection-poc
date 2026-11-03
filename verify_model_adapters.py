@@ -23,11 +23,12 @@ def checks():
     from model_manager import manager,ModelManager
     from runtime_paths import MODEL_ROOT
     with app.test_client() as client:
-        values=[100,100,100,100,.8,.1]
+        values=[320,320,100,100,.8,.1]
         response=client.post('/api/settings/model',data=dict(model=(io.BytesIO(fixture([1,6,1],values)),'fixture.onnx'),
             backend='yolo_onnx',provider='cpu',classes='screw,cable',screw_class_id='0',input_size='640',confidence='.25'))
         assert response.status_code==200,response.json
         snapshot=manager.snapshot();a=snapshot.classify(np.ones((40,80),np.float32))
+        assert a['action']=='manual_review' and a['status']=='active'
         assert a['label']=='screw' and abs(a['screw_score']-.8)<1e-5,a
         identity=snapshot.identity;pointer=(MODEL_ROOT/'active.json').read_bytes()
         versions=client.get('/api/settings/models').json['models'];version=versions[0]['directory']
@@ -45,8 +46,17 @@ def checks():
         # Uploaded labels can place the screw class after another class.
         response=client.post('/api/settings/model',data=dict(model=(io.BytesIO(fixture([1,6,1],values)),'order.onnx'),backend='yolo_onnx',provider='cpu',classes='cable,screw',screw_class_id='1'))
         assert response.status_code==200,response.json
-        assert manager.snapshot().classify(np.ones((80,40),np.float32))['label']=='uncertain'
+        assert manager.snapshot().classify(np.ones((80,40),np.float32))['label']=='non_screw'
+        assert manager.snapshot().classify(np.ones((80,40),np.float32))['action']=='discard'
         assert snapshot.classify(np.ones((40,80),np.float32))['label']=='screw', 'in-flight snapshot changed'
+        # Detection elsewhere in the crop must not keep the candidate.
+        assert snapshot.classify(np.ones((80,80),np.float32),candidate_box=[0,0,10,10])['action']=='discard'
+        assert snapshot.classify(np.ones((80,80),np.float32),candidate_box=[35,35,45,45])['action']=='manual_review'
+        response=client.post('/api/settings/model',data=dict(model=(io.BytesIO(fixture([1,1,6],[270,270,370,370,.9,0])),'postprocessed.onnx'),backend='yolo_onnx',provider='cpu',classes='screw',yolo_layout='end2end'))
+        assert response.status_code==200,response.json
+        assert manager.snapshot().classify(np.ones((80,80),np.float32),candidate_box=[35,35,45,45])['label']=='screw'
+        assert ModelManager(MODEL_ROOT).snapshot().identity==manager.snapshot().identity
+        assert 'yolo-layout' in client.get('/engineer?tab=ai').text
         assert 'model-backend' in client.get('/engineer?tab=ai').text
     print('PASS: YOLO inference, class mapping, invalid-model rollback, disable/reselect, immutable snapshot and restart')
 

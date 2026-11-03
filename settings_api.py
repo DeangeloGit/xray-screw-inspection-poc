@@ -172,6 +172,7 @@ def apply_model():
                     manifest.update(backend=backend,preprocessing='aligned-gray-tight12-v1',
                                     classes=labels,input_size=[size,size],output='yolo_raw',
                                     screw_class_id=int(request.form.get('screw_class_id','0')),
+                                    yolo_layout=request.form.get('yolo_layout','raw'),
                                     confidence=float(request.form.get('confidence','.25')))
             (directory/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False),encoding='utf-8')
             selection=dict(schema_version=1,version_directory=token)

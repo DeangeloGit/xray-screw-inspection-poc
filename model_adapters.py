@@ -61,6 +61,34 @@ def refine_screw_examples(manifest, vector, decision):
 
 
 
+def yolo_predictions(manifest, output):
+    """Return model-pixel xyxy boxes and per-class scores for supported exports."""
+    output=np.asarray(output)
+    n=len(manifest['classes'])
+    layout=manifest.get('yolo_layout','raw')
+    if output.ndim!=3 or output.shape[0]!=1 or not np.isfinite(output).all():
+        raise ValueError('YOLO 推論輸出無效')
+    if layout=='raw':
+        if output.shape[1]!=4+n or output.shape[2]<1:
+            raise ValueError('原始 YOLO 輸出需為 [1,4+類別數,N]')
+        xywh=output[0,:4].T
+        boxes=np.concatenate((xywh[:,:2]-xywh[:,2:]/2,xywh[:,:2]+xywh[:,2:]/2),axis=1)
+        scores=output[0,4:].T
+    elif layout=='end2end':
+        if output.shape[2]!=6:
+            raise ValueError('完成後處理的 YOLO 輸出需為 [1,N,6]')
+        values=output[0];ids=values[:,5]
+        if np.any(ids!=np.floor(ids)) or np.any(ids<0) or np.any(ids>=n):
+            raise ValueError('YOLO 輸出類別編號與設定不符')
+        boxes=values[:,:4];scores=np.zeros((len(values),n),np.float32)
+        scores[np.arange(len(values)),ids.astype(int)]=values[:,4]
+    else:
+        raise ValueError('不支援的 YOLO 輸出格式')
+    if np.any(scores<0) or np.any(scores>1):
+        raise ValueError('YOLO 分數超出範圍')
+    return boxes,scores
+
+
 def validate(manifest, session):
     m = manifest
     size = m.get('input_size')
@@ -102,16 +130,13 @@ def validate(manifest, session):
                 if vectors.ndim!=2 or vectors.shape[1]!=512 or not bank['neighbors']<=len(ids)==len(vectors)<=2000 or not np.isfinite(vectors).all() or not np.allclose(np.linalg.norm(vectors,axis=1),1,atol=.001):
                     raise ValueError('CLIP 螺絲範例特徵無效')
     elif m['backend']=='yolo_onnx':
-        if output.ndim!=3 or output.shape[0]!=1 or output.shape[1]!=4+len(labels) or output.shape[2]<1:
-            raise ValueError('目前支援 YOLO 原始偵測輸出 [1,4+類別數,N]，不支援分割或 end-to-end 輸出')
+        yolo_predictions(m,output)
         index=m.get('screw_class_id')
         if type(index) is not int or not 0<=index<len(labels) or not .01<=m.get('confidence',0)<=.99:
             raise ValueError('螺絲類別編號或信心門檻無效')
-        if np.any(output[:,4:]<0) or np.any(output[:,4:]>1):
-            raise ValueError('YOLO 類別分數需在 0 到 1 之間')
 
 
-def classify(manifest, session, crop):
+def classify(manifest, session, crop, candidate_box=None):
     m=manifest
     if m['backend']=='clip_onnx':
         image=Image.fromarray(np.rint(np.clip(crop,0,1)*255).astype('uint8')).convert('RGB')
@@ -140,13 +165,24 @@ def classify(manifest, session, crop):
     canvas[y:y+resized.shape[0],x:x+resized.shape[1]]=resized
     tensor=np.repeat(canvas[None,None],3,axis=1)
     output=np.asarray(session.run(None,{session.get_inputs()[0].name:tensor})[0])
-    if output.ndim!=3 or output.shape[0]!=1 or output.shape[1]!=4+len(m['classes']) or not np.isfinite(output).all():
-        raise ValueError('YOLO 推論輸出無效')
-    scores=output[0,4:].max(axis=1)
-    if np.any(scores<0) or np.any(scores>1):
-        raise ValueError('YOLO 分數超出範圍')
-    screw=float(scores[m['screw_class_id']])
-    label='screw' if screw>=m['confidence'] else 'uncertain'
+    boxes,predictions=yolo_predictions(m,output)
+    roi=np.asarray(candidate_box if candidate_box is not None else [0,0,crop.shape[1],crop.shape[0]],np.float32)
+    if roi.shape!=(4,) or not np.isfinite(roi).all() or np.any(roi[2:]<=roi[:2]):
+        raise ValueError('YOLO 候選位置無效')
+    roi=roi*scale+np.array([x,y,x,y],np.float32)
+    intersection=np.maximum(0,np.minimum(boxes[:,2:],roi[2:])-np.maximum(boxes[:,:2],roi[:2])).prod(axis=1)
+    box_area=np.maximum(0,boxes[:,2:]-boxes[:,:2]).prod(axis=1)
+    # The difference region may be a fragment of a screw, or larger than it.
+    overlap=intersection/np.maximum(1,np.minimum(box_area,(roi[2:]-roi[:2]).prod()))
+    eligible=(box_area>0)&(overlap>=.25)
+    scores=predictions[eligible].max(axis=0) if eligible.any() else np.zeros(len(m['classes']),np.float32)
+    screw=float(scores[m['screw_class_id']]);keep=screw>=m['confidence']
+    label='screw' if keep else 'non_screw'
+    hits=np.flatnonzero(eligible & (predictions[:,m['screw_class_id']]>=m['confidence']))
     return dict(label=label,probabilities=None,score_kind='detector_confidence',
                 screw_score=screw,confidence_threshold=m['confidence'],
+                filter_recommendation='keep' if keep else 'exclude',
+                decision_reason='YOLO 在候選位置偵測到螺絲' if keep else 'YOLO 未在候選位置偵測到達門檻的螺絲，自動排除',
+                candidate_overlap_threshold=.25,
+                screw_detections=[dict(box=((boxes[i]-np.array([x,y,x,y]))/scale).tolist(),score=float(predictions[i,m['screw_class_id']])) for i in hits],
                 class_scores=dict(zip(m['classes'],map(float,scores))))

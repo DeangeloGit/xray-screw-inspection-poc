@@ -7,7 +7,7 @@ import json
 from runtime_paths import WORK_ROOT as ROOT
 from model_manager import manager
 
-DETECTOR_VERSION = 11
+DETECTOR_VERSION = 12
 
 
 def write_image(path, image):
@@ -535,7 +535,11 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
             ai_crop = (np.clip(ai_crop,0,1)*255).astype('uint8').astype('float32')/255
         else:
             ai_crop = raw[box[1]:box[3], box[0]:box[2]]
-        c['classification'] = model_snapshot.classify(ai_crop)
+        if model_snapshot.manifest.get('backend')=='yolo_onnx':
+            x0,y0=max(0,cx-12),max(0,cy-12)
+            c['classification'] = model_snapshot.classify(ai_crop, candidate_box=[cx-x0,cy-y0,cx-x0+cw,cy-y0+ch])
+        else:
+            c['classification'] = model_snapshot.classify(ai_crop)
         x, y, w, h = [c[k] for k in ('x', 'y', 'w', 'h')]
         patch = (r[max(0,y-25):y+h+25, max(0,x-25):x+w+25]*255).astype('uint8')
         write_image(str(out/f'reference_crop_{i}.png'), patch)

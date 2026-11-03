@@ -26,10 +26,10 @@ class Snapshot:
     def info(self):
         return dict(model_id=self.manifest['model_id'], fingerprint=self.identity,
                     backend=self.manifest['backend'], requested=self.requested,
-                    error=self.error, mode='auto_filter' if self.manifest.get('backend')=='clip_onnx' else 'shadow',
+                    error=self.error, mode='auto_filter' if self.manifest.get('backend') in ('clip_onnx','yolo_onnx') else 'shadow',
                     providers=self.session.get_providers() if self.session else [])
 
-    def classify(self, crop):
+    def classify(self, crop, candidate_box=None):
         base = dict(model_id=self.manifest['model_id'], action='manual_review')
         if self.session is None:
             return dict(base, status='error' if self.error else 'disabled', label='uncertain', probabilities=None)
@@ -37,10 +37,9 @@ class Snapshot:
             m = self.manifest
             if m['backend'] in ('clip_onnx','yolo_onnx'):
                 from model_adapters import classify
-                prediction = classify(m, self.session, crop)
-                if m['backend']=='clip_onnx':
-                    base['action'] = 'discard' if prediction['filter_recommendation']=='non_screw_suggestion' else 'manual_review'
-                return dict(base, status='active' if m['backend']=='clip_onnx' else 'shadow', **prediction)
+                prediction = classify(m, self.session, crop, candidate_box=candidate_box)
+                base['action'] = 'discard' if prediction['filter_recommendation'] in ('non_screw_suggestion','exclude') else 'manual_review'
+                return dict(base, status='active', **prediction)
             image = cv2.resize(crop.astype(np.float32), (224, 224), interpolation=cv2.INTER_LINEAR)
             image = np.repeat(image[None], 3, axis=0)
             image = (image - np.asarray(m['mean'], np.float32)[:, None, None]) / np.asarray(m['std'], np.float32)[:, None, None]
@@ -152,6 +151,8 @@ class ModelManager:
                 if m['backend']=='clip_onnx':
                     from model_adapters import CLIP_DECISION_POLICY, CLIP_REVIEW_MARGIN
                     policy = [CLIP_DECISION_POLICY, CLIP_REVIEW_MARGIN]
+                elif m['backend']=='yolo_onnx':
+                    policy = ['yolo-candidate-filter-v1', .25]
                 identity_parts = [m, m.get('sha256'), session.get_providers() if session else []]
                 if policy is not None:
                     identity_parts.append(policy)
