@@ -18,7 +18,9 @@ def main():
  assert all(digest(ROOT/name)==sha for name,sha in plan['code'].items())
  assert all(digest(r['path'])==r['sha256'] for r in rows)
  baseline={r['sha256']:r for r in read(ROOT/'workspace/windows-check/diagnostics/v10-full-evaluation-20261103/results.json')}
- checked=0;pages=[OUT/n for n in ('index.html','good.html','bad.html','issues.html')]
+ review=read(OUT/'good-review-index.json')
+ extra=[OUT/n for n in review['pages'] if n!='good.html']
+ checked=0;pages=[OUT/n for n in ('index.html','good.html','bad.html','issues.html')]+extra
  for row in rows:
   folder=OUT/'photos'/row['sha256'];result=read(folder/'result.json');pages.append(folder/'report.html')
   assert result['version']==11 and result['threshold']==.13
@@ -40,8 +42,13 @@ def main():
    if parts.scheme or not parts.path:continue
    assert (file.parent/unquote(parts.path)).resolve().exists(),(file,link)
    checked+=1
- assert len(pages)==194 and summary['historical_retained']==summary['historical_regions']==8
+ assert len(pages)==194+len(extra) and summary['historical_retained']==summary['historical_regions']==8
  assert summary['known_batch_retained']==summary['known_batch_regions']==2
+ assert review['total']==len(review['items'])==sum(review['categories'].values())==106
+ for item in review['items']:
+  name=f'good-{item["machine"]}-{item["category"]}.html'
+  text=(OUT/name).read_text(encoding='utf-8')
+  assert text.count(f'id="case-{item["sha"]}-{item["id"]}"')==1
  issues=read(OUT/'visual-issues.json')
  assert len(issues)==6
  for issue in issues:

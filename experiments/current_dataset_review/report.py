@@ -118,5 +118,7 @@ def main():
  save('issues.html','疑似誤刪案例',issuebody)
  (OUT/'summary.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding='utf-8')
  (OUT/'report-rows.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2),encoding='utf-8')
+ from experiments.current_dataset_review.good_review import main as grouped_good_review
+ grouped_good_review()
  print(json.dumps(summary,ensure_ascii=True))
 if __name__=='__main__':main()
