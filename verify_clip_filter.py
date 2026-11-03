@@ -26,7 +26,12 @@ assert result['proposal_count']+result['filtered_count']==5
 assert all(c['classification']['action']=='discard' for c in result['filtered_candidates'])
 assert all(c['classification']['action']!='discard' for c in result['candidates'])
 assert {c['id'] for c in result['candidates']}.isdisjoint(c['id'] for c in result['filtered_candidates'])
-assert next(c for c in result['candidates'] if c['id']==1)['classification']['label']=='uncertain'
+all_candidates=result['candidates']+result['filtered_candidates']
+wire=next(c for c in all_candidates if c['id']==1)['classification']
+if wire.get('shape_evidence'):
+    assert wire['label']=='cable' and wire['action']=='discard'
+else:
+    assert wire['label']=='uncertain'
 print(json.dumps({k:result[k] for k in ('version','pre_ai_count','proposal_count','filtered_count')}))
 print('PASS: clear non-screw discarded, screw/tie/error retained, production sample evaluated')
 sample=next(r for r in rows if r['label']=='OK' and not r['is_reference'] and r['ai_non_screw']>0)

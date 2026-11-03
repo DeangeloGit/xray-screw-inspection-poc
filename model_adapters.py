@@ -23,6 +23,22 @@ def clip_decision(labels, scores):
                 decision_reason='螺絲與其他類別分數接近，保留候選' if near_tie else '螺絲類別分數最高' if label=='screw' else '非螺絲類別分數領先超過門檻，自動排除候選')
 
 
+def refine_cable_shape(manifest, vector, decision, scores):
+    """Resolve cable/screw ambiguity using target-image appearance, never a reference."""
+    shape = manifest.get('cable_shape')
+    if not shape or decision['label'] != 'uncertain' or decision['raw_label'] != 'cable':
+        return decision
+    similarity = float(np.asarray(shape['embedding'], np.float32) @ vector)
+    margin = float(scores[0] - similarity)
+    evidence = dict(method='clip-cable-shape-v1', similarity=similarity,
+                    screw_margin=margin, initial_screw_margin=decision['screw_margin'])
+    if margin < -CLIP_REVIEW_MARGIN - 1e-7:
+        return dict(decision, label='cable', screw_margin=margin,
+                    filter_recommendation='non_screw_suggestion', shape_evidence=evidence,
+                    decision_reason='CLIP 線材外型描述領先螺絲超過原門檻，自動排除')
+    return dict(decision, shape_evidence=evidence)
+
+
 
 def validate(manifest, session):
     m = manifest
@@ -51,6 +67,10 @@ def validate(manifest, session):
             a=np.asarray(m.get(name),float)
             if a.shape!=(3,) or not np.isfinite(a).all() or (name=='std' and np.any(a<=0)):
                 raise ValueError('CLIP 正規化設定不符')
+        if 'cable_shape' in m:
+            shape=m['cable_shape']; vector=np.asarray(shape.get('embedding'),np.float32)
+            if shape.get('method')!='clip-cable-shape-v1' or 'cable' not in labels or vector.shape!=(512,) or not np.isfinite(vector).all() or not np.isclose(np.linalg.norm(vector),1,atol=.001):
+                raise ValueError('CLIP 線材外型向量無效')
     elif m['backend']=='yolo_onnx':
         if output.ndim!=3 or output.shape[0]!=1 or output.shape[1]!=4+len(labels) or output.shape[2]<1:
             raise ValueError('目前支援 YOLO 原始偵測輸出 [1,4+類別數,N]，不支援分割或 end-to-end 輸出')
@@ -77,7 +97,8 @@ def classify(manifest, session, crop):
             raise ValueError('CLIP 推論向量無效')
         vector=vector/np.linalg.norm(vector)
         scores=np.asarray(m['text_embeddings'],np.float32)@vector
-        return dict(**clip_decision(m['classes'], scores), probabilities=None,
+        decision=refine_cable_shape(m, vector, clip_decision(m['classes'], scores), scores)
+        return dict(**decision, probabilities=None,
                     similarities=dict(zip(m['classes'],map(float,scores))),
                     score_kind='cosine_similarity')
     height,width=m['input_size']
