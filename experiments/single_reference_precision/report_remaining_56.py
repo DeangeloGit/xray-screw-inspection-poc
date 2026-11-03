@@ -69,7 +69,7 @@ def main():
     links=' · '.join(f'<a href="remaining-56/contact-{i}.png" target="_blank">第 {i} 頁（#{(i-1)*8+1:02d}–#{i*8:02d}）</a>' for i in range(1,8))
     body=f'''<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MPT12 剩餘 56 個候選</title>
 <style>body{{max-width:1040px;margin:30px auto;padding:0 18px;font:18px/1.7 sans-serif;color:#173b47;background:#f7f9fa}}article{{background:white;border:1px solid #dbe3e7;border-radius:12px;margin:22px 0;padding:18px}}h2{{font-size:21px;overflow-wrap:anywhere}}p{{margin:8px 0}}img{{width:100%;height:auto}}.controls{{position:sticky;top:0;background:#edf5f5;padding:12px;z-index:2;border-bottom:1px solid #bed1d5}}input[type=search]{{font:inherit;max-width:100%;padding:8px}}a{{color:#007c84}}article[hidden]{{display:none}}</style>
-<h1>MPT12：剩餘 56 個候選逐一對照</h1><p>唯一參照圖：<strong>{html.escape(reference)}</strong>。V9、門檻 0.13；共同 48 張待測良品中，32 張有候選、16 張沒有候選。本頁列出全部 56 個，未加入舊參照圖作為待測時的另外 4 個。</p>
+<h1>MPT12：剩餘 56 個候選逐一對照</h1><p><a href="wire-review-report.html">V10 更新：15 個疑似線材位移提示（全部候選仍保留）</a></p><p>唯一參照圖：<strong>{html.escape(reference)}</strong>。V9、門檻 0.13；共同 48 張待測良品中，32 張有候選、16 張沒有候選。本頁列出全部 56 個，未加入舊參照圖作為待測時的另外 4 個。</p>
 <p>每個編號左側是參照圖、右側是待測圖，裁切位置與倍率相同。紅框在兩邊標示同一位置，並非兩邊都偵測到異物。影像已灰階正規化與對齊；可隱藏紅框查看細節。資料夾標為良品，這裡保留「候選」名稱，供你判讀。</p>
 <details><summary>七頁總覽（全部 56 個）</summary><p>{links}</p></details>
 <div class="controls"><input id="search" type="search" placeholder="搜尋檔名或編號，例如 07"><label><input id="boxes" type="checkbox" checked>顯示紅框</label> <span id="count">56 / 56 個</span></div>

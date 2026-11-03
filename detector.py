@@ -7,7 +7,7 @@ import json
 from runtime_paths import WORK_ROOT as ROOT
 from model_manager import manager
 
-DETECTOR_VERSION = 9
+DETECTOR_VERSION = 10
 
 
 def write_image(path, image):
@@ -347,6 +347,10 @@ def proposals(ref, target, mask, threshold, structure_changes=None):
             if structure_changes is not None:
                 structure_changes.append(c)
         else:
+            from wire_review import review_evidence
+            wire = review_evidence(ref, target, c, threshold)
+            if wire:
+                c['wire_review'] = wire
             retained.append(c)
     retained.sort(key=lambda c:c['score'], reverse=True)
     return retained, residual
@@ -410,6 +414,8 @@ def prioritize(candidate):
     """Conservative heuristic ranking, never deletes proposals; not a screw classifier."""
     c = candidate
     reasons = []
+    if c.get('wire_review'):
+        reasons.append('疑似線材位移：兩側線條連續且原位置有變化；候選仍保留，小螺絲可能混在線材中，需複核')
     if c.get('shape_similarity', 0) > .65:
         reasons.append('附近有相似輪廓，可能為既有結構的對齊或外觀差異')
     if c['normal_support'] > .5:
@@ -561,6 +567,7 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
                   baseline_count=len(baseline), proposal_count=len(candidates),
                   structure_change_count=len(structure_changes), structure_changes=structure_changes,
                   high_count=n_high, review_count=len(candidates)-n_high, candidates=candidates,
+                  wire_review_count=sum(bool(c.get('wire_review')) for c in candidates),
                   warning='紅框為規則優先候選，不是 AI 確認螺絲；黃色候選仍需查看。無紅框不代表正常。')
     (out/'result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     return result
