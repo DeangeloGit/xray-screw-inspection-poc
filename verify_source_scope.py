@@ -16,14 +16,15 @@ def checks(root):
     from runtime_paths import DATA, RESOURCE_ROOT
     from station_settings import source_scope
     from acquisition import Importer
-    shutil.copyfile(RESOURCE_ROOT/'data/ok_0.png', DATA/'ok_0.png')
-    shutil.copyfile(RESOURCE_ROOT/'data/ng_5.png', DATA/'demo.png')
+    fixtures=Path(os.environ.get('XRAY_TEST_FIXTURES', RESOURCE_ROOT/'data'))
+    shutil.copyfile(fixtures/'ok_0.png', DATA/'ok_0.png')
+    shutil.copyfile(fixtures/'ng_5.png', DATA/'demo.png')
     a=root/'source-A'; b=root/'source-B'; sibling=root/'source-A-extra'
     for folder in (a,b,sibling):folder.mkdir()
-    shutil.copyfile(RESOURCE_ROOT/'data/ng_5.png',a/'A.png')
-    shutil.copyfile(RESOURCE_ROOT/'data/ng_9.png',b/'B.png')
-    shutil.copyfile(RESOURCE_ROOT/'data/ng_5.png',b/'shared.png')
-    shutil.copyfile(RESOURCE_ROOT/'data/ng_9.png',sibling/'other.png')
+    shutil.copyfile(fixtures/'ng_5.png',a/'A.png')
+    shutil.copyfile(fixtures/'ng_9.png',b/'B.png')
+    shutil.copyfile(fixtures/'ng_5.png',b/'shared.png')
+    shutil.copyfile(fixtures/'ng_9.png',sibling/'other.png')
     def activate(client, folder, enabled=True):
         response=client.post('/api/settings/acquisition',json=dict(enabled=enabled,source=str(folder),stable_seconds=0))
         assert response.status_code==200,response.json
@@ -62,7 +63,7 @@ def checks(root):
         assert report.status_code==200
         assert str(b) in report.data.decode('utf-8-sig') and str(a) not in report.data.decode('utf-8-sig')
         importer.process_pending();assert set(calls)=={'B.png','shared.png'}
-        uploaded=client.post('/api/analyze',data=dict(image=(io.BytesIO((RESOURCE_ROOT/'data/ng_5.png').read_bytes()),'manual.png')))
+        uploaded=client.post('/api/analyze',data=dict(image=(io.BytesIO((fixtures/'ng_5.png').read_bytes()),'manual.png')))
         assert uploaded.status_code==200,uploaded.json
         assert any('manual.png' in x['aliases'][-1] or any('manual.png' in alias for alias in x['aliases']) for x in catalog())
         activate(client,sibling);scan()

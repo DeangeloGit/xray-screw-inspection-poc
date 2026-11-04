@@ -1,0 +1,3 @@
+# Optional isolated worker environment; keep the main CPU environment unchanged.
+numpy==2.5.4; sys_platform == 'win32'
+onnxruntime-directml==1.24.4; sys_platform == 'win32'

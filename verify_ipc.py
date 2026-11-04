@@ -125,7 +125,8 @@ def checks(root):
     worker.scan_once(now=40); assert len(worker.metadata())==1
     ok,blob=cv2.imencode('.png',np.zeros((128,128),np.uint16)); file.write_bytes(blob.tobytes())
     worker.scan_once(now=50); worker.scan_once(now=61)
-    assert len(worker.metadata())==2, 'same source path must retain both acquisition events'
+    assert len(worker.metadata(include_history=True))==2, 'same source path must retain both acquisition events'
+    assert len(worker.metadata())==1, 'current list must show only the current file version'
     def failure(*args): raise ValueError('test failure')
     worker.analyze=failure; worker.process_pending()
     assert all(x['state']=='analysis_error' for x in worker.metadata().values())
@@ -133,7 +134,7 @@ def checks(root):
     assert all(x['state']=='done' for x in worker.metadata().values())
     bad=source/'unfinished.png'; bad.write_bytes(b'not an image')
     worker.scan_once(now=70); worker.scan_once(now=81)
-    assert len(worker.metadata())==2 and worker.info()['counts']['retry']==1
+    assert len(worker.metadata(include_history=True))==2 and len(worker.metadata())==1 and worker.info()['counts']['retry']==1
     # Production scan subprocess obeys station environment and returns bounded status.
     worker2=Importer()
     worker2.isolated_scan()

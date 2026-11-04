@@ -1,12 +1,21 @@
 (()=>{
 const $=id=>document.getElementById(id);
-let modelBusy=false,activeModelDirectory=null;
+let modelBusy=false,activeModelDirectory=null,executionDirty=false;
 async function api(url,options={}){
  const response=await fetch(url,options);const result=await response.json();
  if(!response.ok)throw Error(result.error||'設定失敗');return result;
 }
 function message(id,text,error=false){$(id).textContent=text;$(id).className='message'+(error?' error':'')}
-function showModel(m){activeModelDirectory=m.requested;$('current-model').textContent=m.backend==='noop'?'未啟用 AI，目前使用差分與人工複判':({clip_onnx:'CLIP',dino_onnx:'DINO',yolo_onnx:'YOLO',onnx:'分類模型'}[m.backend]||m.backend)+' · '+m.model_id+' · '+(m.mode==='auto_filter'?'自動過濾':'分類建議')+(m.backend==='dino_onnx'?(m.decision_policy==='dino-top3-target-and-reference-v1'?' · 參照圖＋待測圖':' · 只看待測圖'):'')+' · '+(m.providers.includes('CUDAExecutionProvider')?'NVIDIA GPU':'CPU');if(m.error)message('model-message',m.error,true)}
+function showModel(m){activeModelDirectory=m.requested;$('current-model').textContent=m.backend==='noop'?'未啟用 AI，目前使用差分與人工複判':({clip_onnx:'CLIP',dino_onnx:'DINO',yolo_onnx:'YOLO',onnx:'分類模型'}[m.backend]||m.backend)+' · '+m.model_id+' · '+(m.mode==='auto_filter'?'自動過濾':'分類建議')+(m.backend==='dino_onnx'?(m.decision_policy==='dino-top3-target-and-reference-v1'?' · 參照圖＋待測圖':' · 只看待測圖'):'')+' · '+(m.providers.some(p=>['CUDAExecutionProvider','DmlExecutionProvider'].includes(p))?'NVIDIA GPU'+(m.gpu_device?'（'+m.gpu_device+'）':''):'CPU');const canSelect=m.backend==='dino_onnx'||m.requested_backend==='dino_onnx';$('dino-execution').disabled=!canSelect;$('apply-dino-execution').disabled=!canSelect;if(!executionDirty)$('dino-execution').value=m.execution||'cpu';if(m.error)message('model-message',m.error,true)}
+$('dino-execution').onchange=()=>{executionDirty=true;message('dino-execution-message','尚未套用，請按「套用執行方式」。')};
+$('apply-dino-execution').onclick=async()=>{
+ if(modelBusy)return;modelBusy=true;$('apply-dino-execution').disabled=true;
+ const value=$('dino-execution').value;$('dino-execution').disabled=true;
+ message('dino-execution-message','正在檢查 '+value.toUpperCase()+'，首次啟用 GPU 需要載入模型…');
+ try{const result=await api('/api/settings/dino-execution',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({execution:value})});executionDirty=false;showModel(result.model);message('dino-execution-message',result.message)}
+ catch(e){message('dino-execution-message',e.message,true)}
+ finally{modelBusy=false;try{showModel((await api('/api/settings')).model)}catch(e){$('apply-dino-execution').disabled=false;$('dino-execution').disabled=false}}
+};
 async function loadSettings(){
  try{const s=await api('/api/settings');$('source-enabled').checked=s.acquisition.enabled;$('source-path').value=s.acquisition.source;$('stable-seconds').value=s.acquisition.stable_seconds;$('model-provider').value=s.default_provider;showModel(s.model);await loadModels()}
  catch(e){message('source-message',e.message,true)}

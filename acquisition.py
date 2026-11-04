@@ -16,6 +16,15 @@ from station_settings import acquisition_config, source_scope, in_source
 
 SUFFIXES = {'.png', '.jpg', '.jpeg', '.tif', '.tiff'}
 
+def source_images(source):
+    """Raise on incomplete directory reads: an offline folder is not an empty one."""
+    with os.scandir(source) as entries:
+        for entry in entries:
+            if entry.is_dir(follow_symlinks=False):
+                yield from source_images(Path(entry.path))
+            elif entry.is_file(follow_symlinks=False) and Path(entry.name).suffix.lower() in SUFFIXES:
+                yield Path(entry.path)
+
 class Importer:
     def __init__(self, config=None, data=DATA, state=STATE, analyze=None, recover=True):
         self.config = dict(config if config is not None else acquisition_config())
@@ -29,6 +38,8 @@ class Importer:
         with self.connect() as db:
             db.execute('CREATE TABLE IF NOT EXISTS files (source TEXT PRIMARY KEY, size INTEGER, mtime INTEGER, stable_since REAL, state TEXT, local TEXT, sha TEXT, error TEXT, acquired_at TEXT)')
             db.execute('CREATE TABLE IF NOT EXISTS events (local TEXT PRIMARY KEY, source TEXT, sha TEXT, acquired_at TEXT, state TEXT, error TEXT)')
+            if 'present' not in {row[1] for row in db.execute('PRAGMA table_info(files)')}:
+                db.execute('ALTER TABLE files ADD COLUMN present INTEGER NOT NULL DEFAULT 1')
             if recover:
                 db.execute("UPDATE events SET state='pending' WHERE state='analyzing'")
 
@@ -43,18 +54,21 @@ class Importer:
             source = Path(self.config['source'])
             if not source.is_dir():
                 raise OSError('共享資料夾無法連線或無讀取權限')
+            # Finish enumeration/stat before changing presence. Partial/failed scans
+            # must retain the last complete inventory and all historical snapshots.
+            inventory = [(path, path.stat()) for path in source_images(source)]
+            seen = {str(path.absolute()) for path, _ in inventory}
             with self.connect() as db:
-                for path in source.rglob('*'):
-                    if not path.is_file() or path.suffix.lower() not in SUFFIXES:
-                        continue
+                for path, st in inventory:
                     if not path.resolve().is_relative_to(source.resolve()):
                         continue
-                    st = path.stat(); key = str(path.absolute())
+                    key = str(path.absolute())
                     row = db.execute('SELECT size,mtime,stable_since,state FROM files WHERE source=?', (key,)).fetchone()
                     if row is None or row[:2] != (st.st_size, st.st_mtime_ns):
                         db.execute('INSERT OR REPLACE INTO files(source,size,mtime,stable_since,state) VALUES(?,?,?,?,?)',
                                    (key, st.st_size, st.st_mtime_ns, now, 'waiting'))
                         continue
+                    db.execute('UPDATE files SET present=1 WHERE source=?', (key,))
                     if row[3] not in ('waiting', 'retry') or now-row[2] < float(self.config.get('stable_seconds',15)):
                         continue
                     local = self.data / 'incoming' / (uuid.uuid4().hex + path.suffix.lower())
@@ -89,13 +103,17 @@ class Importer:
                     except (OSError, ValueError) as exc:
                         partial.unlink(missing_ok=True)
                         db.execute("UPDATE files SET state='retry',error=?,stable_since=? WHERE source=?", (str(exc), now, key))
+                scope = source_scope(self.config)
+                for (key,) in db.execute('SELECT source FROM files').fetchall():
+                    if in_source(key, scope['path']) and key not in seen:
+                        db.execute('UPDATE files SET present=0 WHERE source=?', (key,))
                 db.commit()
             self.status.update(state='online', error=None, last_scan=now, source_id=source_scope(self.config)['id'])
 
     def process_pending(self):
         if self.analyze is None: return
         with self.connect() as db:
-            rows = db.execute("SELECT source,local FROM events WHERE state IN ('pending','analysis_error')").fetchall()
+            rows = db.execute("SELECT e.source,e.local FROM events e JOIN files f ON f.source=e.source AND f.local=e.local WHERE f.present=1 AND e.state IN ('pending','analysis_error')").fetchall()
         for source, local in rows:
             config = acquisition_config() if self.thread else self.config
             if not in_source(source, source_scope(config)['path']):
@@ -111,17 +129,19 @@ class Importer:
             with self.connect() as db:
                 db.execute('UPDATE events SET state=?,error=? WHERE local=?', (state,error,local))
 
-    def metadata(self):
+    def metadata(self, include_history=False):
         with self.connect() as db:
+            query = ('SELECT local,source,acquired_at,state,error FROM events' if include_history else
+                     'SELECT e.local,e.source,e.acquired_at,e.state,e.error FROM events e JOIN files f ON f.source=e.source AND f.local=e.local WHERE f.present=1')
             return {row[0]:dict(source_path=row[1], original_filename=Path(row[1]).name, acquired_at=row[2], state=row[3],error=row[4])
-                    for row in db.execute('SELECT local,source,acquired_at,state,error FROM events')}
+                    for row in db.execute(query)}
 
     def info(self):
         config = acquisition_config() if self.thread else self.config
         scope = source_scope(config)
         with self.connect() as db:
-            files = db.execute('SELECT source,state FROM files').fetchall()
-            events = db.execute('SELECT source,state FROM events').fetchall()
+            files = db.execute('SELECT source,state FROM files WHERE present=1').fetchall()
+            events = db.execute('SELECT e.source,e.state FROM events e JOIN files f ON f.source=e.source AND f.local=e.local WHERE f.present=1').fetchall()
         counts, event_counts = {}, {}
         for rows, target in ((files, counts), (events, event_counts)):
             for source, state in rows:

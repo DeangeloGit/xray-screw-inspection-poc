@@ -1,4 +1,18 @@
-# 最新 Checkpoint：r2 DINO 雙圖可攜版
+# 最新 Checkpoint：2026-11-04 DINO辨識與效能研究
+
+Tag：`checkpoint-2026-11-04-dino-performance-research`；分支：`codex/next-development-20261103`。
+
+[接續開發必讀](docs/CHECKPOINT_DINO_PERFORMANCE_20261104.md) · [報告／交付對照紀錄](docs/checkpoints/dino-performance-research-20261104.json)。
+
+18766為r2雙圖、47＋65範例、CPU。來源清單修正及CPU/GPU選項已保存；最新辨識與三項加速仍僅離線實驗。移除另一個可攜版干擾後，同圖CPU到DINO答案58.06→56.77秒，137個候選及判斷不變。GPU目前300MHz／10W受限，正常GPU13～15秒及換機6～8秒均為估算，非新實測。
+
+本機私人備份：`workspace/checkpoints/2026-11-04-dino-performance-research`。本次未重包EXE；r2 ZIP是歷史交付，不含本輪後續修改。公開Git保留程式、交接、校驗及實驗腳本，私人模型、圖資、報告、設定及人工紀錄留本機備份。
+
+以下歷史checkpoint保留。
+
+---
+
+# 歷史 Checkpoint：r2 DINO 雙圖可攜版
 
 日期：2026-11-03（Asia/Taipei）
 

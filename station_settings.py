@@ -31,6 +31,13 @@ def cpu_allowed():
     return read_settings().get('allow_cpu_fallback', SETTINGS.get('allow_cpu_fallback',False))
 
 
+def dino_execution():
+    value = read_settings().get('dino_execution', 'cpu')
+    if value not in ('cpu', 'gpu'):
+        raise ValueError('DINO 執行方式需為 CPU 或 GPU')
+    return value
+
+
 def source_scope(config=None):
     """A lexical identity: do not contact SMB just to identify the saved source."""
     import hashlib

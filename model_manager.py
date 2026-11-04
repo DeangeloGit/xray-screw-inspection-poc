@@ -7,7 +7,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from runtime_paths import MODEL_ROOT, SETTINGS
-from station_settings import cpu_allowed
+from station_settings import cpu_allowed, dino_execution
 
 CLASSES = ['screw', 'cable', 'structure', 'uncertain']
 PREPROCESSING = 'source-gray-percentile-crop-v1'
@@ -22,12 +22,16 @@ class Snapshot:
     session: object = None
     error: str = None
     requested: str = None
+    requested_backend: str = None
 
     def info(self):
         return dict(model_id=self.manifest['model_id'], fingerprint=self.identity,
                     backend=self.manifest['backend'], requested=self.requested,
+                    requested_backend=self.requested_backend,
                     error=self.error, mode='auto_filter' if self.manifest.get('backend') in ('clip_onnx','yolo_onnx','dino_onnx') else 'shadow',
                     providers=self.session.get_providers() if self.session else [],
+                    execution='gpu' if self.session and any(p in self.session.get_providers() for p in ('DmlExecutionProvider','CUDAExecutionProvider')) else 'cpu',
+                    gpu_device=getattr(self.session, 'device', None),
                     decision_policy=self.manifest.get('decision_policy'))
 
     def classify(self, crop, candidate_box=None, reference_crop=None):
@@ -63,9 +67,10 @@ def noop(error=None, requested=None):
     return Snapshot(m, fingerprint(m), error=error, requested=requested)
 
 class ModelManager:
-    def __init__(self, root=MODEL_ROOT, allow_cpu=None):
+    def __init__(self, root=MODEL_ROOT, allow_cpu=None, execution_override=None):
         self.root = Path(root)
         self.allow_cpu = allow_cpu
+        self.execution_override = execution_override
         self.lock = threading.Lock()
         self.current = noop()
         self.signature = None
@@ -80,6 +85,7 @@ class ModelManager:
                 return Snapshot(self.current.manifest, self.current.identity, self.current.session,
                                 '找不到 active.json，保留先前模型', self.current.requested)
             requested = None
+            m = None
             try:
                 pointer = (json.dumps(dict(schema_version=1,version_directory=version_directory)).encode() if version_directory is not None else active.read_bytes())
                 selection = json.loads(pointer)
@@ -99,6 +105,11 @@ class ModelManager:
                     raise ValueError('缺少 model_id')
                 session = None
                 signature = fingerprint([pointer.hex(), manifest_bytes.hex()])
+                execution = (self.execution_override or dino_execution()) if m['backend'] == 'dino_onnx' else None
+                if execution not in (None, 'cpu', 'gpu'):
+                    raise ValueError('無效的 DINO 執行方式')
+                if execution is not None:
+                    signature = fingerprint([signature, execution])
                 if m['backend'] in ('onnx','clip_onnx','yolo_onnx','dino_onnx'):
                     filename = m['file']
                     path = (directory / filename).resolve()
@@ -123,10 +134,10 @@ class ModelManager:
                             if a.shape != (3,) or not np.isfinite(a).all() or (field == 'std' and np.any(a <= 0)):
                                 raise ValueError('無效的正規化設定')
                     import onnxruntime as ort
-                    require_cuda = m.get('provider_policy', 'require_cuda') == 'require_cuda'
+                    require_cuda = execution is None and m.get('provider_policy', 'require_cuda') == 'require_cuda'
                     if m.get('provider_policy', 'require_cuda') not in ('require_cuda', 'cpu'):
                         raise ValueError('無效 provider_policy')
-                    if not require_cuda and not (cpu_allowed() if self.allow_cpu is None else self.allow_cpu):
+                    if execution != 'gpu' and not require_cuda and not (cpu_allowed() if self.allow_cpu is None else self.allow_cpu):
                         raise ValueError('站台未允許 CPU 模型')
                     if require_cuda and 'CUDAExecutionProvider' not in ort.get_available_providers():
                         raise ValueError('CUDA provider 不可用')
@@ -136,8 +147,12 @@ class ModelManager:
                     # Load bytes so the validated file cannot change between hashing and session creation.
                     options = ort.SessionOptions()
                     options.intra_op_num_threads = 4
-                    session = ort.InferenceSession(payload, sess_options=options, providers=providers)
-                    session.disable_fallback()
+                    if execution == 'gpu':
+                        from gpu_runtime import GpuSession
+                        session = GpuSession(path, m['sha256'])
+                    else:
+                        session = ort.InferenceSession(payload, sess_options=options, providers=providers)
+                        session.disable_fallback()
                     if require_cuda and session.get_providers()[0] != 'CUDAExecutionProvider':
                         raise ValueError('CUDA session 未成功建立')
                     if m['backend']=='onnx':
@@ -164,12 +179,15 @@ class ModelManager:
                 identity_parts = [m, m.get('sha256'), session.get_providers() if session else []]
                 if policy is not None:
                     identity_parts.append(policy)
+                if execution == 'gpu':
+                    identity_parts.append(['directml-fixed224-v1', session.runtime_version, session.device])
                 identity = fingerprint(identity_parts)
                 self.current = Snapshot(m, identity, session, requested=requested)
                 self.signature = signature
                 return self.current
             except Exception as exc:
                 # Keep the previous validated session, clearly reporting requested/effective versions.
-                return Snapshot(self.current.manifest, self.current.identity, self.current.session, ('尚未安裝模型推論套件，請先安裝 onnxruntime（Mac／CPU）或 onnxruntime-gpu（IPC／GPU）' if isinstance(exc, ModuleNotFoundError) and exc.name == 'onnxruntime' else str(exc)), requested)
+                return Snapshot(self.current.manifest, self.current.identity, self.current.session, ('尚未安裝模型推論套件，請先安裝 onnxruntime（Mac／CPU）或 onnxruntime-gpu（IPC／GPU）' if isinstance(exc, ModuleNotFoundError) and exc.name == 'onnxruntime' else str(exc)), requested,
+                                m.get('backend') if isinstance(m, dict) else None)
 
 manager = ModelManager()

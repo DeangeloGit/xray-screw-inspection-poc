@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "tag": "checkpoint-2026-11-04-dino-performance-research",
+  "branch": "codex/next-development-20261103",
+  "base_commit": "e154c35",
+  "date": "2026-11-04",
+  "local_checkpoint": "workspace/checkpoints/2026-11-04-dino-performance-research",
+  "production": {
+    "url": "http://127.0.0.1:18766",
+    "model": "dino-paired-47-20261103",
+    "examples": {
+      "screw": 47,
+      "normal": 65
+    },
+    "paired": true,
+    "execution": "cpu",
+    "new_offline_recognition_enabled": false,
+    "three_speed_optimization_enabled": false
+  },
+  "cpu_timing": {
+    "photo_count": 1,
+    "runs_per_mode": 4,
+    "candidates": 137,
+    "start_to_dino_seconds": {
+      "base": 58.05660132499179,
+      "combined": 56.76995914999861
+    },
+    "saved_seconds": 1.286642174993176,
+    "all_four_pairs_faster": true,
+    "decisions_unchanged": true
+  },
+  "gpu": {
+    "normal_paired_comparison_complete": false,
+    "current_constraint": "300 MHz / enforced 10W, requested 80W; thermal and power flags active",
+    "short_probe_only": true
+  },
+  "estimates": {
+    "normal_gpu_same_nb_seconds": [
+      13,
+      15
+    ],
+    "rtx5080_gaming_nb_planning_seconds": [
+      6,
+      8
+    ],
+    "not_new_hardware_measurements": true
+  },
+  "reports": [
+    {
+      "title": "最新CPU交錯實測",
+      "path": "workspace/dino-after-portable-close-20261104/index.html",
+      "sha256": "279e3bb2b3818722cea8b9d687140b74b0f60d01acab507968ffac0cbc64e2b9"
+    },
+    {
+      "title": "CPU分段與三項優化",
+      "path": "workspace/dino-three-speed-20261104/index.html",
+      "sha256": "8c714bde41a51a556633a7617c9449e7e4ddf9ffbfd7d87b4c8e9cf45b3bcee0"
+    },
+    {
+      "title": "AI變慢原因與另一可攜版",
+      "path": "workspace/dino-ai-contention-20261104/index.html",
+      "sha256": "04407db25b4acef5d67e6717b43eb3cb5278bd539939bc2284b02cec943e24db"
+    },
+    {
+      "title": "GPU受限狀態與短測",
+      "path": "workspace/dino-gpu-paired-timing-20261104/index.html",
+      "sha256": "69129f32e14f41c3d6f9aeb7ac738b382764bf58ac3bbbff949e69dabe604e14"
+    },
+    {
+      "title": "正常GPU時間估算",
+      "path": "workspace/dino-gpu-optimized-estimate-20261104/index.html",
+      "sha256": "8f4d19dfca770e4bc85d48bf849e1238552be1b55d89e3df3bff5b29336248c6"
+    },
+    {
+      "title": "2026電競筆電換機估算",
+      "path": "workspace/dino-2026-laptop-estimate-20261104/index.html",
+      "sha256": "3fdb2d7bfe84db988cee6634ef9237ca5a66416b7199b0a0f87a75b82f7632e8"
+    },
+    {
+      "title": "固定案例辨識實驗",
+      "path": "workspace/dino-four-remaining-20261103/index.html",
+      "sha256": "d6fffd004a79fa1ef6c0d53e9463464888ed783702e5e57626dc9f9fb2601c97"
+    }
+  ],
+  "previous_portable": {
+    "tag": "checkpoint-2026-11-03-dino-paired-r2",
+    "new_build_created": false,
+    "code_since_r2_differs": true,
+    "artifacts": [
+      {
+        "path": "dist/XRayReview-DINO-Paired-20261103-r2-Windows-x64.zip",
+        "bytes": 437423479,
+        "sha256": "753b23bec3802552ac1bc573edca7a0269ceaa6a1aa9a5b9616812272a6c3594"
+      },
+      {
+        "path": "dist/XRayReview-DINO-Paired-20261103-r2-完整報告.zip",
+        "bytes": 683469178,
+        "sha256": "198ec2b3c276366f778644dbb0fc663d2e46c5ad034334304157c992e492db08"
+      }
+    ]
+  }
+}

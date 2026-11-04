@@ -9,7 +9,7 @@ import threading
 import uuid
 from flask import Blueprint, jsonify, request
 from runtime_paths import DATA, OUTPUTS, WORK_ROOT, MODEL_ROOT, RESOURCE_ROOT, STATE, SETTINGS
-from station_settings import acquisition_config, update_settings, cpu_allowed
+from station_settings import acquisition_config, update_settings, cpu_allowed, dino_execution
 from model_manager import CLASSES, PREPROCESSING, ModelManager, manager
 
 settings_api = Blueprint('settings_api',__name__)
@@ -32,13 +32,43 @@ def validate_source(path):
 
 def config_info():
     c = acquisition_config()
+    from gpu_runtime import available
     return dict(acquisition=dict(enabled=c.get('enabled',False),source=c.get('source',''),
                                  stable_seconds=c.get('stable_seconds',15)),
+                dino_execution=dino_execution(), gpu_runtime_installed=available(),
                 model=manager.snapshot().info(),default_provider=SETTINGS.get('default_provider','cpu' if sys.platform=='darwin' else 'require_cuda'))
 
 @settings_api.get('/api/settings')
 def get_settings():
     return jsonify(config_info())
+
+
+@settings_api.post('/api/settings/dino-execution')
+def set_dino_execution():
+    with apply_lock:
+        try:
+            body = request.get_json(silent=True)
+            value = body.get('execution') if isinstance(body, dict) else None
+            if value not in ('cpu', 'gpu'):
+                raise ValueError('請選擇 CPU 或 GPU')
+            pointer_before = (MODEL_ROOT / 'active.json').read_bytes()
+            validator = ModelManager(MODEL_ROOT, execution_override=value)
+            # Read the real pointer so the cached signature remains stable after applying.
+            candidate = validator.snapshot()
+            if candidate.error:
+                raise ValueError(candidate.error)
+            if candidate.manifest['backend'] != 'dino_onnx':
+                raise ValueError('請先選擇 DINO 模型')
+            if (MODEL_ROOT / 'active.json').read_bytes() != pointer_before:
+                raise ValueError('模型已變更，請重新選擇執行方式')
+            with manager.lock:
+                update_settings(dino_execution=value)
+                manager.current = candidate
+                manager.signature = validator.signature
+            return jsonify(applied=True, model=candidate.info(), dino_execution=value,
+                message='已切換為 ' + value.upper() + '；正在處理的照片會先完成，下一張分析開始使用。舊結果不會自動重跑。')
+        except (OSError, ValueError, RuntimeError) as exc:
+            return jsonify(error='未切換，保留原執行方式：' + str(exc)), 400
 
 @settings_api.get('/api/settings/folders')
 def folders():
