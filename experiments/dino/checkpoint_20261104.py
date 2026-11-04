@@ -1,5 +1,6 @@
 """Private local checkpoint only. Never stage this snapshot's field data in Git."""
 import sys,json,os,shutil,hashlib,sqlite3,subprocess,time,zipfile,tempfile
+from contextlib import closing
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2];OUT=ROOT/'workspace/checkpoints/2026-11-04-dino-performance-research'
 def sha(p):
@@ -30,8 +31,8 @@ def main():
             rel=p.relative_to(ROOT);kind='exact_copy';temporary=None;source_path=p
             if p.suffix.lower() in ('.sqlite3','.sqlite','.db'):
                 fd,name=tempfile.mkstemp(suffix='.sqlite3',dir=OUT);os.close(fd);temporary=Path(name)
-                with sqlite3.connect(p.as_uri()+'?mode=ro',uri=True) as source:
-                    with sqlite3.connect(temporary) as target:source.backup(target)
+                with closing(sqlite3.connect(p.as_uri()+'?mode=ro',uri=True)) as source:
+                    with closing(sqlite3.connect(temporary)) as target:source.backup(target)
                 source_path=temporary;kind='consistent_sqlite_snapshot'
             before=source_path.stat();h=hashlib.sha256()
             with source_path.open('rb') as src,z.open(rel.as_posix(),'w',force_zip64=True) as dest:
