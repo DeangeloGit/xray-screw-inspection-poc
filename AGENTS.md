@@ -20,3 +20,11 @@
 - 使用者已要求同時啟用「47 張螺絲＋65 張正常範例」及「DINO 看參照圖＋待測圖」。可攜版預設也必須同時啟用，不能因已知風險自行停用雙圖。
 - 雙圖規則與完整報告一致：待測像螺絲且參照不像螺絲才保留；兩圖都像螺絲或待測不像螺絲則排除。風險照實說明。
 - 打包前核對預設模型、判斷規則、實際程式與報告結果；舊的單圖交付不能稱為雙圖報告對應版本。
+
+## Windows／Mac 私人資料移交
+
+- 沿用 TCOOL 題庫方式：本機一致性備份、外部金鑰加密、已連接 Google Drive 上傳／下載、SHA-256 回比及隔離還原。固定工具與說明見 `docs/STATION_HANDOFF.md`；Drive 目的地讀 `config/handoff-drive.json`，不要猜資料夾或混用題庫備份。
+- 核心為 `tools/station_transfer.py`，加密為 `tools/transfer_crypto.py`，雲端下載回比及隔離還原為 `tools/transfer_cloud.py`；Mac／Windows 介面由 `packaging/build_transfer.py` 建置。
+- 金鑰不入 Git、移交包或 Drive。Mac 金鑰預設 `~/.config/xray-transfer/backup.key`；公司使用另行安全移交的同一金鑰，勿自行新建另一把後冒充可互解。
+- 來源站台須完成作業並停寫才匯出。匯入建立新工作區、不覆寫、不自動合併，CPU 與關閉監看為預設；模型仍須同時啟用 47＋65 及雙圖規則。
+- 雲端傳輸成功須有實際下載回比及隔離還原證據。合成資料驗證與正式私人圖資移交分開回報。已連接 Drive 不等於本機 rclone OAuth；未設定不得稱無人值守已啟用。

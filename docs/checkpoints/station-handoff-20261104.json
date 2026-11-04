@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-04",
+  "workflow": "TCOOL-style encrypted connector handoff",
+  "drive_folder_id": "1QBfJNjDh9RpPe6bNr3HpC7ZBrCDkDzi2",
+  "drive_windows_source_file_id": "1AW6Dv0-Zv2Cz4-5cVtVHcD2FPf7e7AVz",
+  "encryption": "XRAYENC1 / scrypt / AES-256-GCM",
+  "key_in_git_or_drive": false,
+  "checks": {
+    "core_roundtrip": true,
+    "windows_drive_path_simulation": true,
+    "model_manifest_bytes_preserved": true,
+    "human_labels_preserved": true,
+    "wrong_key_and_tamper_rejected": true,
+    "missing_models_rejected": true,
+    "no_overwrite": true,
+    "native_mac_app_self_check": true,
+    "startup_regression": true,
+    "google_drive_download_hash_and_isolated_restore": true
+  },
+  "cloud_test": {
+    "test_only": true,
+    "synthetic_files": 126,
+    "drive_file_id": "1kdTsiWD7IRXl38AAs9crZOqR6fAP4tCO",
+    "sha256": "01ff357ef7872580afc9c7a3b5321767fbb838812b0c9b28fac2f82003932177"
+  },
+  "limitations": [
+    "Windows native build/execution not performed on this Mac",
+    "Company private DINO/data unavailable; first formal archive must be exported there",
+    "One-time independent key transfer needed",
+    "No unattended rclone OAuth or scheduled background task configured",
+    "Historical HTML absolute URLs are preserved, not rewritten"
+  ]
+}

@@ -10,8 +10,11 @@ def main():
     root = Path(sys.executable).resolve().parent
     os.chdir(root)
     # A copied package must never inherit the developer workstation's locations.
-    os.environ['XRAY_CONFIG'] = str(root / 'config/station.json')
-    os.environ['XRAY_WORKSPACE'] = str(root / 'workspace')
+    handoff = os.environ.get('XRAY_HANDOFF_CONFIG')
+    config = Path(handoff).resolve() if handoff else root / 'config/station.json'
+    workspace = config.parent.parent / 'workspace' if handoff else root / 'workspace'
+    os.environ['XRAY_CONFIG'] = str(config)
+    os.environ['XRAY_WORKSPACE'] = str(workspace)
     os.environ['PYTHONUTF8'] = '1'
     for stream in (sys.stdout, sys.stderr):
         if stream and hasattr(stream, 'reconfigure'):
@@ -25,13 +28,13 @@ def main():
         return 0
     # Rebase only reference images actually stored inside this portable workspace.
     # The application writes absolute paths after uploads; moving the folder is safe.
-    settings_path = root / 'workspace/state/ui_settings.json'
+    settings_path = workspace / 'state/ui_settings.json'
     if settings_path.exists():
         settings = json.loads(settings_path.read_text(encoding='utf-8'))
         changed = False
         for profile in settings.get('machine_profiles', []):
             old = Path(profile['reference'])
-            local = root / 'workspace/state/machine-references' / old.name
+            local = workspace / 'state/machine-references' / old.name
             if old.parent.name == 'machine-references' and local.is_file() and str(local) != str(old):
                 profile['reference'] = str(local)
                 changed = True
@@ -41,7 +44,7 @@ def main():
             os.replace(temporary, settings_path)
     print('X-RAY DINO 2026-11-03 | Windows x64 | CPU', flush=True)
     print('本包預設啟用 47＋65 範例及參照圖＋待測圖雙圖判斷，與完整報告規則一致。', flush=True)
-    print('資料儲存在此程式資料夾；請保持視窗開啟。', flush=True)
+    print('資料儲存位置：'+str(workspace)+'；請保持視窗開啟。', flush=True)
     import launch
     # Windows can allow another listener on a reused fixed port. An OS-selected
     # port avoids serving an older installation's page on this machine.

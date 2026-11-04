@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "folder_id": "1QBfJNjDh9RpPe6bNr3HpC7ZBrCDkDzi2",
+  "folder_url": "https://drive.google.com/drive/folders/1QBfJNjDh9RpPe6bNr3HpC7ZBrCDkDzi2",
+  "transport": "connected_google_drive",
+  "encryption": "XRAYENC1:scrypt: AES-256-GCM",
+  "unattended_rclone_configured": false,
+  "instructions": "由 Codex 的 Google Drive 連接器上傳／下載加密包及校驗碼；下載比對、解密認證及隔離匯入通過後才算移交成功。金鑰另存，不放入此資料夾或 Git。"
+}
