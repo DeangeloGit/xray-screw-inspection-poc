@@ -1,0 +1,2695 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>X-RAY r3｜RD核心流程實作規格</title><style>*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;color:#183948;background:#f3f6f8;font:16px/1.85 "Microsoft JhengHei",system-ui,sans-serif}aside{position:fixed;inset:0 auto 0 0;width:260px;background:#102e3c;color:#e5f1f5;padding:26px 20px;overflow:auto}aside strong{font-size:20px}aside p{color:#a7c5d2;font-size:13px}nav a{display:block;color:#d5e7ef;text-decoration:none;font-size:14px;line-height:1.55;padding:7px 8px;border-radius:5px}nav a:hover{background:#245167}main{margin-left:260px;max-width:1390px;padding:40px 42px 70px}header{border-top:6px solid #07868d;background:white;padding:30px 34px;margin-bottom:26px}h1{font-size:34px;line-height:1.4;margin:12px 0}header p{margin:8px 0}.tag{font-size:13px;color:#00767e;font-weight:bold;letter-spacing:1px}section{background:white;padding:26px 32px;margin:20px 0;border:1px solid #dde6eb;border-radius:8px;overflow:hidden}h2{font-size:23px;line-height:1.5;margin:0 0 18px;color:#103b4d}p{margin:12px 0}code{font-family:Consolas,"Microsoft JhengHei",monospace;font-size:.9em;overflow-wrap:anywhere}p code,td code{background:#edf3f5;padding:2px 4px}pre{background:#112b38;color:#e0f1f6;border-radius:7px;padding:20px;overflow:auto;tab-size:4;line-height:1.65;font-size:14px;max-height:800px}pre code{white-space:pre;overflow-wrap:normal;font-size:inherit}.table{overflow:auto}table{border-collapse:collapse;width:100%;font-size:15px;margin:14px 0}th,td{text-align:left;vertical-align:top;border:1px solid #d7e3e9;padding:12px 15px}th{background:#e8f2f4;color:#164c5b}td:first-child{min-width:145px;width:22%;font-weight:600}.flow{max-width:770px;margin:18px auto}.step{border:1px solid #b5d1dc;border-left:5px solid #07868d;background:#f0f7f8;padding:12px 18px;border-radius:6px}.step b{display:block}.step span{font-size:15px;display:block;color:#405d6b}.arrow{text-align:center;color:#278a92;font-size:22px;line-height:30px}button{background:#057c84;color:white;border:0;border-radius:5px;padding:9px 13px;cursor:pointer;font:inherit;font-size:14px}button:hover{background:#075965}.source{border:1px solid #cbdce5;margin:14px 0;border-radius:6px}.source summary{cursor:pointer;background:#edf4f6;padding:12px 16px;font-weight:600}.source small{font-weight:400;color:#567583}.source pre{border-radius:0;margin:0;max-height:680px}.sourcebar{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:12px;font:11px/1.6 Consolas,monospace;overflow-wrap:anywhere}.sourcebar button{flex-shrink:0}footer{font-size:13px;color:#577382}a{color:#087983}input{width:100%;padding:9px;margin:15px 0;color:#142f3e;border-radius:5px;border:0}.tools{display:flex;gap:10px;margin-top:15px}.notice{background:#fff7e6;border-left:4px solid #d9952d;padding:12px 16px}section:target{border-color:#07868d}@media(max-width:1050px){aside{position:static;width:auto;padding:18px}nav{columns:2}main{margin:0;padding:20px}header,section{padding:22px}h1{font-size:27px}}@media print{aside,.tools,button,.sourcebar{display:none!important}main{margin:0;max-width:none;padding:0}body{background:white;font-size:11pt}header,section{border:0;padding:10px 0;margin:10px 0}h1{font-size:22pt}h2{font-size:16pt;break-after:avoid}table{font-size:9pt}pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:none!important;font-size:8pt;background:#f1f4f5;color:black}pre code{white-space:pre-wrap}#source{display:none}tr,.step{break-inside:avoid}a{color:inherit;text-decoration:none}}</style></head><body><aside><strong>X-RAY · RD 實作規格</strong><p>r3 / 2026-11-04<br>差分 → DINO 雙圖 → 結果</p><input id="filter" aria-label="篩選目錄" placeholder="搜尋目錄關鍵字"><nav><a href="#contract">01｜範圍、版本與重做所需材料</a><a href="#flow">02｜完整資料流與模組分工</a><a href="#coordinates">03｜座標、影像型別與取整規則</a><a href="#read">04｜讀圖、參照資料與遮罩</a><a href="#registration">05｜全域對齊：方向選擇與變換矩陣</a><a href="#refine">06｜3×3 局部位置修正</a><a href="#brightness">07｜明暗補償公式：三輪局部穩健擬合</a><a href="#difference">08｜差分、連通區與候選特徵</a><a href="#explain">09｜AI 前的結構排除與線材提示</a><a href="#crop">10｜AI 小圖：量化、中心裁切及對比順序</a><a href="#bank">11｜模型與範例庫如何準備</a><a href="#scores">12｜DINO 比分公式與雙圖真值表</a><a href="#recheck">13｜一次局部補看的完整規則</a><a href="#mapping">14｜原圖顯示框與座標回推</a><a href="#runtime">15｜CPU／GPU與三項加速如何實作</a><a href="#errors">16｜錯誤、輸出與紀錄的契約</a><a href="#io">17｜取圖、快取與最小呼叫範例</a><a href="#verify">18｜RD重作的驗收方式與已知界限</a><a href="#source">19｜完整原始碼快照：重作與逐行對照</a></nav></aside><main><header><span class="tag">ENGINEERING IMPLEMENTATION SPECIFICATION</span><h1>差分與 DINO 雙圖檢測<br>可依此重建的 RD 技術說明</h1><p>先掌握資料流，再依公式、參數和原始碼重作。所有流程圖、說明及 22 份程式快照都在這個 HTML，離線可開啟。</p><div class="notice">本文件描述目前正式 r3 的實際行為，含限制及例外；不是新一輪圖資檢測報告。未更動模型、設定、圖資、人工紀錄或可攜版。</div><div class="tools"><button id="print" type="button">列印／存成 PDF（規格本文）</button><a href="#source">直接看原始碼附錄 ↓</a></div></header><section id="contract"><h2>01｜範圍、版本與重做所需材料</h2><p>目標是讓 RD 能用其他語言或另一套程式，重建目前 r3 的差分與 DINO 判斷。前半部是可依序實作的規格，後半部附上本次正式來源程式的完整唯讀快照。文件本身不會執行檢測。</p><div class="table"><table><thead><tr><th>識別</th><th>本文件對應</th></tr></thead><tbody><tr><td>流程</td><td><code>dino-combined-20261104-r3</code>；DETECTOR_VERSION = 13</td></tr><tr><td>預設模型目錄</td><td><code>dino-paired-optimized-47-20261104-r3</code></td></tr><tr><td>判斷</td><td>47 張螺絲＋65 張正常；參照圖與待測圖分別判斷；整體／局部各 50%</td></tr><tr><td>基準與版本</td><td>2026-11-04；Git 基準 66f17bb；r3 是基準之後的工作目錄實作，不能把基準 commit 本身當作已含 r3。</td></tr><tr><td>必須另有的資料</td><td>相同 ONNX 權重、manifest、paired-features.npz，或原始 112 張範例及其順序。HTML 不含模型權重、範例圖片或全部特徵值。</td></tr><tr><td>重作邊界</td><td>可重寫處理邏輯；無法只靠文字重建已訓練的 DINO 權重。換模型、前處理或範例就屬另一版本，須重新驗證。</td></tr></tbody></table></div><p>附錄原始碼是程式快照，可直接複製比對；演算法說明中的「簡化流程」不能取代附錄的邊界判斷、資料型別和運算順序。</p></section><section id="flow"><h2>02｜完整資料流與模組分工</h2><div class="flow"><div class="step"><b>1. 讀圖與快取</b><span>灰階、百分位明暗正規化；參照圖縮到長邊 1536，保留其遮罩與 ORB 特徵。</span></div><div class="arrow">↓</div><div class="step"><b>2. 整張圖對齊</b><span>四個旋轉方向 → 評估；普通方向支援不足才測四個鏡像方向。</span></div><div class="arrow">↓</div><div class="step"><b>3. 覆蓋檢查／局部微調</b><span>覆蓋機體至少 95%；3×3 區域僅允許小幅平移，建立平滑位移場。</span></div><div class="arrow">↓</div><div class="step"><b>4. 明暗補償與差分</b><span>三輪局部明暗擬合；7×7 容忍版本找主候選，3×3 版本補查小物件。</span></div><div class="arrow">↓</div><div class="step"><b>5. 整理／結構解釋</b><span>雜點、尺寸、相似既有輪廓篩選；能由位移及明暗解釋的變化另列。</span></div><div class="arrow">↓</div><div class="step"><b>6. 候選編號與座標</b><span>依優先度／分數排序；保存對齊座標，並映射回原始待測圖。</span></div><div class="arrow">↓</div><div class="step"><b>7. DINO 雙圖判斷</b><span>同座標各截一張；調整為 224×224；用相同 47＋65 範例獨立計分。</span></div><div class="arrow">↓</div><div class="step"><b>8. 受限補看</b><span>僅初判兩圖都像螺絲，且幾何條件可靠時，固定規則再截同座標一對，最多一次。</span></div><div class="arrow">↓</div><div class="step"><b>9. 結果與紀錄</b><span>只有待測像螺絲、參照不像才保留；其餘排除但保存紀錄，保留項目供人工複判。</span></div></div><p>舊版 <code>legacy_proposals</code> 另在「整張對齊後、局部修正前」計算，僅供候選核對及保存圖片；不把其結果直接合併進本次 DINO 候選。</p><div class="table"><table><thead><tr><th>模組</th><th>職責</th></tr></thead><tbody><tr><td>detector.py</td><td>讀圖、對齊、候選整理、座標回推、輸出</td></tr><tr><td>registration_candidate.py / detection_runtime.py</td><td>普通／鏡像選擇；快取、並行與 OpenCV 全域狀態保護</td></tr><tr><td>brightness_fit.py</td><td>與原數學運算一致的明暗擬合加速</td></tr><tr><td>single_reference_evidence.py / wire_review.py</td><td>既有結構解釋；線材提示（提示本身不刪候選）</td></tr><tr><td>dino_paired_optimized.py / paired_geometry.py</td><td>r3 特徵比分、雙圖分類、一次受限幾何補看</td></tr><tr><td>model_manager.py / gpu_*.py</td><td>固定每張圖的模型快照；CPU／GPU 選擇及隔離工作程序</td></tr></tbody></table></div><p><b>主控偽程式碼（函式內細節依後續章節與附錄）</b></p><pre class="code"><code>snapshot = freeze_model_for_this_photo()
+R, cached_masks, reference_features = prepare_reference(reference_file)
+T = read_and_normalize(target_file)
+reg = choose_registration(R, T)       # 普通4方向；必要時才加鏡像4方向
+if coverage(reg) &lt; 0.95: raise InspectionError
+legacy = legacy_proposals(R, reg.aligned)  # 只供核對，不加進AI候選
+corrected, flow, regions = local_refine(R, reg.aligned)
+P = compensate_brightness(R, corrected)
+raw_candidates = find_D7_candidates_and_recover_D3(P, corrected)
+candidates, structure_changes = explain_existing_structure(raw_candidates)
+candidates = assign_priority_sort_and_number(candidates)
+Rq, Tq = quantize_frames_once(R, corrected)
+
+for c in candidates:
+    first = independent_pair_classification(Rq, Tq, padded12(c))
+    final = first
+    if first.active and first.reference_screw and first.target_screw:
+        local_object = extract_difference_component(Rq, Tq, c)
+        if eligible_for_one_recheck(local_object):
+            final = independent_pair_classification(
+                Rq, Tq, component_square_plus2(local_object))
+    if final.status != active:
+        retain_for_manual_review(c, final)  # 不冒充成功排除
+    elif final.target_screw and not final.reference_screw:
+        retain_for_manual_review(c, final)
+    else:
+        discard_but_keep_audit_record(c, final)
+
+map_display_boxes_back_to_original(flow, reg)
+save_all_results_images_and_error_metadata()</code></pre></section><section id="coordinates"><h2>03｜座標、影像型別與取整規則</h2><div class="table"><table><thead><tr><th>資料</th><th>定義／不可混用處</th></tr></thead><tbody><tr><td>raw</td><td>待測原始方向影像；大小 Hraw×Wraw；灰階值 0～1。</td></tr><tr><td>r</td><td>參照預覽座標；參照影像長邊 1536，比例 s_ref = 1536/max(Href,Wref)，也可能放大小圖。</td></tr><tr><td>aligned / corrected</td><td>先全域對齊到 r，再以位移場局部修正的待測影像；尺寸與 r 相同。</td></tr><tr><td>候選 x,y,w,h</td><td>全部是 r／corrected 座標，矩形使用左閉右開 [x,x+w)、[y,y+h)。不是原始待測座標。</td></tr><tr><td>flow[y,x]</td><td>從 corrected 座標映回 aligned 的位移，單位是預覽像素。</td></tr><tr><td>source_polygon / source_bbox</td><td>原始待測圖座標；顯示預覽另乘 preview_scale。</td></tr><tr><td>round / cast</td><td>Python round、np.rint 為 ties-to-even；astype(uint8) 對非負值截斷。兩者不能互換。</td></tr><tr><td>精度</td><td>不要統一強制 float32。原 read 表達式的 NumPy 百分位型別提升可能使影像為 float64；局部匹配、DINO 正規化明確使用 float32。若改語言／套件，先比較中間陣列。</td></tr></tbody></table></div><p>所有此文件的像素門檻，除原始影像尺寸與 source 座標外，均指長邊 1536 的預覽空間。OpenCV 尺寸參數是 (width,height)，NumPy 陣列順序是 [y,x]。</p></section><section id="read"><h2>04｜讀圖、參照資料與遮罩</h2><pre class="code"><code>a = imdecode(file_bytes, IMREAD_UNCHANGED)
+if a is color: a = cvtColor(a, BGR2GRAY)
+require min(a.shape) &gt;= 128 and max(a.shape) &lt;= 16000
+lo, hi = percentile(a, [1, 99])
+require hi &gt; lo
+image = clip((a.astype(float32)-lo)/float(hi-lo), 0, 1)
+r = resize(reference, scale=1536/max(reference.shape))</code></pre><p>每張圖各自計算百分位；不是把待測圖套用參照圖的 lo/hi。OpenCV resize 未指定插值時採其預設線性插值。</p><div class="table"><table><thead><tr><th>遮罩</th><th>步驟</th></tr></thead><tbody><tr><td>structure_mask</td><td>r &lt; 0.65 → uint8 → 31×31 全 1 核閉運算 → 保留最大非背景連通區 → 11×11 全 1 核侵蝕 → bool。無主體則報錯。</td></tr><tr><td>machine_mask</td><td>structure_mask 外輪廓 RETR_EXTERNAL / CHAIN_APPROX_SIMPLE → 取最大面積輪廓 → 凸包 → 填滿。檢查機體外包絡，包含亮孔及側邊凹區。</td></tr><tr><td>有效檢測範圍</td><td>machine_mask(r) AND reg.valid。coverage = 有效範圍像素數 / max(machine_mask像素數,1)。coverage &lt; 0.95 停止該張，不能當作正常。</td></tr><tr><td>快取</td><td>鍵為參照絕對路徑＋原始檔案 bytes 的 SHA-256；最多兩份。保存 full、small、structure、machine、ORB 特徵，陣列設為唯讀。換內容即重建，不只看 mtime。</td></tr></tbody></table></div></section><section id="registration"><h2>05｜全域對齊：方向選擇與變換矩陣</h2><p>每次 register_one 先設 OpenCV RNG seed=7。參照 ORB 可從快取取用。每個方向獨立做特徵與匹配，但 RANSAC 擬合與最佳方向選擇仍依 0、1、2、3 的順序執行。</p><div class="table"><table><thead><tr><th>項目</th><th>實際規則</th></tr></thead><tbody><tr><td>方向</td><td>np.rot90(raw,k).copy()，k=0,1,2,3（逆時針）；各自縮放長邊到 1536。</td></tr><tr><td>特徵與配對</td><td>ORB_create(nfeatures=7000)；輸入 (image*255).astype(uint8)；BFMatcher(NORM_HAMMING).knnMatch(target_desc,ref_desc,k=2)。</td></tr><tr><td>配對篩選</td><td>每對必須有 2 個鄰居，且 m.distance &lt; 0.72*n.distance；至少 10 個 good matches。</td></tr><tr><td>擬合</td><td>estimateAffinePartial2D(src=target點,dst=reference點, method=RANSAC, ransacReprojThreshold=2)。其他參數沿用已驗證 OpenCV 版本預設。</td></tr><tr><td>最佳方向</td><td>選 inliers 最多者；相等保留先出現方向。最佳 inliers 至少 25；sqrt(M00²+M01²) 必須嚴格介於 0.5 與 2。</td></tr><tr><td>產生 aligned</td><td>warpAffine(target,M,(Wr,Hr),borderValue=1)。valid 用全 1 uint8 圖同樣 warp，再 >0。</td></tr><tr><td>普通方向直接接受</td><td>inliers ≥100 AND 全機體有效範圍的相關係數 ≥0.90 AND coverage ≥0.95。成立就不測鏡像。</td></tr><tr><td>鏡像選擇</td><td>普通方向不足時，對 np.fliplr(raw).copy() 再做四方向。鏡像需 inliers ≥max(50,2×普通inliers)、coverage ≥0.95、相關 ≥0.65，且比普通相關至少高 0.05。普通失敗時其 inliers=0、相關=-1。</td></tr><tr><td>失敗／退回</td><td>鏡像無法支援則退回可用普通結果；普通也失敗才拋出對齊錯誤。</td></tr></tbody></table></div><p>correlation 僅在 mask 像素 ≥100、兩圖標準差各 ≥0.01 時計算 Pearson correlation，否則回傳 0。<b>不是每張都固定試滿八方向，也不是用 DINO 分數挑方向。</b></p></section><section id="refine"><h2>06｜3×3 局部位置修正</h2><p>以 structure_mask(r) AND reg.valid 的有效 bounding box，用 linspace(...,4).astype(int) 切成 3×3。每格使用 ECC，只估計平移，不做任意變形。</p><div class="table"><table><thead><tr><th>階段</th><th>參數／條件</th></tr></thead><tbody><tr><td>估平移</td><td>findTransformECC(a,b,I2×3,MOTION_TRANSLATION, EPS|COUNT,50,0.0001, roi_mask×255,gaussFiltSize=5)。</td></tr><tr><td>接受一格平移</td><td>ECC cc &gt;0.82、max(abs(dx),abs(dy)) ≤6；在以 15×15 侵蝕的格內 mask 上，相關性比原來增加至少 0.0001。ECC 失敗不接受該格平移。</td></tr><tr><td>整張位移場</td><td>每格內填其 dx,dy；未接受格填 0；GaussianBlur(flow,(0,0),sigma=12) 平滑接縫。</td></tr><tr><td>套用</td><td>mapx=x+flow_x；mapy=y+flow_y；remap(aligned,mapx,mapy,INTER_LINEAR,borderValue=1)。</td></tr><tr><td>可靠性紀錄</td><td>用實際 remap 結果重新計算各格相關；after ≥0.82 且 after ≥before−0.01 才標 reliable。有不可靠格會顯示警告，並非直接丟掉全部候選。</td></tr></tbody></table></div></section><section id="brightness"><h2>07｜明暗補償公式：三輪局部穩健擬合</h2><p>令 R 為參照 r、T 為 corrected；B(X) 為 101×101 boxFilter 平均，borderType=BORDER_REFLECT。目的是預測正常參照在這張待測曝光下應有的灰階 P，不是用 AI 生成參照圖。</p><pre class="code"><code>W = ones_like(R, dtype=float32)
+repeat 3 rounds:
+    mass = max(B(W), 0.01)                       # elementwise
+    muR = B(W*R) / mass
+    muT = B(W*T) / mass
+    varR = max(B(W*R*R)/mass - muR*muR, 0)
+    covRT = B(W*R*T)/mass - muR*muT
+    gain = clip((covRT+0.002)/(varR+0.002), 0.6, 1.6)
+    offset = clip(muT-gain*muR, -0.25, 0.25)
+    P = clip(gain*R+offset, 0, 1)
+    W = min(1, 0.04/max(abs(P-T), 0.0001))**2
+return P</code></pre><p>強差異像素在下一輪的權重降低，以免新增物件把自己的差異「校正掉」。正式加速實作重用暫存陣列、以 64 列為區段運算，最後一輪省略不再使用的 W；運算順序與精度依附錄 brightness_fit.py。</p></section><section id="difference"><h2>08｜差分、連通區與候選特徵</h2><pre class="code"><code>D7 = erode(P, ones((7,7),uint8)) - T
+D3 = erode(P, ones((3,3),uint8)) - T
+binary = ((D &gt; threshold) &amp; machine_valid_mask).astype(uint8)
+binary = morphologyEx(binary, MORPH_OPEN, ellipse(3,3))
+# 對 area&gt;1800 或 max(w,h)&gt;110 的大連通區：
+# 在其局部範圍使用 ellipse(7,7) 開運算，嘗試分離小物件。
+# 完成後重新做 connectedComponentsWithStats。</code></pre><p>D&gt;0 表示待測比正常預測更深；只取正向超門檻差異，不是 abs(R−T)。全 1 的 7×7／3×3 侵蝕核是方形；3×3／7×7 開運算核是橢圓形，不能混用。預設 threshold=0.13，每機種可調，允許 0.03～0.40。</p><div class="table"><table><thead><tr><th>特徵／篩選</th><th>精確定義</th></tr></thead><tbody><tr><td>基本大小</td><td>12 ≤連通區像素面積≤1800；4 ≤max(w,h)≤110。</td></tr><tr><td>area / fill</td><td>area 是連通區有效像素數；fill=area/(w*h)。</td></tr><tr><td>aspect</td><td>對連通區點集做 minAreaRect，aspect=(max(a,b)+1)/(min(a,b)+1)。</td></tr><tr><td>score</td><td>連通區內 D 的第 90 百分位，儲存時 round(...,4)。</td></tr><tr><td>bipolar</td><td>候選外擴 5 像素，取 S=P−T；sum(max(−S,0))/max(sum(max(S,0)),1e−6)，儲存 3 位小數。</td></tr><tr><td>contrast</td><td>連通區內 P−T 的中位數，儲存 4 位。</td></tr><tr><td>normal_support</td><td>N=erode(P,15×15 方形核)；連通區內 N≤T+0.06 的比例，儲存 3 位。</td></tr><tr><td>shape_similarity</td><td>取待測候選外擴 6 像素，參照附近搜尋±12；TM_CCOEFF_NORMED 最大值。patch標準差&lt;0.015 或範圍無效時為0。</td></tr><tr><td>直接篩掉</td><td>shape_similarity ≥0.85；或 area&lt;40 且 (shape_similarity&gt;0.55 或 normal_support&gt;0.5)。注意篩選時使用未 round 的值。</td></tr></tbody></table></div><p>3×3 補查不是全部合併。補查候選須同時滿足：25≤area≤600、max(w,h)≤50、aspect≤4、fill≥0.25、score≥threshold+0.05、bipolar≤0.5、shape_similarity≤0.55。這一關使用已儲存／round 的候選欄位。若與既有框交集面積 / 較小框面積 &gt;0.25 就視為重複；否則加入，框內 residual 取 D7 與 D3 的逐像素最大值。</p></section><section id="explain"><h2>09｜AI 前的結構排除與線材提示</h2><p>這一段確實可能在送 AI 之前排除候選，重寫時不能省略或誤寫成「全部交給 AI」。有兩個依序嘗試的解釋方法；未被解釋者才送 DINO。</p><div class="table"><table><thead><tr><th>方法</th><th>規則</th></tr></thead><tbody><tr><td>A：structure_change_evidence</td><td>候選外擴12、搜尋±12，TM_CCOEFF_NORMED找位移。候選核心不可參與明暗擬合。context correlation≥0.6，且位移≤2 或 context 比原位置提高≥0.03 才支援。用周邊做四輪 gain∈[0.6,1.6]、offset∈[−0.25,0.25] 穩健擬合。</td></tr><tr><td>A 的排除條件</td><td>context_supported AND 模板 sim≥0.65 AND 修正後正差分總量/原始正差分總量≤0.2 AND 修正後 >threshold 的最大連通區 area&lt;12。分母最小0.001。</td></tr><tr><td>B：single_reference_evidence.explain</td><td>A不成立時：外擴20、搜尋±24；候選及外擴3像素不參與匹配／擬合。周邊≥400像素、std≥0.025；masked相關≥0.85，排除最佳點附近±3後的次佳差距≥0.025。位移&gt;2時相關需提升≥0.08；搜尋邊界最佳點拒絕。</td></tr><tr><td>B 的排除條件</td><td>同樣四輪周邊明暗擬合；正差分量比例≤0.2、最大殘留面積&lt;12、核心abs差異P95≤0.10才接受。</td></tr><tr><td>結果</td><td>A 或 B 支援 → change_type=existing_structure_change，放 structure_changes，保存對照圖，不送 DINO。</td></tr><tr><td>線材提示</td><td>兩方法均不能解釋才執行 wire_review：檢查細長連續線、兩側參照支撐、原位置消失等。只新增 wire_review／排序理由，不直接排除候選。完整門檻見附錄 wire_review.py。</td></tr></tbody></table></div><p>候選優先排序只影響顏色與先後：有 wire 提示、shape_similarity&gt;0.65、normal_support&gt;0.5、aspect&gt;8、contrast&lt;0.12、bipolar&gt;0.7、area&lt;35 或 fill&lt;0.18 任一理由即 review；否則 high。先 high，再 score 由大到小，最後依序編號。</p></section><section id="crop"><h2>10｜AI 小圖：量化、中心裁切及對比順序</h2><p>同一張檢測先把 r、corrected 各量化一次並快取。這個順序是實作重點；若從原始高解析待測圖另截，便不再是同一份 DINO 輸入。</p><pre class="code"><code># 一張照片做一次：截斷量化，對整張已對齊的兩圖操作
+Rq = (clip(r,0,1)*255).astype(uint8).astype(float32)/255
+Tq = (clip(corrected,0,1)*255).astype(uint8).astype(float32)/255
+
+# 對每個候選；兩張圖嚴格使用相同 slice，超出右／下邊界由切片裁掉
+region = [max(0,y-12):y+h+12, max(0,x-12):x+w+12]
+reference_crop, target_crop = Rq[region], Tq[region]
+
+# 各自處理：先 resize/中心 crop，再做對比，不可交換次序
+im = RGB_image(rint(clip(crop,0,1)*255).astype(uint8))
+resize shortest side to 224 with PIL BICUBIC
+# 長邊 int(...) 截斷；中心原點用 (dimension-224)//2
+im = center_crop(im,224,224)
+a = grayscale(im).astype(float32)
+low, high = percentile(a,[1,99])
+if high-low &gt;= 1:
+    im = RGB_image(rint(clip((a-low)/(high-low),0,1)*255).astype(uint8))
+# 否則使用前一階段 RGB im，不強制拉對比
+X = float32(im)/255
+X = (X - [0.485,0.456,0.406]) / [0.229,0.224,0.225]
+X = transpose_HWC_to_CHW(X)[None]  # float32 [1,3,224,224]</code></pre><p>目前 resize_shortest=224，非正方形候選的長邊會在中心裁切時被切掉；外加12不代表保證所有螺絲完整入圖。「局部特徵」也不是另外裁一張更小圖片，而是同一次模型輸出的區域特徵彙整。</p></section><section id="bank"><h2>11｜模型與範例庫如何準備</h2><div class="table"><table><thead><tr><th>材料</th><th>契約</th></tr></thead><tbody><tr><td>ONNX</td><td>輸入 float32 [1,3,224,224]；輸出 [1,257,384]。輸出須為有限值。</td></tr><tr><td>輸出解讀</td><td>第0個 token為整體特徵；其餘256個區域 token先求平均，再L2正規化。不是256次分類或256次額外推論。</td></tr><tr><td>特徵</td><td>v_global=normalize(output[0,0])；v_local=normalize(mean(output[0,1:],axis=0))。兩個各384維。norm&lt;1e−8視為錯誤。</td></tr><tr><td>範例順序</td><td>先manifest.example_bank.screw.ids的47張，再normal.ids的65張。NPZ第0軸必須嚴格依此順序。</td></tr><tr><td>八種範例視角</td><td>每張原始範例先做第10節的resize、中心裁切、對比處理，之後先不翻／再左右翻，各rotate(0,90,180,270)。每個視角各算global和local。</td></tr><tr><td>NPZ</td><td>paired-features.npz，鍵 bank；形狀[112,8,2,384]。第1軸view0=未翻未轉；第2軸0=global、1=local。全部向量範數≈1，允許驗證誤差0.001。</td></tr><tr><td>建立成本</td><td>112×8個視角特徵事先建立，可重用重複影像特徵。每個查詢小圖只推論一次；不把112張範例每次重跑。</td></tr><tr><td>manifest</td><td>仍保留原CLS example_bank.embeddings供舊版契約驗證；r3實際比分使用外部NPZ。不能只有新增NPZ卻沒有合法manifest。</td></tr></tbody></table></div><p>模型 SHA-256：<code>f22797eabf810a75e41de68d378541ebea372122b25c4ce3ef25ff618250c20a</code><br>範例特徵 SHA-256：<code>de920d9986bce02b3e8447520a4a634c55a8f8f39876a12d562e04b66d5b378a</code>。同時檢查檔案 bytes、ID順序與形狀。新增／取消範例要另存新模型目錄並同步重建該版特徵；不能直接改112張的標籤而沿用舊矩陣。</p></section><section id="scores"><h2>12｜DINO 比分公式與雙圖真值表</h2><pre class="code"><code># qg, ql：查詢小圖的兩個單位向量；bank i = 一張原始範例
+whole[i] = max(dot(bank[i, view, 0], qg) for view in range(8))
+local[i] = dot(bank[i, 0, 1], ql)   # local只取原始視角，不做8視角max
+
+def margin(scores):
+    screw = mean(top3(scores[0:47]))
+    normal = mean(top3(scores[47:112]))
+    return float(screw-normal)
+
+whole_margin = margin(whole)
+local_margin = margin(local)
+final_margin = (whole_margin+local_margin)/2
+is_screw = final_margin &gt;= 0      # 等於0也算像螺絲
+
+# 參照、待測各獨立算一次，不直接相減兩圖的embedding
+keep = target_is_screw and not reference_is_screw</code></pre><div class="table"><table><thead><tr><th>參照圖判斷</th><th>待測圖判斷</th><th>結果</th></tr></thead><tbody><tr><td>不像</td><td>像</td><td>保留候選，供人工複判</td></tr><tr><td>不像</td><td>不像</td><td>排除</td></tr><tr><td>像</td><td>不像</td><td>排除</td></tr><tr><td>像</td><td>像</td><td>先檢查第13節一次補看；不符合條件就依初判排除</td></tr></tbody></table></div><p>示意數字（不是實測案例）：整體螺絲均值0.62、正常0.58 → +0.04；局部螺絲0.55、正常0.57 → −0.02；合併為+0.01，該張像螺絲。若參照圖合併分數−0.03、待測+0.01，就保留。分數是相似度差，不是「有幾成正確」。每種特徵、每一類各選最像3張，可能選到不同的範例，不是固定六張一直用。</p></section><section id="recheck"><h2>13｜一次局部補看的完整規則</h2><pre class="code"><code>first = classify_pair(target_crop, reference_crop)
+if first.status != active: return first
+if not (first.reference_is_screw and first.target_is_screw):
+    return first
+
+ex = extract_local_component(Rq,Tq,candidate)
+if not eligible(ex): return first
+box = square_around_component(ex) + padding_2_each_side
+return classify_pair(Tq[box], Rq[box])  # 僅一次，不遞迴、不投票挑高分</code></pre><div class="table"><table><thead><tr><th>步驟</th><th>確切做法</th></tr></thead><tbody><tr><td>周邊對位</td><td>外擴52、搜尋±12；候選外擴12的核心不參與masked TM_CCOEFF_NORMED。非有限相關值設−1。correlation≥0.75且abs(dx),abs(dy)&lt;12才稱context_reliable。</td></tr><tr><td>周邊明暗</td><td>用上述周邊mask做四輪穩健 gain/offset 擬合，界限同前。所得dx,dy,gain,offset只用於找差異輪廓，不套用到最後DINO小圖。</td></tr><tr><td>找輪廓</td><td>另在候選外擴32的窗口，將參照依dx,dy移動、明暗擬合；delta=GaussianBlur(fitted_reference-target,(3,3),0.6)；delta&gt;0.08的連通區。</td></tr><tr><td>選哪一個</td><td>在與原候選重疊的非背景連通區中，選重疊像素數最多者；並列依 max((count,label)) 選 label較大者。非按DINO分數挑選。</td></tr><tr><td>產生方框</td><td>物件bbox=(bx,by,bw,bh)，side=max(bw,bh)；左上角=(round(bx+bw/2−side/2),round(by+bh/2−side/2))；side不變，再四側各加2。</td></tr><tr><td>必要條件</td><td>context_reliable；物件area≥12；物件bbox不得碰到或跨過外擴32搜尋窗口的任一邊；補看方框完整在影像內。邊界判斷使用≤或≥，不是只判越界。</td></tr><tr><td>最終判斷</td><td>從原本 Rq/Tq 相同座標取圖，依第10～12節重算。新結果直接取代初判，不取兩次較高分、不做OR合併。若新推論失敗，Snapshot回傳error/manual_review，不當作成功排除。</td></tr><tr><td>不使用的診斷欄位</td><td>paired_geometry.compare中的outcome、dark_share等目前不是補看資格或最終螺絲判斷條件；重寫時勿自行加上。</td></tr></tbody></table></div><p>補看只改AI收到的小圖，不修改差分候選x/y/w/h、編號或畫面檢測框。範圍過小／切片為空等幾何異常並非都有統一保護；詳見第16節現有錯誤邊界。</p></section><section id="mapping"><h2>14｜原圖顯示框與座標回推</h2><p>初始顯示框以候選外擴5個預覽像素的四角，透過下面映射回原始待測圖。AI初判則外擴12，兩者用途不同。</p><pre class="code"><code>p = [x,y] in corrected frame
+idx = clip(rint(p), valid_preview_index_range)
+global_p = p + flow[idx.y,idx.x]
+q = invertAffineTransform(M) * global_p
+q = (q+0.5)/target_scale - 0.5   # OpenCV resize像素中心慣例
+
+# 逆轉np.rot90，H/W是原始raw大小
+k=0: original = (qx, qy)
+k=1: original = (Wraw-1-qy, qx)
+k=2: original = (Wraw-1-qx, Hraw-1-qy)
+k=3: original = (qy, Hraw-1-qx)
+if mirrored: original.x = Wraw-1-original.x
+clip original to [0,Wraw-1] × [0,Hraw-1]
+
+source_polygon = round(mapped_4_corners, 2)
+source_bbox = floor(min_corners), ceil(max_corners)
+preview_scale = 1536/max(raw.shape)
+display_polygon = rint(source_polygon*preview_scale)</code></pre><p>保存供人工看的 crop_i：原始待測 source_bbox 外擴 pad=max(45,框寬//2,框高//2)，裁至原圖邊界。這張較寬的人工小圖不是 DINO 實際輸入。AI排除後仍保留原候選ID及相關圖片。</p></section><section id="runtime"><h2>15｜CPU／GPU與三項加速如何實作</h2><div class="table"><table><thead><tr><th>位置</th><th>正式r3做法</th></tr></thead><tbody><tr><td>方向計算</td><td>ThreadPoolExecutor(max_workers=2)準備4個旋轉方向的resize、ORB與配對；OpenCV內部threads=16；結果依原順序收集，RANSAC擬合依序做。鏡像是否啟用仍由品質決定。</td></tr><tr><td>差分</td><td>亮度擬合重用暫存陣列、64列區段、最後不計未使用權重；候選兩次掃描共用15×15 erode(P)及P−T。</td></tr><tr><td>候選核對</td><td>兩個worker平行做同一條check_candidate鏈，OpenCV內部threads=1；以map維持原順序。結構分類與排序規則不變。</td></tr><tr><td>全域狀態</td><td>整張detect持有RLock；每次暫時改OpenCV threads後finally恢復。CURRENT ContextVar保存本張參照與量化影像；不是跨照片共用可變target。</td></tr><tr><td>CPU模型</td><td>onnxruntime CPUExecutionProvider；intra_op_num_threads=4；模型session長駐。</td></tr><tr><td>GPU模型</td><td>Windows獨立DirectML工作程序，DXGI挑vendor 0x10de的NVIDIA adapter；不是直接使用第0張顯示卡，也不是CUDA版比較。</td></tr><tr><td>GPU session</td><td>固定[1,3,224,224]的自由維度；enable_mem_pattern=False；ORT_SEQUENTIAL；intra_op_num_threads=4；providers=[指定裝置DmlExecutionProvider,CPUExecutionProvider]，停用session fallback。</td></tr><tr><td>GPU限制</td><td>檢查第一provider為DML只證明DML後端成功建立；因仍列CPU provider，不能據此宣稱每一個ONNX算子都100%在GPU上。</td></tr><tr><td>程序傳輸</td><td>stdin/stdout二進位：4-byte little-endian JSON header長度 → UTF-8 JSON（含bytes）→ payload。request float32 little-endian NCHW；response float32 little-endian [1,257,384]。普通回應timeout=30s，初始metadata=90s。stdout不可混入log。</td></tr><tr><td>切換</td><td>設定套用先建候選session，驗證成功才儲存選擇；已開始照片保有原模型快照。GPU切換失敗保留原設定，不冒充GPU。</td></tr><tr><td>版本核對環境</td><td>NumPy 2.5.4；OpenCV headless 5.0.0.93；Pillow 13.0.0；CPU ORT 1.31.1；GPU ORT DirectML 1.24.4。依實際交付環境與requirements再核對；換版本須重驗。</td></tr></tbody></table></div></section><section id="errors"><h2>16｜錯誤、輸出與紀錄的契約</h2><div class="table"><table><thead><tr><th>情況</th><th>目前行為</th></tr></thead><tbody><tr><td>讀圖、尺寸、全域對齊、覆蓋失敗</td><td>拋出整張檢測錯誤，由外層記錄analysis_error；不能輸出「正常」。</td></tr><tr><td>局部ECC失敗</td><td>該格不接受平移，流程繼續，保存局部可靠性警告。</td></tr><tr><td>Snapshot.classify推論／前處理失敗</td><td>回傳status=error、label=uncertain、action=manual_review；不列為成功discard。</td></tr><tr><td>模型載入或切換失敗</td><td>manager可回傳之前已驗證的session及明確error/requested資訊；一張圖固定一份Snapshot。不可省略錯誤狀態假裝新模型成功載入。</td></tr><tr><td>補看幾何計算異常</td><td>extract呼叫在Snapshot.classify外，未統一catch；OpenCV／切片幾何錯誤可能中止整張。重寫若新增保護，是需另驗證的行為改動，文件不把它描述成已全面保護。</td></tr><tr><td>保留</td><td>action=manual_review、分類通常label=screw；表示AI保留候選供人看，不是人工確認的掉落螺絲。</td></tr><tr><td>排除</td><td>action=discard；移至filtered_candidates並保留classification、ID與圖片。</td></tr><tr><td>結構變化</td><td>structure_changes獨立保存；不要與filtered_candidates的AI排除混為同一統計。</td></tr></tbody></table></div><pre class="code"><code>result = {
+  &quot;pipeline&quot;: &quot;dino-combined-20261104-r3&quot;, &quot;version&quot;: 13,
+  &quot;model&quot;: {&quot;fingerprint&quot;: &quot;...&quot;, &quot;execution&quot;: &quot;cpu|gpu&quot;, ...},
+  &quot;matrix&quot;: [[...],[...]], &quot;rotation_ccw&quot;: 0, &quot;mirrored_input&quot;: False,
+  &quot;local_alignment&quot;: [...], &quot;coverage&quot;: 1.0,
+  &quot;baseline_candidates&quot;: [...], &quot;structure_changes&quot;: [...],
+  &quot;pre_ai_count&quot;: N, &quot;proposal_count&quot;: K, &quot;filtered_count&quot;: N-K,
+  &quot;candidates&quot;: [...], &quot;filtered_candidates&quot;: [...],
+  # 每個candidate：id,x,y,w,h,area,score,features,priority,
+  # source_polygon,source_bbox,crop_box,classification
+}
+# classification.paired_evidence.reference / target保存各自label及margin
+# r3保存input_sha256；補看另有paired_recheck.initial與box
+# baseline框數、結構變化框數、AI候選框數，都不是螺絲顆數。</code></pre><p>儲存 reference.png、aligned.png、difference.png、source.png、overlay.png、all_overlay.png、各候選人工crop/reference_crop，以及結構與舊法核對圖片。可重建的判斷稽核還應保存模型／範例SHA、原圖SHA、實際AI輸入hash、框及兩圖分數。</p></section><section id="io"><h2>17｜取圖、快取與最小呼叫範例</h2><p>外層取圖預設每3秒掃描，大小／mtime穩定至少15秒後，分塊複製並算SHA-256，完整解碼驗證，再原子改名提交本機快照。來源檔不修改。待處理事件進佇列，完成後記done；analysis_error可重試。來源改變時只顯示當前來源且present的快照，不刪舊圖與人工紀錄。重作核心可先使用已完整寫好的單張本機檔，之後才接佇列。</p><pre class="code"><code># 可在專案根目錄執行；需要既有模型資料，輸出請用新的測試目錄。
+from model_manager import ModelManager
+from detector import detect
+
+snapshot = ModelManager(allow_cpu=True, execution_override=&quot;cpu&quot;).snapshot(
+    &quot;dino-paired-optimized-47-20261104-r3&quot;)
+if snapshot.error:
+    raise RuntimeError(snapshot.error)
+result = detect(&quot;reference.tiff&quot;, &quot;target.tiff&quot;, &quot;rd-single-photo&quot;,
+                threshold=0.13, model_snapshot=snapshot,
+                output_directory=&quot;rd-output/new-run&quot;)
+# 改成 execution_override=&quot;gpu&quot; 使用已安裝的隔離GPU工作程序。
+# 不呼叫整批介面、不覆寫原outputs，也不更新正式人工紀錄。</code></pre><p>library.analyze_file的分析快取鍵包含引擎指紋、參照SHA＋機種ID、待測SHA、threshold、模型identity及error/requested。只依檔名快取會在換模型／機種後誤用舊結果。更新版本不應主動重跑舊done事件；人工紀錄應與AI新舊版本分開保存。</p></section><section id="verify"><h2>18｜RD重作的驗收方式與已知界限</h2><p>先逐階段比對，不要只看最後螺絲分數或總候選數。此文件沒有重跑檢測；下面是既有r3整合驗證紀錄。</p><div class="table"><table><thead><tr><th>順序</th><th>比對項目</th></tr></thead><tbody><tr><td>1</td><td>鎖定同一ONNX／範例NPZ SHA、ID順序、套件版本、輸入檔SHA與threshold。</td></tr><tr><td>2</td><td>比normalized影像、遮罩、方向、matrix、valid、coverage、flow與corrected；數值不同就先停下查。</td></tr><tr><td>3</td><td>比亮度P、差分D7/D3、連通區、所有候選座標／屬性／編號、結構變化；不是只比候選總數。</td></tr><tr><td>4</td><td>對照每個候選真正送DINO的224×224 RGB bytes SHA，包含base與recheck的reference/target；不能拿人工放大圖代替。</td></tr><tr><td>5</td><td>比模型輸出global/local單位向量、whole/local margins、兩張圖label、是否補看與補看box、最終keep/discard。浮點小差可另定容差，但label／action必須一致。</td></tr><tr><td>6</td><td>比source_polygon／bbox及輸出圖bytes；換不同編碼器可比解碼像素，另說明不再要求PNG壓縮bytes一致。</td></tr><tr><td>7</td><td>CPU與GPU分別核對；切換失敗、無GPU、來源換資料夾、斷線掃描、重新啟動、重複照片及人工紀錄保留也要驗證。</td></tr><tr><td>8</td><td>效能只在結果一致後測：交錯原方法／新方法，分開資料夾等待、冷啟動、模型載入、開始檢測到DINO完成、儲存收尾；記錄GPU時脈／功率／限制標記。</td></tr></tbody></table></div><p>既有固定單圖：137個候選、276次推論（274次初判＋2次補看）、368張輸出圖；來源程式與實際可攜EXE，CPU／GPU判斷及影像均相同。137不是每張必有的數量，276也不是固定上限；一般為2N＋2R，R為符合資格的補看候選數。</p><p>既有59個固定案例：原本兩顆螺絲、另2個已確認位置維持判對；5個目視疑似位置判出2個、仍漏3個（疑似不是完整人工標準答案）；50個正常對照無誤報。不是獨立完整準確率測試。任何「差分沒提候選」的物件，後段DINO不會自行全圖找回。</p><p>既有GPU八次交錯平均：原方法11.98秒、新方法10.82秒（開始檢測到DINO判完；已暖機，排除資料夾等待）。不能把這個單圖結果保證為所有照片／硬體的時限。</p></section><section id="source"><h2>19｜完整原始碼快照：重作與逐行對照</h2><p>以下為產生文件當下的正式r3相關原始碼，不是縮短過的範例。HTML內統一採LF換行；SHA-256標示原始檔案bytes的值。所有Python程式碼已做語法解析；本次只讀取並嵌入，沒有執行檢測或修改正式程式。核心模組需依依賴關係放在同一專案，並提供前述模型材料；不是每個檔案都能單獨執行。</p><button id="expand" type="button">展開全部原始碼</button> <button id="collapse" type="button">收合全部原始碼</button><details class="source" id="src-detector-py"><summary>detector.py <small>608 行</small></summary><div class="sourcebar"><span>SHA-256 4385f027e2188e64b3d140b78b158aaaad766c177874a1ef4d769dd526b485ed</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="detector.py">&quot;&quot;&quot;Local X-ray inspection prototype. No labels or sample coordinates enter detection.&quot;&quot;&quot;
+from pathlib import Path
+import cv2
+import numpy as np
+import json
+
+from runtime_paths import WORK_ROOT as ROOT
+from model_manager import manager
+from detection_runtime import CURRENT, detection, directions, parallel_map, PIPELINE
+from brightness_fit import brightness
+
+DETECTOR_VERSION = 13
+
+
+def write_image(path, image):
+    ok, encoded = cv2.imencode(Path(path).suffix, image)
+    if not ok: raise ValueError(&#x27;無法儲存影像&#x27;)
+    Path(path).write_bytes(encoded.tobytes())
+
+
+def read(path):
+    a = cv2.imdecode(np.frombuffer(Path(path).read_bytes(), np.uint8), cv2.IMREAD_UNCHANGED)
+    if a is None:
+        raise ValueError(&#x27;無法讀取影像，請使用 PNG、JPEG 或 TIFF&#x27;)
+    if a.ndim == 3:
+        a = cv2.cvtColor(a, cv2.COLOR_BGR2GRAY)
+    if min(a.shape) &lt; 128 or max(a.shape) &gt; 16000:
+        raise ValueError(&#x27;影像尺寸需介於 128 與 16000 像素&#x27;)
+    lo, hi = np.percentile(a, [1, 99])
+    if hi &lt;= lo:
+        raise ValueError(&#x27;影像缺乏灰階變化，需重新拍攝／人工確認&#x27;)
+    return np.clip((a.astype(np.float32) - lo) / float(hi - lo), 0, 1)
+
+
+def register(ref, raw):
+    from registration_candidate import choose_registration
+    return choose_registration(ref, raw, _register_orientation, machine_mask, correlation)
+
+
+def _register_orientation(ref, raw):
+    cv2.setRNGSeed(7)
+    orb = cv2.ORB_create(nfeatures=7000)
+    context = CURRENT.get()
+    kr, dr = context.reference.features if context and ref is context.reference.small else orb.detectAndCompute((ref * 255).astype(&#x27;uint8&#x27;), None)
+    prepared_directions = directions(raw, dr)
+    best = None
+    for rotation in range(4):
+        target, s, kt, dt, pairs = prepared_directions[rotation]
+        if pairs is None:
+            continue
+        good = [m for pair in pairs if len(pair) == 2
+                for m, n in [pair] if m.distance &lt; 0.72 * n.distance]
+        if len(good) &lt; 10:
+            continue
+        src = np.float32([kt[m.queryIdx].pt for m in good])
+        dst = np.float32([kr[m.trainIdx].pt for m in good])
+        matrix, inside = cv2.estimateAffinePartial2D(
+            src, dst, method=cv2.RANSAC, ransacReprojThreshold=2)
+        if matrix is None:
+            continue
+        count = int(inside.sum())
+        if best is None or count &gt; best[&#x27;inliers&#x27;]:
+            best = dict(inliers=count, rotation=rotation, matrix=matrix,
+                        target=target, target_scale=s)
+    if best is None or best[&#x27;inliers&#x27;] &lt; 25:
+        raise ValueError(&#x27;找不到足夠的共同結構，對齊失敗；需人工確認或重拍&#x27;)
+    matrix = best[&#x27;matrix&#x27;]
+    scale = float(np.hypot(matrix[0, 0], matrix[0, 1]))
+    if not 0.5 &lt; scale &lt; 2:
+        raise ValueError(&#x27;拍攝尺度差異過大，需人工確認&#x27;)
+    h, w = ref.shape
+    best[&#x27;aligned&#x27;] = cv2.warpAffine(best[&#x27;target&#x27;], matrix, (w, h), borderValue=1)
+    best[&#x27;valid&#x27;] = cv2.warpAffine(np.ones(best[&#x27;target&#x27;].shape, np.uint8), matrix, (w, h)) &gt; 0
+    return best
+
+
+def structure_mask(ref):
+    context = CURRENT.get()
+    if context and ref is context.reference.small:
+        return context.reference.structure
+    mask = (ref &lt; 0.65).astype(&#x27;uint8&#x27;)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((31, 31), np.uint8))
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(mask)
+    if n &lt;= 1:
+        raise ValueError(&#x27;正常參考圖無法定位機體&#x27;)
+    mask = (labels == (1 + np.argmax(stats[1:, cv2.CC_STAT_AREA]))).astype(&#x27;uint8&#x27;)
+    return cv2.erode(mask, np.ones((11, 11), np.uint8)).astype(bool)
+
+
+def machine_mask(ref):
+    &quot;&quot;&quot;Inspect the main body envelope, including bright cavities and side recesses.&quot;&quot;&quot;
+    context = CURRENT.get()
+    if context and ref is context.reference.small:
+        return context.reference.machine
+    structure = structure_mask(ref).astype(&#x27;uint8&#x27;)
+    contours, _ = cv2.findContours(structure, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        raise ValueError(&#x27;正常參考圖無法定位機體&#x27;)
+    filled = np.zeros_like(structure)
+    # Closing holes alone leaves open side recesses outside the contour. Use the
+    # convex envelope of the main body, not a hull of all objects in the image.
+    hull = cv2.convexHull(max(contours, key=cv2.contourArea))
+    cv2.fillConvexPoly(filled, hull, 1)
+    return filled.astype(bool)
+
+
+def compensate_brightness(ref, target):
+    &quot;&quot;&quot;Robust local affine exposure fit; strong residuals cannot train away objects.&quot;&quot;&quot;
+    return brightness(ref, target)
+
+
+def correlation(a, b, mask):
+    if int(mask.sum()) &lt; 100:
+        return 0.0
+    x, y = a[mask], b[mask]
+    if x.std() &lt; .01 or y.std() &lt; .01:
+        return 0.0
+    return float(np.corrcoef(x, y)[0, 1])
+
+
+def refine(ref, aligned, mask):
+    &quot;&quot;&quot;Bounded translations on 3x3 regions; smooth remap, no unconstrained warp.&quot;&quot;&quot;
+    ys, xs = np.where(mask)
+    x_edges = np.linspace(xs.min(), xs.max() + 1, 4).astype(int)
+    y_edges = np.linspace(ys.min(), ys.max() + 1, 4).astype(int)
+    shifts = np.zeros((3, 3, 2), np.float32)
+    regions = []
+    for row in range(3):
+        for col in range(3):
+            x0, x1 = x_edges[col:col+2]
+            y0, y1 = y_edges[row:row+2]
+            a = ref[y0:y1, x0:x1].copy()
+            b = aligned[y0:y1, x0:x1].copy()
+            roi_mask = mask[y0:y1, x0:x1]
+            before = correlation(a, b, roi_mask)
+            mat = np.eye(2, 3, dtype=np.float32)
+            accepted = False
+            after = before
+            dx = dy = 0.0
+            try:
+                cc, mat = cv2.findTransformECC(
+                    a, b, mat, cv2.MOTION_TRANSLATION,
+                    (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, .0001),
+                    roi_mask.astype(&#x27;uint8&#x27;) * 255, 5)
+                corrected = cv2.warpAffine(b, mat, (a.shape[1], a.shape[0]),
+                                          flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP,
+                                          borderMode=cv2.BORDER_REFLECT)
+                inner = cv2.erode(roi_mask.astype(&#x27;uint8&#x27;), np.ones((15, 15), np.uint8)) &gt; 0
+                after = correlation(a, corrected, inner)
+                base_inner = correlation(a, b, inner)
+                before = base_inner
+                accepted = bool(cc &gt; .82 and np.max(np.abs(mat[:, 2])) &lt;= 6
+                                and after &gt;= base_inner + .0001)
+                if accepted:
+                    dx, dy = map(float, mat[:, 2])
+                    shifts[row, col] = [dx, dy]
+            except cv2.error:
+                pass
+            reliable = max(before, after if accepted else before) &gt;= .82
+            regions.append(dict(region=f&#x27;{row+1}-{col+1}&#x27;, bbox=[int(x0), int(y0), int(x1), int(y1)],
+                                before=round(before, 4), after=round(after if accepted else before, 4),
+                                dx=round(dx, 3), dy=round(dy, 3), refined=accepted,
+                                reliable=bool(reliable)))
+    # Keep each region&#x27;s measured translation in its interior; feather only seams.
+    flow = np.zeros((*ref.shape, 2), np.float32)
+    for row in range(3):
+        for col in range(3):
+            x0, x1 = x_edges[col:col+2]
+            y0, y1 = y_edges[row:row+2]
+            flow[y0:y1, x0:x1] = shifts[row, col]
+    flow = cv2.GaussianBlur(flow, (0, 0), 12)
+    base_x, base_y = np.meshgrid(np.arange(ref.shape[1], dtype=&#x27;float32&#x27;),
+                                np.arange(ref.shape[0], dtype=&#x27;float32&#x27;))
+    mapx, mapy = base_x + flow[..., 0], base_y + flow[..., 1]
+    corrected = cv2.remap(aligned, mapx, mapy, cv2.INTER_LINEAR, borderValue=1)
+    for region in regions:
+        x0, y0, x1, y1 = region[&#x27;bbox&#x27;]
+        inner = cv2.erode(mask[y0:y1, x0:x1].astype(&#x27;uint8&#x27;), np.ones((15, 15), np.uint8)) &gt; 0
+        before = correlation(ref[y0:y1, x0:x1], aligned[y0:y1, x0:x1], inner)
+        after = correlation(ref[y0:y1, x0:x1], corrected[y0:y1, x0:x1], inner)
+        region[&#x27;before&#x27;] = round(before, 4)
+        region[&#x27;after&#x27;] = round(after, 4)
+        region[&#x27;reliable&#x27;] = bool(after &gt;= .82 and after &gt;= before - .01)
+    return corrected, flow, regions
+
+
+def legacy_proposals(ref, target, mask, threshold):
+    residual = ((ref - cv2.GaussianBlur(ref, (0, 0), 15)) -
+                (target - cv2.GaussianBlur(target, (0, 0), 15)))
+    edges = cv2.Canny((ref * 255).astype(&#x27;uint8&#x27;), 40, 100)
+    band = cv2.dilate(edges, np.ones((9, 9), np.uint8)) &gt; 0
+    binary = ((residual &gt; threshold) &amp; mask &amp; ~band).astype(&#x27;uint8&#x27;)
+    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8))
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
+    candidates = []
+    normal_nearby = cv2.erode(ref, np.ones((15, 15), np.uint8))
+    for i in range(1, n):
+        x, y, w, h, area = map(int, stats[i])
+        if not (12 &lt;= area &lt;= 1800 and 4 &lt;= max(w, h) &lt;= 110):
+            continue
+        component = (labels[y:y+h, x:x+w] == i)
+        py, px = np.where(component)
+        points = np.column_stack([px, py]).astype(&#x27;float32&#x27;)
+        _, (a, b), _ = cv2.minAreaRect(points)
+        aspect = (max(a, b) + 1) / (min(a, b) + 1)
+        score = float(np.percentile(residual[y:y+h, x:x+w][component], 90))
+        # Normal-metal proximity and bipolar residual distinguish edge motion from extra objects.
+        nearby = (slice(max(0, y-5), min(ref.shape[0], y+h+5)),
+                  slice(max(0, x-5), min(ref.shape[1], x+w+5)))
+        diff = residual[nearby]
+        negative = float(np.maximum(-diff, 0).sum())
+        positive = float(np.maximum(diff, 0).sum())
+        bipolar = negative / max(positive, 1e-6)
+        contrast = float(np.median(ref[y:y+h, x:x+w][component] -
+                                   target[y:y+h, x:x+w][component]))
+        normal_support = float(np.mean((normal_nearby[y:y+h, x:x+w] &lt;=
+                                        target[y:y+h, x:x+w] + .06)[component]))
+        candidates.append(dict(x=x, y=y, w=w, h=h, area=area, score=round(score, 4),
+                               normal_support=round(normal_support, 3),
+                               aspect=round(float(aspect), 2), fill=round(area/(w*h), 3),
+                               bipolar=round(bipolar, 3), contrast=round(contrast, 4)))
+    candidates.sort(key=lambda c: c[&#x27;score&#x27;], reverse=True)
+    return candidates, residual
+
+
+def matching_structure(ref, target, x, y, w, h):
+    padding, radius = 6, 12
+    x0, y0 = max(radius, x-padding), max(radius, y-padding)
+    x1, y1 = min(ref.shape[1]-radius, x+w+padding), min(ref.shape[0]-radius, y+h+padding)
+    if x1 &lt;= x0 or y1 &lt;= y0:
+        return 0.0
+    patch = target[y0:y1, x0:x1].astype(&#x27;float32&#x27;)
+    if patch.std() &lt; .015:
+        return 0.0
+    search = ref[y0-radius:y1+radius, x0-radius:x1+radius].astype(&#x27;float32&#x27;)
+    return float(cv2.matchTemplate(search, patch, cv2.TM_CCOEFF_NORMED).max())
+
+
+def structure_change_evidence(ref, target, candidate, threshold):
+    &quot;&quot;&quot;Explain a candidate with bounded translation and context-only exposure fit.
+
+    Similarity alone cannot reject an object: most positive residual must also
+    disappear, with no object-sized component left. This does not certify normality.
+    &quot;&quot;&quot;
+    x, y, w, h = (candidate[k] for k in (&#x27;x&#x27;, &#x27;y&#x27;, &#x27;w&#x27;, &#x27;h&#x27;))
+    padding, radius = 12, 12
+    x0, y0 = max(radius, x-padding), max(radius, y-padding)
+    x1 = min(ref.shape[1]-radius, x+w+padding)
+    y1 = min(ref.shape[0]-radius, y+h+padding)
+    # A clipped candidate cannot support a complete explanation.
+    if x0 &gt; x or y0 &gt; y or x1 &lt; x+w or y1 &lt; y+h:
+        return {}
+    patch = target[y0:y1, x0:x1].astype(&#x27;float32&#x27;)
+    if patch.size == 0 or patch.std() &lt; .015:
+        return {}
+    search = ref[y0-radius:y1+radius, x0-radius:x1+radius].astype(&#x27;float32&#x27;)
+    scores = cv2.matchTemplate(search, patch, cv2.TM_CCOEFF_NORMED)
+    _, similarity, _, point = cv2.minMaxLoc(scores)
+    dx, dy = point[0]-radius, point[1]-radius
+    normal = ref[y0+dy:y1+dy, x0+dx:x1+dx].astype(&#x27;float32&#x27;)
+    core = (slice(y-y0, y+h-y0), slice(x-x0, x+w-x0))
+    context = np.ones_like(patch)
+    context[core] = 0  # An extra object must not train its own brightness correction.
+    outside = context &gt; 0
+    def context_similarity(image):
+        a, b = image[outside], patch[outside]
+        if a.std() &lt; .015 or b.std() &lt; .015:
+            return 0.0
+        return float(np.corrcoef(a, b)[0, 1])
+    context_match = context_similarity(normal)
+    context_before = context_similarity(ref[y0:y1, x0:x1])
+    # A nearby similar screw is not evidence that the surrounding structure moved.
+    supported = context_match &gt;= .6 and (max(abs(dx), abs(dy)) &lt;= 2
+                                         or context_match &gt;= context_before + .03)
+    weights = context.copy()
+    for _ in range(4):
+        mass = max(float(weights.sum()), .001)
+        mx = (weights*normal).sum()/mass
+        my = (weights*patch).sum()/mass
+        covariance = (weights*(normal-mx)*(patch-my)).sum()
+        variance = (weights*(normal-mx)**2).sum()
+        gain = np.clip(covariance/max(float(variance), .001), .6, 1.6)
+        offset = np.clip(my-gain*mx, -.25, .25)
+        fitted = np.clip(gain*normal+offset, 0, 1)
+        error = np.abs(fitted-patch)
+        weights = context*np.minimum(1, .04/np.maximum(error, .0001))**2
+    difference = fitted[core]-patch[core]
+    original = ref[y:y+h, x:x+w]-target[y:y+h, x:x+w]
+    ratio = float(np.maximum(difference, 0).sum()) / max(float(np.maximum(original, 0).sum()), .001)
+    _, _, stats, _ = cv2.connectedComponentsWithStats((difference &gt; threshold).astype(&#x27;uint8&#x27;))
+    remaining = max(stats[1:, cv2.CC_STAT_AREA], default=0)
+    return dict(sim=float(similarity), context_similarity=context_match,
+                context_before=context_before, context_supported=bool(supported),
+                dx=dx, dy=dy, gain=float(gain),
+                offset=float(offset), ratio=ratio, remaining=int(remaining))
+
+
+def proposals(ref, target, mask, threshold, structure_changes=None):
+    predicted = compensate_brightness(ref, target)
+    residual = cv2.erode(predicted, np.ones((7, 7), np.uint8)) - target
+    shared_arrays = (cv2.erode(predicted, np.ones((15, 15), np.uint8)), predicted-target)
+    candidates, _ = candidates_from_residual(ref, target, mask, threshold, predicted, residual, shared_arrays)
+    # Tight-tolerance recovery: small objects beside existing dark structures can
+    # be erased by the main 3px tolerance. Require compact, novel, predominantly
+    # one-sided evidence before retaining a 1px-tolerance candidate.
+    tight_residual = cv2.erode(predicted, np.ones((3, 3), np.uint8)) - target
+    recovered, _ = candidates_from_residual(ref, target, mask, threshold, predicted, tight_residual, shared_arrays)
+    for candidate in recovered:
+        c = candidate
+        if not (25 &lt;= c[&#x27;area&#x27;] &lt;= 600 and max(c[&#x27;w&#x27;], c[&#x27;h&#x27;]) &lt;= 50
+                and c[&#x27;aspect&#x27;] &lt;= 4 and c[&#x27;fill&#x27;] &gt;= .25
+                and c[&#x27;score&#x27;] &gt;= threshold + .05 and c[&#x27;bipolar&#x27;] &lt;= .5
+                and c[&#x27;shape_similarity&#x27;] &lt;= .55):
+            continue
+        duplicate = False
+        for existing in candidates:
+            overlap = max(0, min(c[&#x27;x&#x27;]+c[&#x27;w&#x27;], existing[&#x27;x&#x27;]+existing[&#x27;w&#x27;])-max(c[&#x27;x&#x27;],existing[&#x27;x&#x27;])) * max(0,min(c[&#x27;y&#x27;]+c[&#x27;h&#x27;],existing[&#x27;y&#x27;]+existing[&#x27;h&#x27;])-max(c[&#x27;y&#x27;],existing[&#x27;y&#x27;]))
+            if overlap / max(1, min(c[&#x27;w&#x27;]*c[&#x27;h&#x27;], existing[&#x27;w&#x27;]*existing[&#x27;h&#x27;])) &gt; .25:
+                duplicate = True
+                break
+        if not duplicate:
+            c[&#x27;recovery&#x27;] = &#x27;tight_spatial_tolerance&#x27;
+            candidates.append(c)
+            x, y, w, h = (c[k] for k in (&#x27;x&#x27;,&#x27;y&#x27;,&#x27;w&#x27;,&#x27;h&#x27;))
+            residual[y:y+h,x:x+w] = np.maximum(residual[y:y+h,x:x+w], tight_residual[y:y+h,x:x+w])
+    retained = []
+    for c, explained in parallel_map(lambda c: check_candidate(ref, target, c, threshold), candidates, 1):
+        if explained:
+            if structure_changes is not None:
+                structure_changes.append(c)
+        else:
+            retained.append(c)
+    retained.sort(key=lambda c:c[&#x27;score&#x27;], reverse=True)
+    return retained, residual
+
+
+def check_candidate(ref, target, c, threshold):
+    evidence = structure_change_evidence(ref, target, c, threshold)
+    explained = bool(evidence and evidence[&#x27;context_supported&#x27;] and evidence[&#x27;sim&#x27;] &gt;= .65
+                     and evidence[&#x27;ratio&#x27;] &lt;= .2 and evidence[&#x27;remaining&#x27;] &lt; 12)
+    if not explained:
+        from single_reference_evidence import explain
+        context_evidence = explain(ref, target, c, threshold)
+        if context_evidence:
+            c[&#x27;single_reference_evidence&#x27;] = context_evidence
+            explained = True
+    c[&#x27;change_evidence&#x27;] = evidence
+    c[&#x27;change_type&#x27;] = &#x27;existing_structure_change&#x27; if explained else &#x27;unexplained_object_candidate&#x27;
+    if not explained:
+        from wire_review import review_evidence
+        wire = review_evidence(ref, target, c, threshold)
+        if wire:
+            c[&#x27;wire_review&#x27;] = wire
+    return c, explained
+
+
+def candidates_from_residual(ref, target, mask, threshold, predicted, residual, shared_arrays=None):
+    binary = ((residual &gt; threshold) &amp; mask).astype(&#x27;uint8&#x27;)
+    binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN,
+                              cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
+    # Separate a compact object from long connected residuals instead of dropping
+    # the entire oversized component. Keep ordinary small components intact.
+    _, component_labels, component_stats, _ = cv2.connectedComponentsWithStats(binary)
+    for index, (x, y, w, h, area) in enumerate(component_stats[1:], 1):
+        if area &gt; 1800 or max(w, h) &gt; 110:
+            region = (component_labels[y:y+h, x:x+w] == index).astype(&#x27;uint8&#x27;)
+            separated = cv2.morphologyEx(region, cv2.MORPH_OPEN,
+                                         cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)))
+            binary[y:y+h, x:x+w][region &gt; 0] = separated[region &gt; 0]
+
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
+    candidates = []
+    normal_nearby, signed_difference = shared_arrays if shared_arrays is not None else (cv2.erode(predicted, np.ones((15, 15), np.uint8)), predicted-target)
+    for i in range(1, n):
+        x, y, w, h, area = map(int, stats[i])
+        if not (12 &lt;= area &lt;= 1800 and 4 &lt;= max(w, h) &lt;= 110):
+            continue
+        component = (labels[y:y+h, x:x+w] == i)
+        py, px = np.where(component)
+        points = np.column_stack([px, py]).astype(&#x27;float32&#x27;)
+        _, (a, b), _ = cv2.minAreaRect(points)
+        aspect = (max(a, b) + 1) / (min(a, b) + 1)
+        score = float(np.percentile(residual[y:y+h, x:x+w][component], 90))
+        # Normal-metal proximity and bipolar residual distinguish edge motion from extra objects.
+        nearby = (slice(max(0, y-5), min(ref.shape[0], y+h+5)),
+                  slice(max(0, x-5), min(ref.shape[1], x+w+5)))
+        diff = signed_difference[nearby]
+        negative = float(np.maximum(-diff, 0).sum())
+        positive = float(np.maximum(diff, 0).sum())
+        bipolar = negative / max(positive, 1e-6)
+        contrast = float(np.median(predicted[y:y+h, x:x+w][component] -
+                                   target[y:y+h, x:x+w][component]))
+        normal_support = float(np.mean((normal_nearby[y:y+h, x:x+w] &lt;=
+                                        target[y:y+h, x:x+w] + .06)[component]))
+        shape_similarity = matching_structure(ref, target, x, y, w, h)
+        # Correlation ignores brightness offsets/gain; suppress a close existing
+        # shape only when the local template has a strong match.
+        if shape_similarity &gt;= .85:
+            continue
+        if area &lt; 40 and (shape_similarity &gt; .55 or normal_support &gt; .5):
+            continue
+        candidates.append(dict(shape_similarity=round(shape_similarity, 3), x=x, y=y, w=w, h=h, area=area, score=round(score, 4),
+                               normal_support=round(normal_support, 3),
+                               aspect=round(float(aspect), 2), fill=round(area/(w*h), 3),
+                               bipolar=round(bipolar, 3), contrast=round(contrast, 4)))
+    candidates.sort(key=lambda c: c[&#x27;score&#x27;], reverse=True)
+    return candidates, residual
+
+
+def prioritize(candidate):
+    &quot;&quot;&quot;Conservative heuristic ranking, never deletes proposals; not a screw classifier.&quot;&quot;&quot;
+    c = candidate
+    reasons = []
+    if c.get(&#x27;wire_review&#x27;):
+        reasons.append(&#x27;疑似線材位移：兩側線條連續且原位置有變化；候選仍保留，小螺絲可能混在線材中，需複核&#x27;)
+    if c.get(&#x27;shape_similarity&#x27;, 0) &gt; .65:
+        reasons.append(&#x27;附近有相似輪廓，可能為既有結構的對齊或外觀差異&#x27;)
+    if c[&#x27;normal_support&#x27;] &gt; .5:
+        reasons.append(&#x27;正常圖鄰近有相似深色結構，可能為固定零件或線材偏移&#x27;)
+    if c[&#x27;aspect&#x27;] &gt; 8:
+        reasons.append(&#x27;輪廓過於細長，疑似線材或邊界殘差&#x27;)
+    if c[&#x27;contrast&#x27;] &lt; .12:
+        reasons.append(&#x27;相對正常圖的額外衰減較弱&#x27;)
+    if c[&#x27;bipolar&#x27;] &gt; .7:
+        reasons.append(&#x27;鄰近同時出現明暗差分，疑似結構偏移&#x27;)
+    if c[&#x27;area&#x27;] &lt; 35:
+        reasons.append(&#x27;差分面積較小，保留供複核&#x27;)
+    if c[&#x27;fill&#x27;] &lt; .18:
+        reasons.append(&#x27;輪廓稀疏或破碎&#x27;)
+    return reasons
+
+
+def source_points(points, reg, flow, raw_shape):
+    points = np.asarray(points, np.float32).reshape(-1, 2)
+    ix = np.clip(np.rint(points[:, 0]).astype(int), 0, flow.shape[1]-1)
+    iy = np.clip(np.rint(points[:, 1]).astype(int), 0, flow.shape[0]-1)
+    global_points = points + flow[iy, ix]
+    inv = cv2.invertAffineTransform(reg[&#x27;matrix&#x27;])
+    rotated = cv2.transform(global_points[None], inv)[0]
+    # cv2.resize maps pixel centres with this half-pixel convention.
+    rotated = (rotated + .5) / reg[&#x27;target_scale&#x27;] - .5
+    x, y = rotated[:, 0], rotated[:, 1]
+    h, w = raw_shape
+    k = reg[&#x27;rotation&#x27;]
+    if k == 0: result = np.column_stack([x, y])
+    elif k == 1: result = np.column_stack([w-1-y, x])
+    elif k == 2: result = np.column_stack([w-1-x, h-1-y])
+    else: result = np.column_stack([y, h-1-x])
+    if reg.get(&#x27;mirrored&#x27;, False):
+        result[:, 0] = w-1-result[:, 0]
+    result[:, 0] = np.clip(result[:, 0], 0, w-1)
+    result[:, 1] = np.clip(result[:, 1], 0, h-1)
+    return result
+
+
+def detect(reference, target, name, threshold=.13, model_snapshot=None, output_directory=None):
+    with detection(reference, read, structure_mask, machine_mask):
+        return _detect(reference, target, name, threshold, model_snapshot, output_directory)
+
+
+def _detect(reference, target, name, threshold=.13, model_snapshot=None, output_directory=None):
+    model_snapshot = model_snapshot or manager.snapshot()
+    if not np.isfinite(threshold) or not .03 &lt;= threshold &lt;= .4:
+        raise ValueError(&#x27;門檻需介於 0.03 與 0.40&#x27;)
+    context = CURRENT.get()
+    ref, raw = context.reference.full, read(target)
+    r = context.reference.small
+    reg = register(r, raw)
+    mask = machine_mask(r) &amp; reg[&#x27;valid&#x27;]
+    total = max(int(machine_mask(r).sum()), 1)
+    coverage = int(mask.sum()) / total
+    if coverage &lt; .95:
+        raise ValueError(&#x27;待測影像未完整覆蓋正常參考機體，需重新拍攝／人工確認&#x27;)
+    baseline, _ = legacy_proposals(r, reg[&#x27;aligned&#x27;], structure_mask(r) &amp; reg[&#x27;valid&#x27;], threshold)
+    corrected, flow, regions = refine(r, reg[&#x27;aligned&#x27;], structure_mask(r) &amp; reg[&#x27;valid&#x27;])
+    structure_changes = []
+    candidates, residual = proposals(r, corrected, mask, threshold, structure_changes)
+    for c in candidates:
+        c[&#x27;reasons&#x27;] = prioritize(c)
+        c[&#x27;priority&#x27;] = &#x27;review&#x27; if c[&#x27;reasons&#x27;] else &#x27;high&#x27;
+    candidates.sort(key=lambda c: (c[&#x27;priority&#x27;] != &#x27;high&#x27;, -c[&#x27;score&#x27;]))
+    for i, c in enumerate(candidates, 1):
+        c[&#x27;id&#x27;] = i
+        x, y, w, h = [c[k] for k in (&#x27;x&#x27;, &#x27;y&#x27;, &#x27;w&#x27;, &#x27;h&#x27;)]
+        points = source_points([[x-5, y-5], [x+w+5, y-5],
+                                [x+w+5, y+h+5], [x-5, y+h+5]], reg, flow, raw.shape)
+        c[&#x27;source_polygon&#x27;] = np.round(points, 2).tolist()
+        x0, y0 = np.floor(points.min(axis=0)).astype(int)
+        x1, y1 = np.ceil(points.max(axis=0)).astype(int)
+        c[&#x27;source_bbox&#x27;] = [int(x0), int(y0), int(x1), int(y1)]
+    out = Path(output_directory) if output_directory is not None else ROOT/&#x27;outputs&#x27;/name
+    out.mkdir(parents=True, exist_ok=True)
+    for i, c in enumerate(structure_changes, 1):
+        c[&#x27;id&#x27;] = i
+        x, y, w, h = (c[k] for k in (&#x27;x&#x27;, &#x27;y&#x27;, &#x27;w&#x27;, &#x27;h&#x27;))
+        region = (slice(max(0, y-12), y+h+12), slice(max(0, x-12), x+w+12))
+        for prefix, image in [(&#x27;structure_ref&#x27;, r), (&#x27;structure_target&#x27;, corrected)]:
+            write_image(str(out/f&#x27;{prefix}_{i}.png&#x27;), (image[region]*255).astype(&#x27;uint8&#x27;))
+    ys, xs = np.where(mask)
+    machine_points = source_points([[xs.min(), ys.min()], [xs.max(), ys.min()],
+                                    [xs.max(), ys.max()], [xs.min(), ys.max()]], reg, flow, raw.shape)
+    machine_box = [max(0, int(machine_points[:, 0].min())-35),
+                   max(0, int(machine_points[:, 1].min())-35),
+                   min(raw.shape[1], int(machine_points[:, 0].max())+35),
+                   min(raw.shape[0], int(machine_points[:, 1].max())+35)]
+    zero_flow = np.zeros_like(flow)
+    for i, c in enumerate(baseline, 1):
+        c[&#x27;id&#x27;] = i
+        x, y, w, h = [c[k] for k in (&#x27;x&#x27;, &#x27;y&#x27;, &#x27;w&#x27;, &#x27;h&#x27;)]
+        p = source_points([[x-25, y-25], [x+w+25, y-25],
+                           [x+w+25, y+h+25], [x-25, y+h+25]], reg, zero_flow, raw.shape)
+        b0 = np.floor(p.min(axis=0)).astype(int)
+        b1 = np.ceil(p.max(axis=0)).astype(int)+1
+        crop = raw[b0[1]:b1[1], b0[0]:b1[0]]
+        write_image(str(out/f&#x27;baseline_crop_{i}.png&#x27;), (crop*255).astype(&#x27;uint8&#x27;))
+        write_image(str(out/f&#x27;baseline_ref_{i}.png&#x27;),
+                    (r[max(0,y-25):y+h+25, max(0,x-25):x+w+25]*255).astype(&#x27;uint8&#x27;))
+        matches = [z[&#x27;id&#x27;] for z in candidates if
+                   min(x+w+8, z[&#x27;x&#x27;]+z[&#x27;w&#x27;]) &gt; max(x-8, z[&#x27;x&#x27;]) and
+                   min(y+h+8, z[&#x27;y&#x27;]+z[&#x27;h&#x27;]) &gt; max(y-8, z[&#x27;y&#x27;])]
+        c[&#x27;v2_nearby_ids&#x27;] = matches
+        c[&#x27;audit&#x27;] = &#x27;鄰近仍有目前版本候選，請逐圖確認&#x27; if matches else &#x27;局部對齊後未達候選門檻；不代表正常&#x27;
+    source_preview = cv2.cvtColor((raw*255).astype(&#x27;uint8&#x27;), cv2.COLOR_GRAY2BGR)
+    # Save natural-orientation preview at &lt;=1536px; source coordinates remain native pixels.
+    preview_scale = 1536/max(raw.shape)
+    source_preview = cv2.resize(source_preview, None, fx=preview_scale, fy=preview_scale)
+    for c in candidates:
+        i = c[&#x27;id&#x27;]
+        x0, y0, x1, y1 = c[&#x27;source_bbox&#x27;]
+        pad = max(45, (x1-x0)//2, (y1-y0)//2)
+        box = [max(0, x0-pad), max(0, y0-pad), min(raw.shape[1], x1+pad), min(raw.shape[0], y1+pad)]
+        c[&#x27;crop_box&#x27;] = list(map(int, box))
+        crop = (raw[box[1]:box[3], box[0]:box[2]]*255).astype(&#x27;uint8&#x27;)
+        write_image(str(out/f&#x27;crop_{i}.png&#x27;), crop)
+        if model_snapshot.manifest.get(&#x27;backend&#x27;) == &#x27;dino_onnx&#x27;:
+            c[&#x27;classification&#x27;] = classify_dino_candidate(model_snapshot, corrected, r, c)
+        elif model_snapshot.manifest.get(&#x27;preprocessing&#x27;) == &#x27;aligned-gray-tight12-v1&#x27;:
+            cx, cy, cw, ch = (c[k] for k in (&#x27;x&#x27;,&#x27;y&#x27;,&#x27;w&#x27;,&#x27;h&#x27;))
+            ai_crop = corrected[max(0,cy-12):cy+ch+12, max(0,cx-12):cx+cw+12]
+            # Match the previously evaluated PNG crop quantization exactly.
+            ai_crop = (np.clip(ai_crop,0,1)*255).astype(&#x27;uint8&#x27;).astype(&#x27;float32&#x27;)/255
+        else:
+            ai_crop = raw[box[1]:box[3], box[0]:box[2]]
+        if model_snapshot.manifest.get(&#x27;backend&#x27;) == &#x27;dino_onnx&#x27;:
+            pass
+        elif model_snapshot.manifest.get(&#x27;backend&#x27;)==&#x27;yolo_onnx&#x27;:
+            x0,y0=max(0,cx-12),max(0,cy-12)
+            c[&#x27;classification&#x27;] = model_snapshot.classify(ai_crop, candidate_box=[cx-x0,cy-y0,cx-x0+cw,cy-y0+ch])
+        else:
+            c[&#x27;classification&#x27;] = model_snapshot.classify(ai_crop)
+        x, y, w, h = [c[k] for k in (&#x27;x&#x27;, &#x27;y&#x27;, &#x27;w&#x27;, &#x27;h&#x27;)]
+        patch = (r[max(0,y-25):y+h+25, max(0,x-25):x+w+25]*255).astype(&#x27;uint8&#x27;)
+        write_image(str(out/f&#x27;reference_crop_{i}.png&#x27;), patch)
+    pre_ai_count = len(candidates)
+    filtered_candidates = [c for c in candidates if c[&#x27;classification&#x27;].get(&#x27;action&#x27;) == &#x27;discard&#x27;]
+    candidates = [c for c in candidates if c[&#x27;classification&#x27;].get(&#x27;action&#x27;) != &#x27;discard&#x27;]
+    # Render only retained candidates. Preserve original IDs and crops for the audit.
+    high, all_overlay = source_preview.copy(), source_preview.copy()
+    for c in candidates:
+        points = np.rint(np.asarray(c[&#x27;source_polygon&#x27;])*preview_scale).astype(&#x27;int32&#x27;)
+        color = (60, 65, 245) if c[&#x27;priority&#x27;] == &#x27;high&#x27; else (0, 185, 245)
+        for canvas in ([high, all_overlay] if c[&#x27;priority&#x27;] == &#x27;high&#x27; else [all_overlay]):
+            cv2.polylines(canvas, [points], True, color, 2)
+            cv2.putText(canvas, str(c[&#x27;id&#x27;]), tuple(points.min(axis=0)-[0, 6]), cv2.FONT_HERSHEY_SIMPLEX, .6, color, 2)
+    write_image(str(out/&#x27;source.png&#x27;), source_preview)
+    write_image(str(out/&#x27;overlay.png&#x27;), high)
+    write_image(str(out/&#x27;all_overlay.png&#x27;), all_overlay)
+    for key, arr in [(&#x27;aligned&#x27;, corrected), (&#x27;reference&#x27;, r)]:
+        write_image(str(out/f&#x27;{key}.png&#x27;), (arr*255).astype(&#x27;uint8&#x27;))
+    heat = np.clip(residual/.3, 0, 1)
+    heat[~mask] = 0
+    write_image(str(out/&#x27;difference.png&#x27;), cv2.applyColorMap((heat*255).astype(&#x27;uint8&#x27;), cv2.COLORMAP_INFERNO))
+    n_high = sum(c[&#x27;priority&#x27;] == &#x27;high&#x27; for c in candidates)
+    result = dict(model=model_snapshot.info(), version=DETECTOR_VERSION, pipeline=PIPELINE, name=name, status=&#x27;需人工複核&#x27;,
+                  rotation_ccw=reg[&#x27;rotation&#x27;]*90, mirrored_input=reg.get(&#x27;mirrored&#x27;,False),
+                  orientation_evidence=reg.get(&#x27;orientation_evidence&#x27;), inliers=reg[&#x27;inliers&#x27;], threshold=threshold,
+                  source_shape=list(raw.shape), source_machine_bbox=machine_box, preview_scale=preview_scale,
+                  coordinate_frame=&#x27;x/y/w/h: reference preview; source_bbox/polygon: original target pixels&#x27;,
+                  matrix=reg[&#x27;matrix&#x27;].tolist(), local_alignment=regions,
+                  alignment_warning=any(not z[&#x27;reliable&#x27;] for z in regions),
+                  coverage=round(coverage, 4), baseline_candidates=baseline,
+                  baseline_count=len(baseline), proposal_count=len(candidates),
+                  pre_ai_count=pre_ai_count, filtered_count=len(filtered_candidates), filtered_candidates=filtered_candidates,
+                  structure_change_count=len(structure_changes), structure_changes=structure_changes,
+                  high_count=n_high, review_count=len(candidates)-n_high, candidates=candidates,
+                  wire_review_count=sum(bool(c.get(&#x27;wire_review&#x27;)) for c in candidates),
+                  warning=&#x27;紅框為規則優先候選，不是 AI 確認螺絲；黃色候選仍需查看。無紅框不代表正常。&#x27;)
+    (out/&#x27;result.json&#x27;).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding=&#x27;utf-8&#x27;)
+    return result
+
+
+def classify_dino_candidate(snapshot, target, reference, candidate):
+    &quot;&quot;&quot;Same coordinates, padding and PNG quantization as the frozen report.&quot;&quot;&quot;
+    if snapshot.manifest.get(&#x27;feature_strategy&#x27;) == &#x27;contrast-global-local-half-v1&#x27;:
+        from dino_paired_optimized import classify_candidate
+        return classify_candidate(snapshot, target, reference, candidate)
+    x, y, w, h = (candidate[k] for k in (&#x27;x&#x27;, &#x27;y&#x27;, &#x27;w&#x27;, &#x27;h&#x27;))
+    region = (slice(max(0, y-12), y+h+12), slice(max(0, x-12), x+w+12))
+    crops = [(np.clip(im[region], 0, 1)*255).astype(&#x27;uint8&#x27;).astype(&#x27;float32&#x27;)/255
+             for im in (target, reference)]
+    return snapshot.classify(crops[0], reference_crop=crops[1])
+
+
+if __name__ == &#x27;__main__&#x27;:
+    for name in [&#x27;ok_0&#x27;, &#x27;ng_5&#x27;, &#x27;ng_9&#x27;]:
+        result = detect(ROOT/&#x27;data/ok_0.png&#x27;, ROOT/f&#x27;data/{name}.png&#x27;, name+&#x27;_v2&#x27;)
+        print(name, &#x27;baseline&#x27;, result[&#x27;baseline_count&#x27;], &#x27;proposals&#x27;, result[&#x27;proposal_count&#x27;],
+              &#x27;high&#x27;, result[&#x27;high_count&#x27;], &#x27;review&#x27;, result[&#x27;review_count&#x27;])
+</code></pre></details><details class="source" id="src-detection_runtime-py"><summary>detection_runtime.py <small>91 行</small></summary><div class="sourcebar"><span>SHA-256 896738d00a7c8149f78dfb0a9961ed3ba68069dc3a42cf0fe9f86bc60c11be84</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="detection_runtime.py">&quot;&quot;&quot;Bounded reference cache and deterministic per-stage parallel work.&quot;&quot;&quot;
+import contextlib
+import contextvars
+import hashlib
+import threading
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+import cv2
+import numpy as np
+
+PIPELINE = &#x27;dino-combined-20261104-r3&#x27;
+LOCK = threading.RLock()
+CURRENT = contextvars.ContextVar(&#x27;detection_context&#x27;, default=None)
+_REFERENCES = OrderedDict()
+
+
+class Reference:
+    def __init__(self, path, payload, read, structure_mask, machine_mask):
+        self.full = read(path)
+        self.small = cv2.resize(self.full, None, fx=1536/max(self.full.shape), fy=1536/max(self.full.shape))
+        self.structure = structure_mask(self.small)
+        self.machine = machine_mask(self.small)
+        cv2.setRNGSeed(7)
+        self.features = cv2.ORB_create(nfeatures=7000).detectAndCompute((self.small*255).astype(&#x27;uint8&#x27;), None)
+        if Path(path).read_bytes() != payload:
+            raise ValueError(&#x27;參照圖於準備期間變更，請重試&#x27;)
+        for a in (self.full,self.small,self.structure,self.machine):
+            a.flags.writeable = False
+
+
+def prepare_reference(path, read, structure_mask, machine_mask):
+    with LOCK:
+        path = Path(path).resolve()
+        payload = path.read_bytes()
+        key = (str(path),hashlib.sha256(payload).hexdigest())
+        if key not in _REFERENCES:
+            _REFERENCES[key] = Reference(path,payload,read,structure_mask,machine_mask)
+        _REFERENCES.move_to_end(key)
+        while len(_REFERENCES)&gt;2:
+            _REFERENCES.popitem(last=False)
+        return _REFERENCES[key]
+
+
+class Context:
+    def __init__(self, reference):
+        self.reference = reference
+        self.pair = None
+        self.quantized = None
+
+    def arrays(self, reference, target):
+        if self.pair is None or self.pair[0] is not reference or self.pair[1] is not target:
+            self.pair = (reference,target)
+            self.quantized = [(np.clip(im,0,1)*255).astype(&#x27;uint8&#x27;).astype(&#x27;float32&#x27;)/255 for im in self.pair]
+        return self.quantized
+
+
+@contextlib.contextmanager
+def detection(path, read, structure_mask, machine_mask):
+    # OpenCV&#x27;s thread count and RNG are process globals. Serialize full detection
+    # calls while stage workers do independent calculations and ordered collection.
+    with LOCK:
+        reference = prepare_reference(path,read,structure_mask,machine_mask)
+        token = CURRENT.set(Context(reference))
+        try:
+            yield CURRENT.get()
+        finally:
+            CURRENT.reset(token)
+
+
+def parallel_map(fn, values, inner_threads):
+    with LOCK:
+        threads = cv2.getNumThreads()
+        cv2.setNumThreads(inner_threads)
+        try:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                return list(pool.map(fn,values))
+        finally:
+            cv2.setNumThreads(threads)
+
+
+def directions(raw, descriptors):
+    def one(rotation):
+        rotated=np.rot90(raw,rotation).copy()
+        scale=1536/max(rotated.shape)
+        target=cv2.resize(rotated,None,fx=scale,fy=scale)
+        kt,dt=cv2.ORB_create(nfeatures=7000).detectAndCompute((target*255).astype(&#x27;uint8&#x27;),None)
+        pairs=None if dt is None or descriptors is None else cv2.BFMatcher(cv2.NORM_HAMMING).knnMatch(dt,descriptors,k=2)
+        return target,scale,kt,dt,pairs
+    return parallel_map(one,range(4),16)
+</code></pre></details><details class="source" id="src-brightness_fit-py"><summary>brightness_fit.py <small>44 行</small></summary><div class="sourcebar"><span>SHA-256 6402d60a52a1b2307253aebe981aa00d33d4b7fffec240e0ede643f04a387c0f</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="brightness_fit.py">&quot;&quot;&quot;Byte-preserving scratch-buffer implementation of the three exposure-fit rounds.&quot;&quot;&quot;
+import cv2
+import numpy as np
+
+def brightness(ref, target):
+    # Keep the original dtype promotion and operation order, including rounding.
+    # Reuse scratch buffers; the last round&#x27;s weights have no subsequent reader.
+    weights = np.ones_like(ref, dtype=np.float32)
+    wr, tmp, tmp2 = (np.empty_like(ref) for _ in range(3))
+    def average(a):
+        return cv2.boxFilter(a, -1, (101, 101), normalize=True, borderType=cv2.BORDER_REFLECT)
+    for round_index in range(3):
+        mass = average(weights); np.maximum(mass, .01, out=mass)
+        np.multiply(weights, ref, out=wr)
+        mean_ref = average(wr); np.divide(mean_ref, mass, out=mean_ref)
+        np.multiply(weights, target, out=tmp)
+        mean_target = average(tmp); np.divide(mean_target, mass, out=mean_target)
+        np.multiply(wr, ref, out=tmp)
+        variance = average(tmp); np.divide(variance, mass, out=variance)
+        np.square(mean_ref, out=tmp); np.subtract(variance, tmp, out=variance)
+        np.maximum(variance, 0, out=variance)
+        np.multiply(wr, target, out=tmp)
+        covariance = average(tmp); np.divide(covariance, mass, out=covariance)
+        np.multiply(mean_ref, mean_target, out=tmp); np.subtract(covariance, tmp, out=covariance)
+        # Short row strips keep consecutive arithmetic near one another in memory.
+        predicted = np.empty_like(ref)
+        if round_index == 0:
+            # Input images can be float64; the original first reweight promotes
+            # the initial float32 weights to the predicted image&#x27;s dtype.
+            weights = np.empty_like(predicted)
+        for top in range(0, ref.shape[0], 64):
+            sl = slice(top, top+64)
+            a, b = tmp[sl], tmp2[sl]
+            np.add(covariance[sl], .002, out=a); np.add(variance[sl], .002, out=b)
+            np.divide(a,b,out=a); np.clip(a,.6,1.6,out=a)  # gain
+            np.multiply(a,mean_ref[sl],out=b); np.subtract(mean_target[sl],b,out=b)
+            np.clip(b,-.25,.25,out=b)  # offset
+            np.multiply(a,ref[sl],out=a); np.add(a,b,out=predicted[sl])
+            np.clip(predicted[sl],0,1,out=predicted[sl])
+            if round_index &lt; 2:
+                np.subtract(predicted[sl],target[sl],out=a); np.abs(a,out=a)
+                np.maximum(a,.0001,out=a); np.divide(.04,a,out=a)
+                np.minimum(1,a,out=a); np.square(a,out=weights[sl])
+    return predicted
+</code></pre></details><details class="source" id="src-registration_candidate-py"><summary>registration_candidate.py <small>32 行</small></summary><div class="sourcebar"><span>SHA-256 753dd000f54cca4d5e8247be98c67bb6792494298c4c91b0b66be7dbb756826d</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="registration_candidate.py">&quot;&quot;&quot;Test a reflected image only when ordinary registration lacks strong support.&quot;&quot;&quot;
+import numpy as np
+
+
+def choose_registration(ref, raw, register_one, machine_mask, correlation):
+    ordinary=None;original_error=None
+    try:ordinary=register_one(ref,raw)
+    except ValueError as error:original_error=error
+    mask=machine_mask(ref)
+    def quality(reg):
+        valid=mask&amp;reg[&#x27;valid&#x27;]
+        coverage=float(valid.sum())/max(int(mask.sum()),1)
+        return correlation(ref,reg[&#x27;aligned&#x27;],valid),coverage
+    base_score,base_coverage=quality(ordinary) if ordinary is not None else (-1.,0.)
+    if ordinary is not None and ordinary[&#x27;inliers&#x27;]&gt;=100 and base_score&gt;=.90 and base_coverage&gt;=.95:
+        ordinary[&#x27;mirrored&#x27;]=False
+        return ordinary
+    try:
+        reflected=register_one(ref,np.fliplr(raw).copy())
+        score,coverage=quality(reflected)
+        supported=(reflected[&#x27;inliers&#x27;]&gt;=max(50,2*ordinary[&#x27;inliers&#x27;] if ordinary else 50)
+                   and coverage&gt;=.95 and score&gt;=.65 and score&gt;=base_score+.05)
+        if supported:
+            reflected[&#x27;mirrored&#x27;]=True
+            reflected[&#x27;orientation_evidence&#x27;]=dict(ordinary_inliers=ordinary[&#x27;inliers&#x27;] if ordinary else 0,
+                                                   ordinary_correlation=base_score,mirrored_correlation=score)
+            return reflected
+    except ValueError:
+        pass
+    if ordinary is None:raise original_error
+    ordinary[&#x27;mirrored&#x27;]=False
+    return ordinary
+</code></pre></details><details class="source" id="src-single_reference_evidence-py"><summary>single_reference_evidence.py <small>57 行</small></summary><div class="sourcebar"><span>SHA-256 e75d069421ab8d28f23bdb23c6ab4f7de70af10cc653ea3b41e78ab591eab51e</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="single_reference_evidence.py">&quot;&quot;&quot;Explain local displacement using only the supplied reference and target.
+
+Candidate pixels cannot choose the displacement or fit the exposure model.
+Uncertain matches are retained, never treated as evidence of normality.
+&quot;&quot;&quot;
+import cv2
+import numpy as np
+
+
+def explain(ref, target, candidate, threshold):
+    x,y,w,h=(candidate[k] for k in (&#x27;x&#x27;,&#x27;y&#x27;,&#x27;w&#x27;,&#x27;h&#x27;))
+    padding,radius=20,24
+    x0,y0=max(radius,x-padding),max(radius,y-padding)
+    x1,y1=min(ref.shape[1]-radius,x+w+padding),min(ref.shape[0]-radius,y+h+padding)
+    if x0&gt;x-3 or y0&gt;y-3 or x1&lt;x+w+3 or y1&lt;y+h+3:return None
+    patch=target[y0:y1,x0:x1].astype(&#x27;float32&#x27;)
+    context=np.ones(patch.shape,np.uint8)
+    context[y-y0-3:y+h-y0+3,x-x0-3:x+w-x0+3]=0
+    outside=context&gt;0
+    if outside.sum()&lt;400 or patch[outside].std()&lt;.025:return None
+    search=ref[y0-radius:y1+radius,x0-radius:x1+radius].astype(&#x27;float32&#x27;)
+    scores=cv2.matchTemplate(search,patch,cv2.TM_CCOEFF_NORMED,mask=context)
+    scores[~np.isfinite(scores)]=-1
+    _,score,_,point=cv2.minMaxLoc(scores)
+    dx,dy=point[0]-radius,point[1]-radius
+    before=float(scores[radius,radius])
+    alternative=scores.copy()
+    alternative[max(0,point[1]-3):point[1]+4,max(0,point[0]-3):point[0]+4]=-1
+    uniqueness=score-float(alternative.max())
+    if score&lt;.85 or uniqueness&lt;.025:return None
+    if max(abs(dx),abs(dy))&gt;2 and score&lt;before+.08:return None
+    # Reject a search-boundary optimum: the actual displacement is unresolved.
+    if max(abs(dx),abs(dy))==radius:return None
+    normal=ref[y0+dy:y1+dy,x0+dx:x1+dx].astype(&#x27;float32&#x27;)
+    weights=context.astype(&#x27;float32&#x27;)
+    for _ in range(4):
+        mass=max(float(weights.sum()),.001)
+        mx=float((weights*normal).sum()/mass);my=float((weights*patch).sum()/mass)
+        gain=float(np.clip((weights*(normal-mx)*(patch-my)).sum()/max(float((weights*(normal-mx)**2).sum()),.001),.6,1.6))
+        offset=float(np.clip(my-gain*mx,-.25,.25))
+        fitted=np.clip(gain*normal+offset,0,1)
+        error=np.abs(fitted-patch)
+        weights=context*np.minimum(1,.04/np.maximum(error,.0001))**2
+    core=(slice(y-y0,y+h-y0),slice(x-x0,x+w-x0))
+    difference=fitted[core]-patch[core]
+    positive=np.maximum(difference,0)
+    original=np.maximum(ref[y:y+h,x:x+w]-target[y:y+h,x:x+w],0)
+    ratio=float(positive.sum()/max(float(original.sum()),.001))
+    _,_,stats,_=cv2.connectedComponentsWithStats((difference&gt;threshold).astype(&#x27;uint8&#x27;))
+    remaining=int(max(stats[1:,cv2.CC_STAT_AREA],default=0))
+    # Both polarities must agree: a nearby normal screw must not explain a
+    # darker edge merely because the fitted reference is darker everywhere.
+    absolute_p95=float(np.percentile(np.abs(difference),95))
+    if ratio&gt;.2 or remaining&gt;=12 or absolute_p95&gt;.10:return None
+    return dict(method=&#x27;single_reference_context_translation&#x27;,dx=dx,dy=dy,
+                context_similarity=score,context_before=before,uniqueness=uniqueness,
+                gain=gain,offset=offset,ratio=ratio,remaining=remaining,absolute_p95=absolute_p95)
+</code></pre></details><details class="source" id="src-wire_review-py"><summary>wire_review.py <small>70 行</small></summary><div class="sourcebar"><span>SHA-256 81ef9bd4b3a9e6d477cfba70d7140457ade03ce953b04908e6d1df17a112d4c8</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="wire_review.py">&quot;&quot;&quot;Advisory wire evidence using one reference. Never use it to delete candidates.&quot;&quot;&quot;
+import cv2
+import numpy as np
+
+
+def review_evidence(ref,target,candidate,threshold):
+    x,y,w,h=(candidate[k] for k in (&#x27;x&#x27;,&#x27;y&#x27;,&#x27;w&#x27;,&#x27;h&#x27;))
+    padding=45
+    if x&lt;padding or y&lt;padding or x+w+padding&gt;=ref.shape[1] or y+h+padding&gt;=ref.shape[0]:return None
+    a=ref[y-padding:y+h+padding,x-padding:x+w+padding].astype(&#x27;float32&#x27;)
+    b=target[y-padding:y+h+padding,x-padding:x+w+padding].astype(&#x27;float32&#x27;)
+    kernel=cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(11,11))
+    ar=cv2.morphologyEx(a,cv2.MORPH_CLOSE,kernel)-a
+    br=cv2.morphologyEx(b,cv2.MORPH_CLOSE,kernel)-b
+    core=np.zeros(a.shape,bool);core[padding:padding+h,padding:padding+w]=True
+    # A dark extra object raises the ridge threshold; surrounding faint wire
+    # then cannot supply a continuous explanation for it.
+    cutoff=max(.08,float(np.percentile(br[core],90))*.35)
+    bm=(br&gt;cutoff).astype(&#x27;uint8&#x27;);am=(ar&gt;cutoff).astype(&#x27;uint8&#x27;)
+    n,labels,stats,_=cv2.connectedComponentsWithStats(bm)
+    overlaps=[int(((labels==i)&amp;core).sum()) for i in range(1,n)]
+    if not overlaps or max(overlaps)&lt;max(10,.5*candidate[&#x27;area&#x27;]):return None
+    label=int(np.argmax(overlaps))+1;component=labels==label
+    cy,cx=np.where(component)
+    length=float(np.hypot(np.ptp(cx),np.ptp(cy)))
+    if length&lt;max(45,2*max(w,h)):return None
+    outside=cv2.dilate(core.astype(&#x27;uint8&#x27;),np.ones((17,17),np.uint8))==0
+    distance=cv2.distanceTransform(bm,cv2.DIST_L2,5)
+    core_width=float(np.max(distance[core&amp;component]))
+    if core_width&gt;2.8:return None
+    # Require two distant reference-supported anchors outside the candidate.
+    nearby=cv2.dilate(am,np.ones((7,7),np.uint8))&gt;0
+    anchors=component&amp;outside&amp;nearby
+    ay,ax=np.where(anchors)
+    if len(ax)&lt;25 or np.hypot(np.ptp(ax),np.ptp(ay))&lt;35:return None
+    # A line ending near the candidate is not a two-sided explanation. In
+    # particular, do not treat a screw attached to a wire as a wire extension.
+    along=ax if w&gt;=h else ay
+    end=padding+(w if w&gt;=h else h)
+    if (along&lt;padding-8).sum()&lt;8 or (along&gt;end+8).sum()&lt;8:return None
+    # The reference support must itself be a long, thin component, not a nearby screw.
+    nr,rl,rs,_=cv2.connectedComponentsWithStats(am)
+    supports=[]
+    for i in range(1,nr):
+        region=rl==i;yy,xx=np.where(region)
+        if len(xx)&lt;35 or np.hypot(np.ptp(xx),np.ptp(yy))&lt;40:continue
+        matched=(cv2.dilate(region.astype(&#x27;uint8&#x27;),np.ones((7,7),np.uint8))&gt;0)&amp;anchors
+        my,mx=np.where(matched);ma=mx if w&gt;=h else my
+        if len(ma)&lt;20 or (ma&lt;padding-8).sum()&lt;8 or (ma&gt;end+8).sum()&lt;8:continue
+        supports.append(region)
+    if not supports:return None
+    support=np.logical_or.reduce(supports)
+    lost=float(np.maximum(ar-br,0)[support].sum())
+    appeared=float(np.maximum(br-ar,0)[core&amp;component].sum())
+    if lost&lt;max(1.,appeared*.7):return None
+    ref_width=cv2.distanceTransform(am,cv2.DIST_L2,5)
+    if core_width&gt;float(np.percentile(ref_width[support],95))+.6:return None
+    strength=float(np.percentile(br[core&amp;component],95))
+    normal_strength=float(np.percentile(ar[support],95))
+    # High-attenuation edges and opaque small objects are deliberately outside
+    # this wire-only rule; matching their thin silhouette is not sufficient.
+    if strength&gt;.45 or float(np.percentile(b[core&amp;component],5))&lt;.25:return None
+    if strength&gt;normal_strength*1.25+.025:return None
+    # All strong candidate pixels must belong to this continuous line.
+    strong=core&amp;(br&gt;max(.10,threshold))
+    if strong.sum() and np.mean(component[strong])&lt;.95:return None
+    return dict(method=&#x27;wire_continuity_review_only&#x27;,length=length,
+                core_radius=core_width,normal_strength=normal_strength,
+                target_strength=strength,anchor_pixels=int(len(ax)),
+                vacated_ridge_mass=lost,appeared_ridge_mass=appeared)
+</code></pre></details><details class="source" id="src-dino_adapter-py"><summary>dino_adapter.py <small>86 行</small></summary><div class="sourcebar"><span>SHA-256 dd7443bbd5d757738aaa1b94c98b971746042d447434d5b78f3cb5b17ff10926</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="dino_adapter.py">&quot;&quot;&quot;Frozen DINOv2 CLS features and an immutable example bank.&quot;&quot;&quot;
+import numpy as np
+from PIL import Image
+
+POLICY = &#x27;dino-top3-examples-v1&#x27;
+PAIRED_POLICY = &#x27;dino-top3-target-and-reference-v1&#x27;
+
+
+def validate(m, output):
+    if m.get(&#x27;input_size&#x27;) != [224, 224] or m.get(&#x27;classes&#x27;) != [&#x27;screw&#x27;, &#x27;non_screw&#x27;] or output.shape != (1, 257, 384):
+        raise ValueError(&#x27;DINO 需要 224×224 輸入與 [1,257,384] 特徵輸出&#x27;)
+    if m.get(&#x27;resize_shortest&#x27;) not in (224, 256) or m.get(&#x27;decision_policy&#x27;) not in (POLICY, PAIRED_POLICY):
+        raise ValueError(&#x27;不支援的 DINO 取圖或判斷設定&#x27;)
+    if m.get(&#x27;neighbors&#x27;) != 3 or m.get(&#x27;decision_margin&#x27;) != 0:
+        raise ValueError(&#x27;DINO 範例比較設定不符&#x27;)
+    for name in (&#x27;mean&#x27;, &#x27;std&#x27;):
+        a = np.asarray(m.get(name), dtype=float)
+        if a.shape != (3,) or not np.isfinite(a).all() or (name == &#x27;std&#x27; and np.any(a &lt;= 0)):
+            raise ValueError(&#x27;DINO 正規化設定無效&#x27;)
+    for label in (&#x27;screw&#x27;, &#x27;normal&#x27;):
+        group = m.get(&#x27;example_bank&#x27;, {}).get(label, {})
+        a = np.asarray(group.get(&#x27;embeddings&#x27;), dtype=np.float32)
+        ids = group.get(&#x27;ids&#x27;, [])
+        if a.ndim != 2 or a.shape[1] != 384 or not 3 &lt;= len(ids) == len(a) &lt;= 2000 or not all(isinstance(x, str) for x in ids) or len(set(ids)) != len(ids) or not np.isfinite(a).all() or not np.allclose(np.linalg.norm(a, axis=1), 1, atol=.001):
+            raise ValueError(&#x27;DINO 範例庫無效&#x27;)
+
+
+def input_image(m, crop):
+    im = Image.fromarray(np.rint(np.clip(crop, 0, 1)*255).astype(&#x27;uint8&#x27;)).convert(&#x27;RGB&#x27;)
+    w, h = im.size
+    edge = m[&#x27;resize_shortest&#x27;]
+    im = im.resize((edge, int(edge*h/w)) if w &lt;= h else (int(edge*w/h), edge), Image.Resampling.BICUBIC)
+    x, y = (im.width-224)//2, (im.height-224)//2
+    return im.crop((x, y, x+224, y+224))
+
+
+def embedding(m, session, crop):
+    a = np.asarray(input_image(m, crop), np.float32)/255
+    a = (a-np.asarray(m[&#x27;mean&#x27;], np.float32))/np.asarray(m[&#x27;std&#x27;], np.float32)
+    output = np.asarray(session.run(None, {session.get_inputs()[0].name: a.transpose(2, 0, 1)[None]})[0])
+    if output.shape != (1, 257, 384) or not np.isfinite(output).all():
+        raise ValueError(&#x27;DINO 推論輸出無效&#x27;)
+    vector = output[0, 0]
+    norm = np.linalg.norm(vector)
+    if norm &lt; 1e-8:
+        raise ValueError(&#x27;DINO 特徵向量無效&#x27;)
+    return vector/norm
+
+
+def classify(m, session, crop):
+    vector = embedding(m, session, crop)
+    return classify_vector(m, vector)
+
+
+def classify_vector(m, vector):
+    evidence = {}
+    for label in (&#x27;screw&#x27;, &#x27;normal&#x27;):
+        group = m[&#x27;example_bank&#x27;][label]
+        scores = np.asarray(group[&#x27;embeddings&#x27;], np.float32)@vector
+        indexes = np.argsort(scores)[-m[&#x27;neighbors&#x27;]:][::-1]
+        evidence[label] = dict(similarity=float(scores[indexes].mean()), neighbors=[group[&#x27;ids&#x27;][i] for i in indexes])
+    margin = evidence[&#x27;screw&#x27;][&#x27;similarity&#x27;]-evidence[&#x27;normal&#x27;][&#x27;similarity&#x27;]
+    keep = margin &gt;= m[&#x27;decision_margin&#x27;]
+    return dict(label=&#x27;screw&#x27; if keep else &#x27;non_screw&#x27;, probabilities=None,
+                screw_margin=margin, score_kind=&#x27;cosine_similarity&#x27;, dino_evidence=evidence,
+                decision_policy=POLICY, filter_recommendation=&#x27;keep&#x27; if keep else &#x27;exclude&#x27;,
+                decision_reason=&#x27;外型較接近螺絲範例，保留&#x27; if keep else &#x27;外型較接近非螺絲範例，排除&#x27;)
+
+
+def paired_decision(target, reference):
+    &quot;&quot;&quot;The exact rule used in the full 47+65 paired-image report.&quot;&quot;&quot;
+    target_screw = target[&#x27;label&#x27;] == &#x27;screw&#x27;
+    reference_screw = reference[&#x27;label&#x27;] == &#x27;screw&#x27;
+    keep = target_screw and not reference_screw
+    reason = (&#x27;待測圖像螺絲、參照圖不像螺絲，保留&#x27; if keep else
+              &#x27;待測圖與參照圖都像螺絲，依雙圖規則排除&#x27; if target_screw else
+              &#x27;待測圖較接近正常範例，排除&#x27;)
+    return dict(target, label=&#x27;screw&#x27; if keep else &#x27;non_screw&#x27;,
+                decision_policy=PAIRED_POLICY, filter_recommendation=&#x27;keep&#x27; if keep else &#x27;exclude&#x27;,
+                decision_reason=reason, paired_evidence=dict(target=target, reference=reference))
+
+
+def classify_pair(m, session, crop, reference_crop):
+    if reference_crop is None or not reference_crop.size:
+        raise ValueError(&#x27;雙圖 DINO 缺少同位置參照小圖，保留候選供人工確認&#x27;)
+    return paired_decision(classify(m, session, crop), classify(m, session, reference_crop))
+</code></pre></details><details class="source" id="src-dino_paired_optimized-py"><summary>dino_paired_optimized.py <small>102 行</small></summary><div class="sourcebar"><span>SHA-256 68bedeed3430b43743c3c14dec8c248394fe0b9b4d11c49a99c90c02384b9def</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="dino_paired_optimized.py">&quot;&quot;&quot;Validated contrast/global/local paired DINO; one restricted geometric recheck.&quot;&quot;&quot;
+import hashlib
+import numpy as np
+from PIL import Image
+from dino_adapter import input_image, paired_decision
+from detection_runtime import CURRENT
+
+STRATEGY = &#x27;contrast-global-local-half-v1&#x27;
+
+
+def adjusted_image(m, crop):
+    im = input_image(m,crop)
+    a = np.asarray(im.convert(&#x27;L&#x27;),np.float32)
+    low,high = np.percentile(a,[1,99])
+    if high-low&lt;1:
+        return im.convert(&#x27;RGB&#x27;)
+    return Image.fromarray(np.rint(np.clip((a-low)/(high-low),0,1)*255).astype(&#x27;uint8&#x27;)).convert(&#x27;RGB&#x27;)
+
+
+def features(m, session, im):
+    a=np.asarray(im,np.float32)/255
+    a=(a-np.asarray(m[&#x27;mean&#x27;],np.float32))/np.asarray(m[&#x27;std&#x27;],np.float32)
+    raw=np.asarray(session.run(None,{session.get_inputs()[0].name:a.transpose(2,0,1)[None]})[0])
+    if raw.shape!=(1,257,384) or not np.isfinite(raw).all():
+        raise ValueError(&#x27;DINO 特徵輸出無效&#x27;)
+    v=np.stack([raw[0,0],raw[0,1:].mean(axis=0)])
+    norms=np.linalg.norm(v,axis=1)[:,None]
+    if np.any(norms&lt;1e-8):
+        raise ValueError(&#x27;DINO 特徵向量無效&#x27;)
+    return v/norms
+
+
+def example_features(m, session, crop):
+    im=adjusted_image(m,crop)
+    views=[]
+    for flip in (False,True):
+        a=im.transpose(Image.Transpose.FLIP_LEFT_RIGHT) if flip else im
+        for angle in (0,90,180,270):
+            views.append(features(m,session,a.rotate(angle)))
+    return np.stack(views)
+
+
+def validate_bank(m, bank):
+    ids=m[&#x27;example_bank&#x27;][&#x27;screw&#x27;][&#x27;ids&#x27;]+m[&#x27;example_bank&#x27;][&#x27;normal&#x27;][&#x27;ids&#x27;]
+    if bank.shape!=(len(ids),8,2,384) or not np.isfinite(bank).all() or not np.allclose(np.linalg.norm(bank,axis=-1),1,atol=.001):
+        raise ValueError(&#x27;DINO 整體／局部範例特徵無效&#x27;)
+    bank.flags.writeable=False
+    return bank
+
+
+def classify(m,session,crop,bank):
+    im=adjusted_image(m,crop)
+    v=features(m,session,im)
+    groups=m[&#x27;example_bank&#x27;];n=len(groups[&#x27;screw&#x27;][&#x27;ids&#x27;])
+    scores=[(bank[:,:,0]@v[0]).max(axis=1),bank[:,0,1]@v[1]]
+    margins=[];evidence={}
+    for title,s in zip((&#x27;whole&#x27;,&#x27;local&#x27;),scores):
+        margins.append(float(np.sort(s[:n])[-3:].mean()-np.sort(s[n:])[-3:].mean()))
+        evidence[title]={}
+        for label,values in ((&#x27;screw&#x27;,s[:n]),(&#x27;normal&#x27;,s[n:])):
+            indices=np.argsort(values)[-3:][::-1]
+            evidence[title][label]=dict(similarity=float(values[indices].mean()),neighbors=[groups[label][&#x27;ids&#x27;][i] for i in indices])
+    margin=sum(margins)/2
+    return dict(label=&#x27;screw&#x27; if margin&gt;=0 else &#x27;non_screw&#x27;,probabilities=None,screw_margin=margin,
+                whole_margin=margins[0],local_margin=margins[1],dino_evidence=evidence,
+                input_sha256=hashlib.sha256(im.tobytes()).hexdigest(),feature_strategy=STRATEGY,
+                score_kind=&#x27;cosine_similarity&#x27;,filter_recommendation=&#x27;keep&#x27; if margin&gt;=0 else &#x27;exclude&#x27;)
+
+
+def classify_pair(m,session,crop,reference_crop,bank):
+    if reference_crop is None or not reference_crop.size:
+        raise ValueError(&#x27;雙圖 DINO 缺少同位置參照小圖，保留候選供人工確認&#x27;)
+    # Keep reference then target inference order identical to the measured pipeline.
+    reference=classify(m,session,reference_crop,bank)
+    target=classify(m,session,crop,bank)
+    return paired_decision(target,reference)
+
+
+def classify_candidate(snapshot,target,reference,candidate):
+    context=CURRENT.get()
+    arrays=context.arrays(reference,target) if context else [(np.clip(im,0,1)*255).astype(&#x27;uint8&#x27;).astype(&#x27;float32&#x27;)/255 for im in (reference,target)]
+    x,y,w,h=(candidate[k] for k in (&#x27;x&#x27;,&#x27;y&#x27;,&#x27;w&#x27;,&#x27;h&#x27;))
+    region=(slice(max(0,y-12),y+h+12),slice(max(0,x-12),x+w+12))
+    result=snapshot.classify(arrays[1][region],reference_crop=arrays[0][region])
+    pair=result.get(&#x27;paired_evidence&#x27;,{})
+    if result[&#x27;status&#x27;]!=&#x27;active&#x27; or not all(pair.get(side,{}).get(&#x27;label&#x27;)==&#x27;screw&#x27; for side in (&#x27;reference&#x27;,&#x27;target&#x27;)):
+        return result
+    from paired_geometry import extract
+    ex=extract(*arrays,candidate)
+    valid=False;box=None
+    if ex.get(&#x27;valid&#x27;):
+        bx,by,s=ex[&#x27;box&#x27;];box=[bx-2,by-2,bx+s+2,by+s+2];e=32
+        search=[max(e,x-e),max(e,y-e),min(reference.shape[1]-e,x+w+e),min(reference.shape[0]-e,y+h+e)]
+        ox,oy,ow,oh=ex[&#x27;object_box&#x27;]
+        touch=ox&lt;=search[0] or oy&lt;=search[1] or ox+ow&gt;=search[2] or oy+oh&gt;=search[3]
+        valid=ex[&#x27;metrics&#x27;][&#x27;context_reliable&#x27;] and ex[&#x27;area&#x27;]&gt;=12 and not touch and min(box)&gt;=0 and box[2]&lt;=reference.shape[1] and box[3]&lt;=reference.shape[0]
+    if valid:
+        checked=snapshot.classify(arrays[1][box[1]:box[3],box[0]:box[2]],reference_crop=arrays[0][box[1]:box[3],box[0]:box[2]])
+        checked[&#x27;paired_recheck&#x27;]=dict(performed=True,box=box,initial=pair)
+        return checked
+    result[&#x27;paired_recheck&#x27;]=dict(performed=False,reason=&#x27;geometry_not_eligible&#x27;)
+    return result
+</code></pre></details><details class="source" id="src-paired_geometry-py"><summary>paired_geometry.py <small>48 行</small></summary><div class="sourcebar"><span>SHA-256 3f4968207cc64a200c894b7f8211f3d83036275175b5b5182576caf7c087a049</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="paired_geometry.py">&quot;&quot;&quot;Restricted local recheck geometry, promoted unchanged from the validated pilot.&quot;&quot;&quot;
+import cv2
+import numpy as np
+
+RULES=dict(context_padding=52,excluded_padding=12,search_radius=12,
+           minimum_context_correlation=.75,change_threshold=.10,
+           minimum_component_area=12,new_dark_share=.80,
+           balanced_dark_share=[.25,.75],version=&#x27;exploratory-v1&#x27;)
+
+def compare(ref,target,c):
+    x,y,w,h=(c[k] for k in (&#x27;x&#x27;,&#x27;y&#x27;,&#x27;w&#x27;,&#x27;h&#x27;));p=RULES[&#x27;context_padding&#x27;];r=RULES[&#x27;search_radius&#x27;];e=RULES[&#x27;excluded_padding&#x27;]
+    x0,y0=max(r,x-p),max(r,y-p);x1,y1=min(ref.shape[1]-r,x+w+p),min(ref.shape[0]-r,y+h+p)
+    patch=target[y0:y1,x0:x1].astype(&#x27;float32&#x27;)
+    mask=np.ones(patch.shape,&#x27;uint8&#x27;);mask[max(0,y-e-y0):y+h+e-y0,max(0,x-e-x0):x+w+e-x0]=0
+    search=ref[y0-r:y1+r,x0-r:x1+r].astype(&#x27;float32&#x27;)
+    corr=cv2.matchTemplate(search,patch,cv2.TM_CCOEFF_NORMED,mask=mask);corr[~np.isfinite(corr)]=-1
+    _,score,_,point=cv2.minMaxLoc(corr);dx,dy=point[0]-r,point[1]-r
+    # Never allow a borderline/context-poor match to justify an exclusion.
+    reliable=score&gt;=RULES[&#x27;minimum_context_correlation&#x27;] and max(abs(dx),abs(dy))&lt;r
+    normal=ref[y0+dy:y1+dy,x0+dx:x1+dx].astype(&#x27;float32&#x27;);weights=mask.astype(&#x27;float32&#x27;)
+    for _ in range(4):
+        mass=max(float(weights.sum()),.001);mx=float((weights*normal).sum()/mass);my=float((weights*patch).sum()/mass)
+        gain=float(np.clip((weights*(normal-mx)*(patch-my)).sum()/max(float((weights*(normal-mx)**2).sum()),.001),.6,1.6))
+        offset=float(np.clip(my-gain*mx,-.25,.25));fitted=np.clip(gain*normal+offset,0,1)
+        error=np.abs(fitted-patch);weights=mask*np.minimum(1,.04/np.maximum(error,.0001))**2
+    roi=(slice(y-e-y0,y+h+e-y0),slice(x-e-x0,x+w+e-x0));delta=(fitted-patch)[roi]
+    positive=np.maximum(delta-RULES[&#x27;change_threshold&#x27;],0);negative=np.maximum(-delta-RULES[&#x27;change_threshold&#x27;],0)
+    dark=float(positive.sum());light=float(negative.sum());share=dark/max(dark+light,.00001)
+    n,labels,stats,centers=cv2.connectedComponentsWithStats((delta&gt;RULES[&#x27;change_threshold&#x27;]).astype(&#x27;uint8&#x27;))
+    overlaps=set(np.unique(labels[e:e+h,e:e+w]))-{0}
+    area=max([int(stats[i,cv2.CC_STAT_AREA]) for i in overlaps],default=0)
+    p95=float(np.percentile(np.abs(delta),95));outcome=&#x27;uncertain&#x27;
+    if reliable:
+        if area&lt;RULES[&#x27;minimum_component_area&#x27;] and p95&lt;=.10:outcome=&#x27;explained&#x27;
+        elif area&gt;=RULES[&#x27;minimum_component_area&#x27;] and share&gt;=RULES[&#x27;new_dark_share&#x27;]:outcome=&#x27;new_alert&#x27;
+        elif .25&lt;=share&lt;=.75:outcome=&#x27;movement_hint&#x27;
+    metrics=dict(outcome=outcome,context_reliable=reliable,context_correlation=score,dx=dx,dy=dy,gain=gain,offset=offset,dark_mass=dark,light_mass=light,dark_share=share,component_area=area,absolute_p95=p95)
+    return metrics,delta,fitted[roi],patch[roi]
+
+def extract(ref,tar,c):
+    x,y,w,h=(c[k] for k in [&#x27;x&#x27;,&#x27;y&#x27;,&#x27;w&#x27;,&#x27;h&#x27;]);metrics,*_=compare(ref,tar,c);dx,dy=metrics[&#x27;dx&#x27;],metrics[&#x27;dy&#x27;];e=32
+    x0,y0=max(e,x-e),max(e,y-e);x1,y1=min(ref.shape[1]-e,x+w+e),min(ref.shape[0]-e,y+h+e)
+    a=tar[y0:y1,x0:x1];b=ref[y0+dy:y1+dy,x0+dx:x1+dx];fitted=np.clip(metrics[&#x27;gain&#x27;]*b+metrics[&#x27;offset&#x27;],0,1)
+    delta=cv2.GaussianBlur(fitted-a,(3,3),.6);_,labels,stats,_=cv2.connectedComponentsWithStats((delta&gt;.08).astype(&#x27;uint8&#x27;))
+    ids,counts=np.unique(labels[y-y0:y+h-y0,x-x0:x+w-x0],return_counts=True);hits=[(int(count),int(i)) for i,count in zip(ids,counts) if i]
+    if not hits:return dict(valid=False,reason=&#x27;no_component&#x27;)
+    selected=max(hits)[1];xx,yy,ww,hh,area=stats[selected].tolist();bx,by=x0+xx,y0+yy;side=max(ww,hh)
+    return dict(valid=True,object_box=[bx,by,ww,hh],box=[round(bx+ww/2-side/2),round(by+hh/2-side/2),side],area=area,metrics=metrics)
+</code></pre></details><details class="source" id="src-model_manager-py"><summary>model_manager.py <small>217 行</small></summary><div class="sourcebar"><span>SHA-256 abbe032ec7fe51917e6cb3b353814c438e243258a6f9bfe1dd0d3d1395915485</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="model_manager.py">&quot;&quot;&quot;Immutable per-image model snapshots. Noop is explicit, never a fake classifier.&quot;&quot;&quot;
+import hashlib
+import json
+import threading
+from dataclasses import dataclass
+from pathlib import Path
+import cv2
+import numpy as np
+from runtime_paths import MODEL_ROOT, SETTINGS
+from station_settings import cpu_allowed, dino_execution
+
+CLASSES = [&#x27;screw&#x27;, &#x27;cable&#x27;, &#x27;structure&#x27;, &#x27;uncertain&#x27;]
+PREPROCESSING = &#x27;source-gray-percentile-crop-v1&#x27;
+
+def fingerprint(value):
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+
+@dataclass(frozen=True)
+class Snapshot:
+    manifest: dict
+    identity: str
+    session: object = None
+    error: str = None
+    requested: str = None
+    requested_backend: str = None
+    feature_bank: object = None
+
+    def info(self):
+        return dict(model_id=self.manifest[&#x27;model_id&#x27;], fingerprint=self.identity,
+                    backend=self.manifest[&#x27;backend&#x27;], requested=self.requested,
+                    requested_backend=self.requested_backend,
+                    error=self.error, mode=&#x27;auto_filter&#x27; if self.manifest.get(&#x27;backend&#x27;) in (&#x27;clip_onnx&#x27;,&#x27;yolo_onnx&#x27;,&#x27;dino_onnx&#x27;) else &#x27;shadow&#x27;,
+                    providers=self.session.get_providers() if self.session else [],
+                    execution=&#x27;gpu&#x27; if self.session and any(p in self.session.get_providers() for p in (&#x27;DmlExecutionProvider&#x27;,&#x27;CUDAExecutionProvider&#x27;)) else &#x27;cpu&#x27;,
+                    gpu_device=getattr(self.session, &#x27;device&#x27;, None),
+                    decision_policy=self.manifest.get(&#x27;decision_policy&#x27;),
+                    feature_strategy=self.manifest.get(&#x27;feature_strategy&#x27;))
+
+    def classify(self, crop, candidate_box=None, reference_crop=None):
+        base = dict(model_id=self.manifest[&#x27;model_id&#x27;], action=&#x27;manual_review&#x27;)
+        if self.session is None:
+            return dict(base, status=&#x27;error&#x27; if self.error else &#x27;disabled&#x27;, label=&#x27;uncertain&#x27;, probabilities=None)
+        try:
+            m = self.manifest
+            if m[&#x27;backend&#x27;] in (&#x27;clip_onnx&#x27;,&#x27;yolo_onnx&#x27;,&#x27;dino_onnx&#x27;):
+                from model_adapters import classify
+                from dino_adapter import PAIRED_POLICY, classify_pair
+                if m[&#x27;backend&#x27;] == &#x27;dino_onnx&#x27; and m.get(&#x27;decision_policy&#x27;) == PAIRED_POLICY:
+                    if m.get(&#x27;feature_strategy&#x27;):
+                        from dino_paired_optimized import classify_pair as optimized_pair
+                        prediction = optimized_pair(m,self.session,crop,reference_crop,self.feature_bank)
+                    else:
+                        prediction = classify_pair(m, self.session, crop, reference_crop)
+                else:
+                    prediction = classify(m, self.session, crop, candidate_box=candidate_box)
+                base[&#x27;action&#x27;] = &#x27;discard&#x27; if prediction[&#x27;filter_recommendation&#x27;] in (&#x27;non_screw_suggestion&#x27;,&#x27;exclude&#x27;) else &#x27;manual_review&#x27;
+                return dict(base, status=&#x27;active&#x27;, **prediction)
+            image = cv2.resize(crop.astype(np.float32), (224, 224), interpolation=cv2.INTER_LINEAR)
+            image = np.repeat(image[None], 3, axis=0)
+            image = (image - np.asarray(m[&#x27;mean&#x27;], np.float32)[:, None, None]) / np.asarray(m[&#x27;std&#x27;], np.float32)[:, None, None]
+            logits = np.asarray(self.session.run(None, {self.session.get_inputs()[0].name: image[None]})[0])
+            if logits.shape != (1, 4) or not np.isfinite(logits).all():
+                raise ValueError(&#x27;模型輸出必須為有限數值 [1,4]&#x27;)
+            scores = np.exp(logits[0] - logits[0].max()); scores /= scores.sum()
+            return dict(base, status=&#x27;shadow&#x27;, label=CLASSES[int(scores.argmax())],
+                        probabilities=dict(zip(CLASSES, map(float, scores))))
+        except Exception as exc:
+            return dict(base, status=&#x27;error&#x27;, label=&#x27;uncertain&#x27;, probabilities=None, error=str(exc))
+
+
+def noop(error=None, requested=None):
+    m = dict(model_id=&#x27;noop-v1&#x27;, backend=&#x27;noop&#x27;, preprocessing=PREPROCESSING, classes=CLASSES)
+    return Snapshot(m, fingerprint(m), error=error, requested=requested)
+
+class ModelManager:
+    def __init__(self, root=MODEL_ROOT, allow_cpu=None, execution_override=None):
+        self.root = Path(root)
+        self.allow_cpu = allow_cpu
+        self.execution_override = execution_override
+        self.lock = threading.Lock()
+        self.current = noop()
+        self.signature = None
+
+    def snapshot(self, version_directory=None):
+        with self.lock:
+            active = self.root / &#x27;active.json&#x27;
+            if version_directory is None and not active.exists():
+                # A deliberately unconfigured station uses noop; removal after activation is an error.
+                if self.signature is None:
+                    return self.current
+                return Snapshot(self.current.manifest, self.current.identity, self.current.session,
+                                &#x27;找不到 active.json，保留先前模型&#x27;, self.current.requested, feature_bank=self.current.feature_bank)
+            requested = None
+            m = None
+            try:
+                pointer = (json.dumps(dict(schema_version=1,version_directory=version_directory)).encode() if version_directory is not None else active.read_bytes())
+                selection = json.loads(pointer)
+                if selection.get(&#x27;schema_version&#x27;) != 1:
+                    raise ValueError(&#x27;不支援的啟用設定版本&#x27;)
+                requested = selection[&#x27;version_directory&#x27;]
+                if not isinstance(requested, str) or Path(requested).name != requested or requested in (&#x27;.&#x27;, &#x27;..&#x27;) or &#x27;\\&#x27; in requested:
+                    raise ValueError(&#x27;無效模型版本目錄&#x27;)
+                directory = (self.root / requested).resolve()
+                if directory.parent != self.root.resolve():
+                    raise ValueError(&#x27;模型目錄不可指向外部路徑&#x27;)
+                manifest_bytes = (directory / &#x27;manifest.json&#x27;).read_bytes()
+                m = json.loads(manifest_bytes)
+                if m.get(&#x27;schema_version&#x27;) != 1 or (m.get(&#x27;backend&#x27;) in (&#x27;noop&#x27;,&#x27;onnx&#x27;) and (m.get(&#x27;preprocessing&#x27;) != PREPROCESSING or m.get(&#x27;classes&#x27;) != CLASSES)) or (m.get(&#x27;backend&#x27;) in (&#x27;clip_onnx&#x27;,&#x27;yolo_onnx&#x27;,&#x27;dino_onnx&#x27;) and m.get(&#x27;preprocessing&#x27;) != &#x27;aligned-gray-tight12-v1&#x27;):
+                    raise ValueError(&#x27;不支援的模型契約或類別&#x27;)
+                if not isinstance(m.get(&#x27;model_id&#x27;), str) or not m[&#x27;model_id&#x27;]:
+                    raise ValueError(&#x27;缺少 model_id&#x27;)
+                session = None
+                feature_bank = None
+                signature = fingerprint([pointer.hex(), manifest_bytes.hex()])
+                execution = (self.execution_override or dino_execution()) if m[&#x27;backend&#x27;] == &#x27;dino_onnx&#x27; else None
+                if execution not in (None, &#x27;cpu&#x27;, &#x27;gpu&#x27;):
+                    raise ValueError(&#x27;無效的 DINO 執行方式&#x27;)
+                if execution is not None:
+                    signature = fingerprint([signature, execution])
+                if m[&#x27;backend&#x27;] in (&#x27;onnx&#x27;,&#x27;clip_onnx&#x27;,&#x27;yolo_onnx&#x27;,&#x27;dino_onnx&#x27;):
+                    filename = m[&#x27;file&#x27;]
+                    path = (directory / filename).resolve()
+                    if path.parent != directory or path.suffix.lower() != &#x27;.onnx&#x27;:
+                        raise ValueError(&#x27;模型必須為版本目錄內的 ONNX 檔&#x27;)
+                    # Immutable version folders: check stat changes as well as active/manifest changes.
+                    stat = path.stat()
+                    signature = fingerprint([signature, stat.st_size, stat.st_mtime_ns])
+                    if m.get(&#x27;feature_strategy&#x27;):
+                        from dino_paired_optimized import STRATEGY
+                        if m[&#x27;backend&#x27;]!=&#x27;dino_onnx&#x27; or m[&#x27;feature_strategy&#x27;]!=STRATEGY:
+                            raise ValueError(&#x27;不支援的範例特徵策略&#x27;)
+                        feature_path=(directory/m[&#x27;feature_file&#x27;]).resolve()
+                        if feature_path.parent!=directory or feature_path.suffix!=&#x27;.npz&#x27;:
+                            raise ValueError(&#x27;範例特徵必須位於模型版本目錄&#x27;)
+                        fs=feature_path.stat()
+                        signature=fingerprint([signature,fs.st_size,fs.st_mtime_ns])
+                elif m[&#x27;backend&#x27;] != &#x27;noop&#x27;:
+                    raise ValueError(&#x27;不支援的模型 backend&#x27;)
+                if signature == self.signature:
+                    return self.current
+                if m[&#x27;backend&#x27;] in (&#x27;onnx&#x27;,&#x27;clip_onnx&#x27;,&#x27;yolo_onnx&#x27;,&#x27;dino_onnx&#x27;):
+                    payload = path.read_bytes()
+                    if hashlib.sha256(payload).hexdigest() != m[&#x27;sha256&#x27;]:
+                        raise ValueError(&#x27;模型 SHA-256 不符&#x27;)
+                    if m.get(&#x27;feature_strategy&#x27;):
+                        import io
+                        from dino_paired_optimized import validate_bank
+                        feature_payload=feature_path.read_bytes()
+                        if hashlib.sha256(feature_payload).hexdigest()!=m[&#x27;feature_sha256&#x27;]:
+                            raise ValueError(&#x27;DINO 範例特徵 SHA-256 不符&#x27;)
+                        with np.load(io.BytesIO(feature_payload),allow_pickle=False) as bank_file:
+                            feature_bank=validate_bank(m,bank_file[&#x27;bank&#x27;])
+                    if m[&#x27;backend&#x27;]==&#x27;onnx&#x27;:
+                        if m.get(&#x27;input_size&#x27;) != [224, 224] or m.get(&#x27;output&#x27;) != &#x27;logits&#x27;:
+                            raise ValueError(&#x27;不支援的模型輸入輸出契約&#x27;)
+                        for field in (&#x27;mean&#x27;, &#x27;std&#x27;):
+                            a = np.asarray(m[field], dtype=float)
+                            if a.shape != (3,) or not np.isfinite(a).all() or (field == &#x27;std&#x27; and np.any(a &lt;= 0)):
+                                raise ValueError(&#x27;無效的正規化設定&#x27;)
+                    import onnxruntime as ort
+                    require_cuda = execution is None and m.get(&#x27;provider_policy&#x27;, &#x27;require_cuda&#x27;) == &#x27;require_cuda&#x27;
+                    if m.get(&#x27;provider_policy&#x27;, &#x27;require_cuda&#x27;) not in (&#x27;require_cuda&#x27;, &#x27;cpu&#x27;):
+                        raise ValueError(&#x27;無效 provider_policy&#x27;)
+                    if execution != &#x27;gpu&#x27; and not require_cuda and not (cpu_allowed() if self.allow_cpu is None else self.allow_cpu):
+                        raise ValueError(&#x27;站台未允許 CPU 模型&#x27;)
+                    if require_cuda and &#x27;CUDAExecutionProvider&#x27; not in ort.get_available_providers():
+                        raise ValueError(&#x27;CUDA provider 不可用&#x27;)
+                    if require_cuda and hasattr(ort, &#x27;preload_dlls&#x27;):
+                        ort.preload_dlls()
+                    providers = [&#x27;CUDAExecutionProvider&#x27;, &#x27;CPUExecutionProvider&#x27;] if require_cuda else [&#x27;CPUExecutionProvider&#x27;]
+                    # Load bytes so the validated file cannot change between hashing and session creation.
+                    options = ort.SessionOptions()
+                    options.intra_op_num_threads = 4
+                    if execution == &#x27;gpu&#x27;:
+                        from gpu_runtime import GpuSession
+                        session = GpuSession(path, m[&#x27;sha256&#x27;])
+                    else:
+                        session = ort.InferenceSession(payload, sess_options=options, providers=providers)
+                        session.disable_fallback()
+                    if require_cuda and session.get_providers()[0] != &#x27;CUDAExecutionProvider&#x27;:
+                        raise ValueError(&#x27;CUDA session 未成功建立&#x27;)
+                    if m[&#x27;backend&#x27;]==&#x27;onnx&#x27;:
+                        inputs, outputs = session.get_inputs(), session.get_outputs()
+                        if len(inputs) != 1 or inputs[0].type != &#x27;tensor(float)&#x27; or inputs[0].shape not in ([1,3,224,224], [&#x27;N&#x27;,3,224,224]):
+                            raise ValueError(&#x27;模型輸入必須為 float32 [1,3,224,224] 或 [N,3,224,224]&#x27;)
+                        if len(outputs) != 1 or outputs[0].type != &#x27;tensor(float)&#x27;:
+                            raise ValueError(&#x27;模型必須只有一個 float32 輸出&#x27;)
+                        test = session.run(None, {inputs[0].name: np.zeros((1,3,224,224), np.float32)})[0]
+                        if np.asarray(test).shape != (1,4) or not np.isfinite(test).all():
+                            raise ValueError(&#x27;模型測試輸出不符&#x27;)
+                    else:
+                        from model_adapters import validate
+                        validate(m, session)
+                policy = None
+                if m[&#x27;backend&#x27;]==&#x27;clip_onnx&#x27;:
+                    from model_adapters import CLIP_DECISION_POLICY, CLIP_REVIEW_MARGIN
+                    policy = [CLIP_DECISION_POLICY, CLIP_REVIEW_MARGIN]
+                elif m[&#x27;backend&#x27;]==&#x27;dino_onnx&#x27;:
+                    from dino_adapter import POLICY, PAIRED_POLICY
+                    policy = [PAIRED_POLICY if m.get(&#x27;decision_policy&#x27;) == PAIRED_POLICY else POLICY]
+                elif m[&#x27;backend&#x27;]==&#x27;yolo_onnx&#x27;:
+                    policy = [&#x27;yolo-candidate-filter-v1&#x27;, .25]
+                identity_parts = [m, m.get(&#x27;sha256&#x27;), session.get_providers() if session else []]
+                if policy is not None:
+                    identity_parts.append(policy)
+                if execution == &#x27;gpu&#x27;:
+                    identity_parts.append([&#x27;directml-fixed224-v1&#x27;, session.runtime_version, session.device])
+                identity = fingerprint(identity_parts)
+                self.current = Snapshot(m, identity, session, requested=requested, feature_bank=feature_bank)
+                self.signature = signature
+                return self.current
+            except Exception as exc:
+                # Keep the previous validated session, clearly reporting requested/effective versions.
+                return Snapshot(self.current.manifest, self.current.identity, self.current.session, (&#x27;尚未安裝模型推論套件，請先安裝 onnxruntime（Mac／CPU）或 onnxruntime-gpu（IPC／GPU）&#x27; if isinstance(exc, ModuleNotFoundError) and exc.name == &#x27;onnxruntime&#x27; else str(exc)), requested,
+                                m.get(&#x27;backend&#x27;) if isinstance(m, dict) else None, feature_bank=self.current.feature_bank)
+
+manager = ModelManager()
+</code></pre></details><details class="source" id="src-model_adapters-py"><summary>model_adapters.py <small>194 行</small></summary><div class="sourcebar"><span>SHA-256 e3aed92c8ff8458af76efa3ba581c0b1b5a4d1bdf8c39e83a28606868beec447</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="model_adapters.py">&quot;&quot;&quot;Additional candidate classifiers. Scores never replace human decisions.&quot;&quot;&quot;
+import cv2
+import numpy as np
+from PIL import Image
+
+TIGHT_PREPROCESSING = &#x27;aligned-gray-tight12-v1&#x27;
+CLIP_DECISION_POLICY = &#x27;non-screw-auto-filter-v2&#x27;
+CLIP_REVIEW_MARGIN = .01
+
+
+def clip_decision(labels, scores):
+    &quot;&quot;&quot;Do not turn a near-tie into non-screw evidence; scores are not probabilities.&quot;&quot;&quot;
+    scores = np.asarray(scores, dtype=float)
+    if scores.shape != (len(labels),) or len(labels)&lt;2 or labels[0]!=&#x27;screw&#x27; or not np.isfinite(scores).all():
+        raise ValueError(&#x27;CLIP 類別分數無效&#x27;)
+    raw_label = labels[int(scores.argmax())]
+    margin = float(scores[0]-max(scores[1:]))
+    near_tie = raw_label != &#x27;screw&#x27; and margin &gt;= -CLIP_REVIEW_MARGIN - 1e-7
+    label = &#x27;uncertain&#x27; if near_tie else raw_label
+    return dict(label=label, raw_label=raw_label, screw_margin=margin,
+                review_margin=CLIP_REVIEW_MARGIN, decision_policy=CLIP_DECISION_POLICY,
+                filter_recommendation=&#x27;review&#x27; if near_tie else &#x27;keep&#x27; if label==&#x27;screw&#x27; else &#x27;non_screw_suggestion&#x27;,
+                decision_reason=&#x27;螺絲與其他類別分數接近，保留候選&#x27; if near_tie else &#x27;螺絲類別分數最高&#x27; if label==&#x27;screw&#x27; else &#x27;非螺絲類別分數領先超過門檻，自動排除候選&#x27;)
+
+
+def refine_cable_shape(manifest, vector, decision, scores):
+    &quot;&quot;&quot;Resolve cable/screw ambiguity using target-image appearance, never a reference.&quot;&quot;&quot;
+    shape = manifest.get(&#x27;cable_shape&#x27;)
+    if not shape or decision[&#x27;label&#x27;] != &#x27;uncertain&#x27; or decision[&#x27;raw_label&#x27;] != &#x27;cable&#x27;:
+        return decision
+    similarity = float(np.asarray(shape[&#x27;embedding&#x27;], np.float32) @ vector)
+    margin = float(scores[0] - similarity)
+    evidence = dict(method=&#x27;clip-cable-shape-v1&#x27;, similarity=similarity,
+                    screw_margin=margin, initial_screw_margin=decision[&#x27;screw_margin&#x27;])
+    if margin &lt; -CLIP_REVIEW_MARGIN - 1e-7:
+        return dict(decision, label=&#x27;cable&#x27;, screw_margin=margin,
+                    filter_recommendation=&#x27;non_screw_suggestion&#x27;, shape_evidence=evidence,
+                    decision_reason=&#x27;CLIP 線材外型描述領先螺絲超過原門檻，自動排除&#x27;)
+    return dict(decision, shape_evidence=evidence)
+
+
+def refine_screw_examples(manifest, vector, decision):
+    &quot;&quot;&quot;Positive visual evidence can retain a screw; unfamiliar examples never delete it.&quot;&quot;&quot;
+    bank = manifest.get(&#x27;screw_examples&#x27;)
+    if not bank:
+        return decision
+    evidence = dict(method=&#x27;clip-visual-screw-bank-v1&#x27;)
+    for label in (&#x27;screw&#x27;, &#x27;normal&#x27;):
+        scores = np.asarray(bank[label][&#x27;embeddings&#x27;], np.float32) @ vector
+        indexes = np.argsort(scores)[-bank[&#x27;neighbors&#x27;]:][::-1]
+        evidence[label+&#x27;_similarity&#x27;] = float(scores[indexes].mean())
+        evidence[label+&#x27;_neighbors&#x27;] = [bank[label][&#x27;ids&#x27;][i] for i in indexes]
+    evidence[&#x27;margin&#x27;] = evidence[&#x27;screw_similarity&#x27;]-evidence[&#x27;normal_similarity&#x27;]
+    evidence[&#x27;supported&#x27;] = (evidence[&#x27;margin&#x27;] &gt;= bank[&#x27;margin&#x27;] and
+                             evidence[&#x27;screw_similarity&#x27;] &gt;= bank[&#x27;minimum_similarity&#x27;])
+    if evidence[&#x27;supported&#x27;] and decision[&#x27;label&#x27;] != &#x27;screw&#x27;:
+        return dict(decision, label=&#x27;screw&#x27;, filter_recommendation=&#x27;keep&#x27;,
+                    screw_example_evidence=evidence,
+                    decision_reason=&#x27;CLIP 外型更接近已標記螺絲範例，保留候選&#x27;)
+    return dict(decision, screw_example_evidence=evidence)
+
+
+
+def yolo_predictions(manifest, output):
+    &quot;&quot;&quot;Return model-pixel xyxy boxes and per-class scores for supported exports.&quot;&quot;&quot;
+    output=np.asarray(output)
+    n=len(manifest[&#x27;classes&#x27;])
+    layout=manifest.get(&#x27;yolo_layout&#x27;,&#x27;raw&#x27;)
+    if output.ndim!=3 or output.shape[0]!=1 or not np.isfinite(output).all():
+        raise ValueError(&#x27;YOLO 推論輸出無效&#x27;)
+    if layout==&#x27;raw&#x27;:
+        if output.shape[1]!=4+n or output.shape[2]&lt;1:
+            raise ValueError(&#x27;原始 YOLO 輸出需為 [1,4+類別數,N]&#x27;)
+        xywh=output[0,:4].T
+        boxes=np.concatenate((xywh[:,:2]-xywh[:,2:]/2,xywh[:,:2]+xywh[:,2:]/2),axis=1)
+        scores=output[0,4:].T
+    elif layout==&#x27;end2end&#x27;:
+        if output.shape[2]!=6:
+            raise ValueError(&#x27;完成後處理的 YOLO 輸出需為 [1,N,6]&#x27;)
+        values=output[0];ids=values[:,5]
+        if np.any(ids!=np.floor(ids)) or np.any(ids&lt;0) or np.any(ids&gt;=n):
+            raise ValueError(&#x27;YOLO 輸出類別編號與設定不符&#x27;)
+        boxes=values[:,:4];scores=np.zeros((len(values),n),np.float32)
+        scores[np.arange(len(values)),ids.astype(int)]=values[:,4]
+    else:
+        raise ValueError(&#x27;不支援的 YOLO 輸出格式&#x27;)
+    if np.any(scores&lt;0) or np.any(scores&gt;1):
+        raise ValueError(&#x27;YOLO 分數超出範圍&#x27;)
+    return boxes,scores
+
+
+def validate(manifest, session):
+    m = manifest
+    size = m.get(&#x27;input_size&#x27;)
+    if not isinstance(size, list) or len(size)!=2 or any(type(n) is not int or not 32&lt;=n&lt;=1536 for n in size):
+        raise ValueError(&#x27;模型輸入尺寸需介於 32 與 1536&#x27;)
+    inputs, outputs = session.get_inputs(), session.get_outputs()
+    if len(inputs)!=1 or inputs[0].type!=&#x27;tensor(float)&#x27; or len(inputs[0].shape)!=4:
+        raise ValueError(&#x27;需要單一 float32 NCHW 輸入&#x27;)
+    expected=[1,3,*size]
+    if any(isinstance(a,int) and a!=b for a,b in zip(inputs[0].shape,expected)):
+        raise ValueError(&#x27;模型輸入尺寸與設定不符&#x27;)
+    if len(outputs)!=1 or outputs[0].type!=&#x27;tensor(float)&#x27;:
+        raise ValueError(&#x27;需要單一 float32 輸出&#x27;)
+    labels=m.get(&#x27;classes&#x27;)
+    if not isinstance(labels,list) or not 1&lt;=len(labels)&lt;=1000 or any(not isinstance(x,str) or not x.strip() for x in labels) or len(set(labels))!=len(labels):
+        raise ValueError(&#x27;類別名稱需為不重複的非空文字&#x27;)
+    output=np.asarray(session.run(None,{inputs[0].name:np.zeros(expected,np.float32)})[0])
+    if not np.isfinite(output).all():
+        raise ValueError(&#x27;模型測試輸出不是有限數值&#x27;)
+    if m[&#x27;backend&#x27;]==&#x27;clip_onnx&#x27;:
+        text=np.asarray(m.get(&#x27;text_embeddings&#x27;),np.float32)
+        if len(labels)&lt;2 or labels[0]!=&#x27;screw&#x27; or size!=[224,224] or output.shape!=(1,512) or text.shape!=(len(labels),512) or not np.isfinite(text).all() or not np.allclose(np.linalg.norm(text,axis=1),1,atol=.001):
+            raise ValueError(&#x27;CLIP 影像／文字向量契約不符&#x27;)
+        for name in (&#x27;mean&#x27;,&#x27;std&#x27;):
+            a=np.asarray(m.get(name),float)
+            if a.shape!=(3,) or not np.isfinite(a).all() or (name==&#x27;std&#x27; and np.any(a&lt;=0)):
+                raise ValueError(&#x27;CLIP 正規化設定不符&#x27;)
+        if &#x27;cable_shape&#x27; in m:
+            shape=m[&#x27;cable_shape&#x27;]; vector=np.asarray(shape.get(&#x27;embedding&#x27;),np.float32)
+            if shape.get(&#x27;method&#x27;)!=&#x27;clip-cable-shape-v1&#x27; or &#x27;cable&#x27; not in labels or vector.shape!=(512,) or not np.isfinite(vector).all() or not np.isclose(np.linalg.norm(vector),1,atol=.001):
+                raise ValueError(&#x27;CLIP 線材外型向量無效&#x27;)
+        if &#x27;screw_examples&#x27; in m:
+            bank=m[&#x27;screw_examples&#x27;]
+            if bank.get(&#x27;method&#x27;)!=&#x27;clip-visual-screw-bank-v1&#x27; or type(bank.get(&#x27;neighbors&#x27;)) is not int or not 1&lt;=bank[&#x27;neighbors&#x27;]&lt;=10 or not .001&lt;=bank.get(&#x27;margin&#x27;,0)&lt;=1 or not 0&lt;=bank.get(&#x27;minimum_similarity&#x27;,-1)&lt;=1:
+                raise ValueError(&#x27;CLIP 螺絲範例設定無效&#x27;)
+            for label in (&#x27;screw&#x27;,&#x27;normal&#x27;):
+                group=bank.get(label,{})
+                vectors=np.asarray(group.get(&#x27;embeddings&#x27;),np.float32);ids=group.get(&#x27;ids&#x27;,[])
+                if vectors.ndim!=2 or vectors.shape[1]!=512 or not bank[&#x27;neighbors&#x27;]&lt;=len(ids)==len(vectors)&lt;=2000 or not np.isfinite(vectors).all() or not np.allclose(np.linalg.norm(vectors,axis=1),1,atol=.001):
+                    raise ValueError(&#x27;CLIP 螺絲範例特徵無效&#x27;)
+    elif m[&#x27;backend&#x27;]==&#x27;dino_onnx&#x27;:
+        from dino_adapter import validate as validate_dino
+        validate_dino(m, output)
+    elif m[&#x27;backend&#x27;]==&#x27;yolo_onnx&#x27;:
+        yolo_predictions(m,output)
+        index=m.get(&#x27;screw_class_id&#x27;)
+        if type(index) is not int or not 0&lt;=index&lt;len(labels) or not .01&lt;=m.get(&#x27;confidence&#x27;,0)&lt;=.99:
+            raise ValueError(&#x27;螺絲類別編號或信心門檻無效&#x27;)
+
+
+def classify(manifest, session, crop, candidate_box=None):
+    m=manifest
+    if m[&#x27;backend&#x27;]==&#x27;dino_onnx&#x27;:
+        from dino_adapter import classify as classify_dino
+        return classify_dino(m, session, crop)
+    if m[&#x27;backend&#x27;]==&#x27;clip_onnx&#x27;:
+        image=Image.fromarray(np.rint(np.clip(crop,0,1)*255).astype(&#x27;uint8&#x27;)).convert(&#x27;RGB&#x27;)
+        w,h=image.size
+        size=(224,int(224*h/w)) if w&lt;=h else (int(224*w/h),224)
+        image=image.resize(size,Image.Resampling.BICUBIC)
+        left,top=(image.width-224)//2,(image.height-224)//2
+        values=np.asarray(image.crop((left,top,left+224,top+224)),np.float32)/255
+        values=(values-np.asarray(m[&#x27;mean&#x27;],np.float32))/np.asarray(m[&#x27;std&#x27;],np.float32)
+        tensor=values.transpose(2,0,1)[None]
+        vector=np.asarray(session.run(None,{session.get_inputs()[0].name:tensor})[0])[0]
+        if vector.shape!=(512,) or not np.isfinite(vector).all() or np.linalg.norm(vector)&lt;1e-8:
+            raise ValueError(&#x27;CLIP 推論向量無效&#x27;)
+        vector=vector/np.linalg.norm(vector)
+        scores=np.asarray(m[&#x27;text_embeddings&#x27;],np.float32)@vector
+        decision=refine_cable_shape(m, vector, clip_decision(m[&#x27;classes&#x27;], scores), scores)
+        decision=refine_screw_examples(m, vector, decision)
+        return dict(**decision, probabilities=None,
+                    similarities=dict(zip(m[&#x27;classes&#x27;],map(float,scores))),
+                    score_kind=&#x27;cosine_similarity&#x27;)
+    height,width=m[&#x27;input_size&#x27;]
+    scale=min(width/crop.shape[1],height/crop.shape[0])
+    resized=cv2.resize(crop,(round(crop.shape[1]*scale),round(crop.shape[0]*scale)))
+    canvas=np.full((height,width),114/255,np.float32)
+    y,x=round((height-resized.shape[0])/2-.1),round((width-resized.shape[1])/2-.1)
+    canvas[y:y+resized.shape[0],x:x+resized.shape[1]]=resized
+    tensor=np.repeat(canvas[None,None],3,axis=1)
+    output=np.asarray(session.run(None,{session.get_inputs()[0].name:tensor})[0])
+    boxes,predictions=yolo_predictions(m,output)
+    roi=np.asarray(candidate_box if candidate_box is not None else [0,0,crop.shape[1],crop.shape[0]],np.float32)
+    if roi.shape!=(4,) or not np.isfinite(roi).all() or np.any(roi[2:]&lt;=roi[:2]):
+        raise ValueError(&#x27;YOLO 候選位置無效&#x27;)
+    roi=roi*scale+np.array([x,y,x,y],np.float32)
+    intersection=np.maximum(0,np.minimum(boxes[:,2:],roi[2:])-np.maximum(boxes[:,:2],roi[:2])).prod(axis=1)
+    box_area=np.maximum(0,boxes[:,2:]-boxes[:,:2]).prod(axis=1)
+    # The difference region may be a fragment of a screw, or larger than it.
+    overlap=intersection/np.maximum(1,np.minimum(box_area,(roi[2:]-roi[:2]).prod()))
+    eligible=(box_area&gt;0)&amp;(overlap&gt;=.25)
+    scores=predictions[eligible].max(axis=0) if eligible.any() else np.zeros(len(m[&#x27;classes&#x27;]),np.float32)
+    screw=float(scores[m[&#x27;screw_class_id&#x27;]]);keep=screw&gt;=m[&#x27;confidence&#x27;]
+    label=&#x27;screw&#x27; if keep else &#x27;non_screw&#x27;
+    hits=np.flatnonzero(eligible &amp; (predictions[:,m[&#x27;screw_class_id&#x27;]]&gt;=m[&#x27;confidence&#x27;]))
+    return dict(label=label,probabilities=None,score_kind=&#x27;detector_confidence&#x27;,
+                screw_score=screw,confidence_threshold=m[&#x27;confidence&#x27;],
+                filter_recommendation=&#x27;keep&#x27; if keep else &#x27;exclude&#x27;,
+                decision_reason=&#x27;YOLO 在候選位置偵測到螺絲&#x27; if keep else &#x27;YOLO 未在候選位置偵測到達門檻的螺絲，自動排除&#x27;,
+                candidate_overlap_threshold=.25,
+                screw_detections=[dict(box=((boxes[i]-np.array([x,y,x,y]))/scale).tolist(),score=float(predictions[i,m[&#x27;screw_class_id&#x27;]])) for i in hits],
+                class_scores=dict(zip(m[&#x27;classes&#x27;],map(float,scores))))
+</code></pre></details><details class="source" id="src-gpu_runtime-py"><summary>gpu_runtime.py <small>120 行</small></summary><div class="sourcebar"><span>SHA-256 1520407d997bf57f612c509e3dd3974d2870681e2f10def5e39c657eec8513fa</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="gpu_runtime.py">&quot;&quot;&quot;ORT-compatible local worker client. Explicit GPU errors never masquerade as CPU.&quot;&quot;&quot;
+import atexit
+import queue
+import subprocess
+import threading
+import weakref
+from pathlib import Path
+from types import SimpleNamespace
+
+import numpy as np
+from gpu_protocol import receive, send
+from runtime_paths import INSTALL_ROOT, RESOURCE_ROOT
+
+_sessions = weakref.WeakSet()
+
+
+def runtime_python():
+    for path in (INSTALL_ROOT / &#x27;runtime-gpu/XRayGpuWorker.exe&#x27;,
+                 INSTALL_ROOT / &#x27;runtime-gpu/python.exe&#x27;,
+                 INSTALL_ROOT / &#x27;workspace/venvs/dino-directml/Scripts/python.exe&#x27;):
+        if path.is_file():
+            return path
+    raise RuntimeError(&#x27;這台電腦尚未安裝 DINO GPU 執行環境；請繼續使用 CPU&#x27;)
+
+
+def available():
+    try:
+        runtime_python()
+        return True
+    except RuntimeError:
+        return False
+
+
+def _exchange(process, result, header, payload):
+    try:
+        if header is not None:
+            send(process.stdin, header, payload)
+        result.put((True, receive(process.stdout)))
+    except Exception as exc:
+        result.put((False, exc))
+
+
+class GpuSession:
+    def __init__(self, path, sha256):
+        self.lock = threading.Lock()
+        executable=runtime_python()
+        command=([str(executable)] if executable.name==&#x27;XRayGpuWorker.exe&#x27; else [str(executable),&#x27;-u&#x27;,str(RESOURCE_ROOT/&#x27;gpu_worker.py&#x27;)])
+        self.process = subprocess.Popen(command+[str(Path(path).resolve()), sha256], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL, creationflags=getattr(subprocess, &#x27;CREATE_NO_WINDOW&#x27;, 0))
+        _sessions.add(self)
+        try:
+            with self.lock:
+                self.metadata, _ = self._request(timeout=90)
+            self.device = self.metadata[&#x27;device&#x27;]
+            self.runtime_version = self.metadata[&#x27;version&#x27;]
+        except Exception:
+            self.close()
+            raise
+
+    def _request(self, header=None, payload=b&#x27;&#x27;, timeout=30):
+        response = queue.Queue(maxsize=1)
+        thread = threading.Thread(target=_exchange, args=(self.process, response, header, payload), daemon=True)
+        thread.start()
+        try:
+            ok, result = response.get(timeout=timeout)
+        except queue.Empty:
+            self.close()
+            raise RuntimeError(&#x27;GPU 回應逾時，請切回 CPU 或檢查顯示卡狀態&#x27;) from None
+        if not ok:
+            self.close()
+            raise RuntimeError(&#x27;GPU 執行失敗：&#x27; + str(result))
+        if result[0].get(&#x27;error&#x27;):
+            self.close()
+            raise RuntimeError(&#x27;GPU 執行失敗：&#x27; + result[0][&#x27;error&#x27;])
+        return result
+
+    def get_inputs(self):
+        return [SimpleNamespace(**n) for n in self.metadata[&#x27;inputs&#x27;]]
+
+    def get_outputs(self):
+        return [SimpleNamespace(**n) for n in self.metadata[&#x27;outputs&#x27;]]
+
+    def get_providers(self):
+        return self.metadata[&#x27;providers&#x27;]
+
+    def run(self, output_names, inputs):
+        if output_names is not None and output_names != [self.get_outputs()[0].name]:
+            raise ValueError(&#x27;不支援的 DINO 輸出名稱&#x27;)
+        if list(inputs) != [self.get_inputs()[0].name]:
+            raise ValueError(&#x27;DINO 輸入名稱不符&#x27;)
+        image = np.asarray(next(iter(inputs.values())), dtype=&#x27;&lt;f4&#x27;, order=&#x27;C&#x27;)
+        if image.shape != (1, 3, 224, 224):
+            raise ValueError(&#x27;GPU DINO 輸入必須為 [1,3,224,224]&#x27;)
+        with self.lock:
+            header, data = self._request(dict(shape=list(image.shape)), image.tobytes())
+        return [np.frombuffer(data, dtype=&#x27;&lt;f4&#x27;).reshape(header[&#x27;shape&#x27;])]
+
+    def close(self):
+        process = getattr(self, &#x27;process&#x27;, None)
+        if process is not None:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=5)
+            for stream in (process.stdin, process.stdout):
+                try:
+                    stream.close()
+                except (OSError, ValueError):
+                    pass
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+@atexit.register
+def _cleanup():
+    for session in list(_sessions):
+        session.close()
+</code></pre></details><details class="source" id="src-gpu_worker-py"><summary>gpu_worker.py <small>50 行</small></summary><div class="sourcebar"><span>SHA-256 24e40925a099e2006ea8279e7f46b50c4f311894b9ee65ecc0027c4de7a1e322</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="gpu_worker.py">&quot;&quot;&quot;Persistent DirectML inference; separate environment leaves CPU installation intact.&quot;&quot;&quot;
+import hashlib
+import sys
+from pathlib import Path
+
+from gpu_protocol import receive, send
+
+
+def main():
+    source, target = sys.stdin.buffer, sys.stdout.buffer
+    try:
+        import numpy as np
+        import onnxruntime as ort
+        from gpu_devices import nvidia_adapter
+        payload = Path(sys.argv[1]).read_bytes()
+        if hashlib.sha256(payload).hexdigest() != sys.argv[2]:
+            raise ValueError(&#x27;GPU 模型 SHA-256 不符&#x27;)
+        adapter = nvidia_adapter()
+        if &#x27;DmlExecutionProvider&#x27; not in ort.get_available_providers():
+            raise ValueError(&#x27;GPU 環境未安裝 DirectML&#x27;)
+        options = ort.SessionOptions()
+        options.enable_mem_pattern = False
+        options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+        options.intra_op_num_threads = 4
+        for name, value in [(&#x27;batch_size&#x27;, 1), (&#x27;num_channels&#x27;, 3), (&#x27;height&#x27;, 224), (&#x27;width&#x27;, 224)]:
+            options.add_free_dimension_override_by_name(name, value)
+        session = ort.InferenceSession(payload, sess_options=options,
+            providers=[(&#x27;DmlExecutionProvider&#x27;, {&#x27;device_id&#x27;: str(adapter[&#x27;index&#x27;])}), &#x27;CPUExecutionProvider&#x27;])
+        session.disable_fallback()
+        if session.get_providers()[0] != &#x27;DmlExecutionProvider&#x27;:
+            raise ValueError(&#x27;未成功啟用 NVIDIA GPU&#x27;)
+        def describe(nodes):
+            return [dict(name=n.name, type=n.type, shape=n.shape) for n in nodes]
+        send(target, dict(inputs=describe(session.get_inputs()), outputs=describe(session.get_outputs()),
+            providers=session.get_providers(), device=adapter[&#x27;name&#x27;], version=ort.__version__))
+        while True:
+            header, data = receive(source)
+            image = np.frombuffer(data, dtype=&#x27;&lt;f4&#x27;).reshape(header[&#x27;shape&#x27;])
+            if image.shape != (1, 3, 224, 224):
+                raise ValueError(&#x27;GPU DINO 輸入尺寸錯誤&#x27;)
+            result = np.asarray(session.run(None, {session.get_inputs()[0].name: image})[0], dtype=&#x27;&lt;f4&#x27;)
+            send(target, dict(shape=list(result.shape)), result.tobytes())
+    except EOFError:
+        pass
+    except Exception as exc:
+        send(target, dict(error=str(exc) or type(exc).__name__))
+
+
+if __name__ == &#x27;__main__&#x27;:
+    main()
+</code></pre></details><details class="source" id="src-gpu_devices-py"><summary>gpu_devices.py <small>33 行</small></summary><div class="sourcebar"><span>SHA-256 0e295e7a76f4968f2763d0c8be932dd86cb2ddab632624bfb91aa4e1b4502a0e</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="gpu_devices.py">&quot;&quot;&quot;Read DXGI adapter order so DirectML selects NVIDIA, not integrated graphics.&quot;&quot;&quot;
+import ctypes as c
+import uuid
+
+class Description(c.Structure):
+    _fields_=[(&#x27;name&#x27;,c.c_wchar*128),(&#x27;vendor&#x27;,c.c_uint),(&#x27;device&#x27;,c.c_uint),(&#x27;subsystem&#x27;,c.c_uint),(&#x27;revision&#x27;,c.c_uint),(&#x27;dedicated_video&#x27;,c.c_size_t),(&#x27;dedicated_system&#x27;,c.c_size_t),(&#x27;shared_system&#x27;,c.c_size_t),(&#x27;luid_low&#x27;,c.c_uint),(&#x27;luid_high&#x27;,c.c_long),(&#x27;flags&#x27;,c.c_uint)]
+
+def adapters():
+    factory=c.c_void_p();iid=(c.c_ubyte*16).from_buffer_copy(uuid.UUID(&#x27;770aae78-f26f-4dba-a829-253c83d1b387&#x27;).bytes_le)
+    create=c.WinDLL(&#x27;dxgi&#x27;).CreateDXGIFactory1;create.argtypes=[c.c_void_p,c.POINTER(c.c_void_p)];create.restype=c.c_long
+    if create(c.byref(iid),c.byref(factory))&lt;0:raise RuntimeError(&#x27;Cannot enumerate DXGI adapters&#x27;)
+    def method(obj,index,restype,*types):
+        ptr=c.cast(obj,c.POINTER(c.POINTER(c.c_void_p))).contents[index]
+        return c.WINFUNCTYPE(restype,c.c_void_p,*types)(ptr)
+    output=[]
+    try:
+        for index in range(16):
+            adapter=c.c_void_p();hr=method(factory,12,c.c_long,c.c_uint,c.POINTER(c.c_void_p))(factory,index,c.byref(adapter))
+            if hr&lt;0:break
+            try:
+                desc=Description();hr=method(adapter,10,c.c_long,c.POINTER(Description))(adapter,c.byref(desc))
+                if hr&lt;0:raise RuntimeError(&#x27;Cannot read DXGI adapter description&#x27;)
+                output.append(dict(index=index,name=desc.name,vendor=desc.vendor,dedicated_video_bytes=desc.dedicated_video))
+            finally:method(adapter,2,c.c_ulong)(adapter)
+    finally:method(factory,2,c.c_ulong)(factory)
+    return output
+
+def nvidia_adapter():
+    return next(a for a in adapters() if a[&#x27;vendor&#x27;]==0x10de)
+
+if __name__==&#x27;__main__&#x27;:
+    import json
+    print(json.dumps(adapters(),ensure_ascii=False))
+</code></pre></details><details class="source" id="src-gpu_protocol-py"><summary>gpu_protocol.py <small>30 行</small></summary><div class="sourcebar"><span>SHA-256 a33100a1cba4a0ccd2e92ffbd7ecfe223de3c3bd37107322407c06a2b6694004</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="gpu_protocol.py">&quot;&quot;&quot;Length-delimited messages for the private, local DINO worker.&quot;&quot;&quot;
+import json
+import struct
+
+
+def read_exact(stream, size):
+    data = bytearray()
+    while len(data) &lt; size:
+        part = stream.read(size - len(data))
+        if not part:
+            raise EOFError(&#x27;GPU 程序已結束&#x27;)
+        data.extend(part)
+    return bytes(data)
+
+
+def receive(stream):
+    size = struct.unpack(&#x27;&lt;I&#x27;, read_exact(stream, 4))[0]
+    if not 0 &lt; size &lt;= 65536:
+        raise ValueError(&#x27;無效 GPU 訊息&#x27;)
+    header = json.loads(read_exact(stream, size))
+    length = header.get(&#x27;bytes&#x27;, 0)
+    if type(length) is not int or not 0 &lt;= length &lt;= 16 * 1024 * 1024:
+        raise ValueError(&#x27;無效 GPU 資料長度&#x27;)
+    return header, read_exact(stream, length)
+
+
+def send(stream, header, payload=b&#x27;&#x27;):
+    header = json.dumps(dict(header, bytes=len(payload)), ensure_ascii=False).encode(&#x27;utf-8&#x27;)
+    stream.write(struct.pack(&#x27;&lt;I&#x27;, len(header)) + header + payload)
+    stream.flush()
+</code></pre></details><details class="source" id="src-runtime_paths-py"><summary>runtime_paths.py <small>23 行</small></summary><div class="sourcebar"><span>SHA-256 721ec871535efdc85bec45465b1e1e2a4cdd389abdf9b865ed1b7a91e01e0a66</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="runtime_paths.py">&quot;&quot;&quot;Packaged resources are read-only; station data lives outside the bundle.&quot;&quot;&quot;
+import json
+import os
+import sys
+from pathlib import Path
+
+RESOURCE_ROOT = Path(getattr(sys, &#x27;_MEIPASS&#x27;, Path(__file__).resolve().parent))
+INSTALL_ROOT = Path(sys.executable).resolve().parent if getattr(sys, &#x27;frozen&#x27;, False) else RESOURCE_ROOT
+CONFIG_PATH = Path(os.environ.get(&#x27;XRAY_CONFIG&#x27;, INSTALL_ROOT / &#x27;config/station.json&#x27;)).resolve()
+SETTINGS = json.loads(CONFIG_PATH.read_text(encoding=&#x27;utf-8&#x27;)) if CONFIG_PATH.is_file() else {}
+
+def configured_path(value):
+    p = Path(value).expanduser()
+    return p if p.is_absolute() else CONFIG_PATH.parent / p
+
+WORK_ROOT = Path(os.environ[&#x27;XRAY_WORKSPACE&#x27;]).expanduser().resolve() if os.environ.get(&#x27;XRAY_WORKSPACE&#x27;) else configured_path(SETTINGS[&#x27;workspace&#x27;]) if SETTINGS.get(&#x27;workspace&#x27;) else (INSTALL_ROOT / &#x27;workspace&#x27; if getattr(sys, &#x27;frozen&#x27;, False) else RESOURCE_ROOT)
+DATA = WORK_ROOT / &#x27;data&#x27;
+OUTPUTS = WORK_ROOT / &#x27;outputs&#x27;
+STATE = WORK_ROOT / &#x27;state&#x27;
+REFERENCE = configured_path(SETTINGS[&#x27;reference&#x27;]) if SETTINGS.get(&#x27;reference&#x27;) else DATA / &#x27;ok_0.png&#x27;
+MODEL_ROOT = configured_path(SETTINGS[&#x27;model_root&#x27;]) if SETTINGS.get(&#x27;model_root&#x27;) else INSTALL_ROOT / &#x27;models&#x27;
+for directory in (DATA, OUTPUTS, STATE):
+    directory.mkdir(parents=True, exist_ok=True)
+</code></pre></details><details class="source" id="src-station_settings-py"><summary>station_settings.py <small>78 行</small></summary><div class="sourcebar"><span>SHA-256 e2d3dfaeb09226711860d2c35012414c1922dc52b9a32de83796008c61840fff</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="station_settings.py">&quot;&quot;&quot;UI preferences override station defaults without editing the installed resources.&quot;&quot;&quot;
+import json
+import os
+import threading
+import uuid
+from runtime_paths import STATE, SETTINGS
+
+PATH = STATE / &#x27;ui_settings.json&#x27;
+LOCK = threading.RLock()
+
+def read_settings():
+    with LOCK:
+        return json.loads(PATH.read_text(encoding=&#x27;utf-8&#x27;)) if PATH.exists() else {}
+
+def update_settings(**changes):
+    with LOCK:
+        settings = read_settings()
+        settings.update(changes)
+        temporary = PATH.with_name(uuid.uuid4().hex + &#x27;.tmp&#x27;)
+        try:
+            temporary.write_text(json.dumps(settings,ensure_ascii=False,indent=2),encoding=&#x27;utf-8&#x27;)
+            os.replace(temporary, PATH)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return settings
+
+def acquisition_config():
+    return dict(SETTINGS.get(&#x27;acquisition&#x27;,{}), **read_settings().get(&#x27;acquisition&#x27;,{}))
+
+def cpu_allowed():
+    return read_settings().get(&#x27;allow_cpu_fallback&#x27;, SETTINGS.get(&#x27;allow_cpu_fallback&#x27;,False))
+
+
+def dino_execution():
+    value = read_settings().get(&#x27;dino_execution&#x27;, &#x27;cpu&#x27;)
+    if value not in (&#x27;cpu&#x27;, &#x27;gpu&#x27;):
+        raise ValueError(&#x27;DINO 執行方式需為 CPU 或 GPU&#x27;)
+    return value
+
+
+def source_scope(config=None):
+    &quot;&quot;&quot;A lexical identity: do not contact SMB just to identify the saved source.&quot;&quot;&quot;
+    import hashlib
+    config = acquisition_config() if config is None else config
+    source = config.get(&#x27;source&#x27;, &#x27;&#x27;)
+    source = os.path.normcase(os.path.abspath(os.path.expanduser(source))) if source else &#x27;&#x27;
+    return dict(path=source, id=hashlib.sha256(source.encode(&#x27;utf-8&#x27;)).hexdigest()[:16] if source else &#x27;local&#x27;)
+
+
+def in_source(path, root):
+    if not root:
+        return True
+    path = os.path.normcase(os.path.abspath(os.path.expanduser(str(path))))
+    try:
+        return os.path.commonpath([path, root]) == root
+    except ValueError:
+        return False
+
+
+def validate_threshold(value):
+    if type(value) not in (int, float) or not .03 &lt;= value &lt;= .40:
+        raise ValueError(&#x27;差分門檻需為 0.03 至 0.40 的數值&#x27;)
+    return float(value)
+
+
+def detection_threshold(profile_id=None):
+    settings = read_settings()
+    profile_id = profile_id or settings.get(&#x27;selected_machine&#x27;, &#x27;default&#x27;)
+    # Keep the former shared value as the baseline for machines not yet tuned.
+    return validate_threshold(settings.get(&#x27;machine_thresholds&#x27;, {}).get(
+        profile_id, settings.get(&#x27;detection_threshold&#x27;, .13)))
+
+
+def save_machine_threshold(profile_id, threshold):
+    with LOCK:
+        values = dict(read_settings().get(&#x27;machine_thresholds&#x27;, {}))
+        values[profile_id] = validate_threshold(threshold)
+        update_settings(machine_thresholds=values)
+</code></pre></details><details class="source" id="src-dino_examples-py"><summary>dino_examples.py <small>156 行</small></summary><div class="sourcebar"><span>SHA-256 072ed6878c68e2364357d2cf232f9eb2b87718b268f1be2cf2a00bc4bae6c27d</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="dino_examples.py">&quot;&quot;&quot;Versioned DINO example editing. Building never selects or edits the source model.&quot;&quot;&quot;
+import copy,hashlib,io,json,os,shutil,threading,uuid
+from pathlib import Path
+import numpy as np
+from PIL import Image,ImageOps,UnidentifiedImageError
+from flask import Blueprint,jsonify,request,send_file,render_template
+from runtime_paths import MODEL_ROOT,RESOURCE_ROOT
+from model_manager import ModelManager,manager
+from dino_adapter import embedding,input_image
+
+dino_examples=Blueprint(&#x27;dino_examples&#x27;,__name__)
+build_lock=threading.Lock()
+def read(p):return json.loads(p.read_text(encoding=&#x27;utf-8&#x27;))
+def model(name):
+    if not isinstance(name,str) or not name or name.startswith(&#x27;.&#x27;) or &#x27;/&#x27; in name or &#x27;\\&#x27; in name or &#x27;:&#x27; in name:raise ValueError(&#x27;模型名稱不正確&#x27;)
+    p=(MODEL_ROOT/name).resolve()
+    if p.parent!=MODEL_ROOT.resolve():raise ValueError(&#x27;模型路徑不正確&#x27;)
+    m=read(p/&#x27;manifest.json&#x27;)
+    if m.get(&#x27;backend&#x27;)!=&#x27;dino_onnx&#x27;:raise ValueError(&#x27;請選擇 DINO 模型&#x27;)
+    return p,m
+def entries(p,m):
+    meta=read(p/&#x27;examples.json&#x27;) if (p/&#x27;examples.json&#x27;).exists() else {}
+    result=[]
+    for label in (&#x27;screw&#x27;,&#x27;normal&#x27;):
+        for name in m[&#x27;example_bank&#x27;][label][&#x27;ids&#x27;]:
+            z=meta.get(name)
+            result.append(dict(id=name,label=label,available=bool(z),name=z.get(&#x27;name&#x27;,name) if z else name))
+    return result
+def source(p,name):
+    meta=read(p/&#x27;examples.json&#x27;);z=meta.get(name)
+    if not z:raise ValueError(&#x27;這個舊版沒有保存範例圖片，不能重建此範例&#x27;)
+    file=(p/&#x27;examples&#x27;/z[&#x27;file&#x27;]).resolve()
+    if file.parent!=(p/&#x27;examples&#x27;).resolve():raise ValueError(&#x27;範例路徑不正確&#x27;)
+    if hashlib.sha256(file.read_bytes()).hexdigest()!=z[&#x27;sha256&#x27;]:raise ValueError(&#x27;範例圖片已變動，請重新檢查&#x27;)
+    return file,z
+def upload_image(file):
+    data=file.read(8*1024*1024+1)
+    if len(data)&gt;8*1024*1024:raise ValueError(&#x27;每張範例最大 8 MB&#x27;)
+    try:
+        with Image.open(io.BytesIO(data)) as im:
+            if im.width*im.height&gt;16_000_000 or min(im.size)&lt;8:raise ValueError(&#x27;請使用至少 8×8、最多 1600 萬像素的裁圖&#x27;)
+            if getattr(im,&#x27;n_frames&#x27;,1)!=1:raise ValueError(&#x27;請上傳單張圖片&#x27;)
+            return ImageOps.exif_transpose(im).convert(&#x27;L&#x27;).copy()
+    except (UnidentifiedImageError,OSError,Image.DecompressionBombError) as e:raise ValueError(&#x27;無法讀取圖片，請使用 PNG、JPG 或單頁 TIFF&#x27;) from e
+def png(im):
+    b=io.BytesIO();im.save(b,format=&#x27;PNG&#x27;);b.seek(0);return b
+
+def actual_input(m, crop):
+    if m.get(&#x27;feature_strategy&#x27;):
+        from dino_paired_optimized import adjusted_image
+        return adjusted_image(m,crop)
+    return input_image(m,crop)
+@dino_examples.get(&#x27;/engineer/dino-examples&#x27;)
+def page():return render_template(&#x27;dino_examples.html&#x27;)
+@dino_examples.get(&#x27;/api/dino/examples&#x27;)
+def listing():
+    try:
+        versions=[]
+        for p in sorted(MODEL_ROOT.iterdir()):
+            if p.name.startswith(&#x27;.&#x27;) or not p.is_dir():continue
+            try:
+                _,m=model(p.name);versions.append(dict(directory=p.name,name=m[&#x27;model_id&#x27;]))
+            except (ValueError,OSError,KeyError):continue
+        active=manager.snapshot().requested
+        name=request.args.get(&#x27;model&#x27;) or (active if any(v[&#x27;directory&#x27;]==active for v in versions) else versions[0][&#x27;directory&#x27;] if versions else &#x27;&#x27;)
+        p,m=model(name)
+        return jsonify(versions=versions,selected=name,active=active,examples=entries(p,m),name=m[&#x27;model_id&#x27;])
+    except (ValueError,OSError,KeyError) as e:return jsonify(error=str(e)),400
+@dino_examples.get(&#x27;/api/dino/image&#x27;)
+def image():
+    try:
+        p,m=model(request.args.get(&#x27;model&#x27;));name=request.args.get(&#x27;id&#x27;)
+        if name not in {z[&#x27;id&#x27;] for z in entries(p,m)}:raise ValueError(&#x27;範例不存在&#x27;)
+        file,_=source(p,name)
+        with Image.open(file) as im:
+            im=im.convert(&#x27;RGB&#x27;)
+            if request.args.get(&#x27;view&#x27;)==&#x27;input&#x27;:im=actual_input(m,np.asarray(im,np.float32)/255)
+            else:im.thumbnail((800,800))
+            return send_file(png(im),mimetype=&#x27;image/png&#x27;,max_age=0)
+    except (ValueError,OSError,KeyError) as e:return jsonify(error=str(e)),400
+@dino_examples.post(&#x27;/api/dino/preview&#x27;)
+def preview():
+    try:
+        _,m=model(request.form.get(&#x27;model&#x27;));im=upload_image(request.files[&#x27;image&#x27;])
+        return send_file(png(actual_input(m,np.asarray(im,np.float32)/255)),mimetype=&#x27;image/png&#x27;)
+    except (ValueError,OSError,KeyError) as e:return jsonify(error=str(e)),400
+@dino_examples.post(&#x27;/api/dino/build&#x27;)
+def build():
+    if not build_lock.acquire(blocking=False):return jsonify(error=&#x27;正在建立範例庫，請稍候&#x27;),409
+    staging=None
+    try:
+        p,m=model(request.form.get(&#x27;model&#x27;));keep=json.loads(request.form.get(&#x27;keep&#x27;,&#x27;null&#x27;));title=request.form.get(&#x27;name&#x27;,&#x27;&#x27;).strip()
+        if not title or len(title)&gt;80:raise ValueError(&#x27;請填寫 1～80 字的新版名稱&#x27;)
+        if not isinstance(keep,list) or not all(isinstance(x,str) for x in keep) or len(keep)!=len(set(keep)):raise ValueError(&#x27;範例選擇不正確&#x27;)
+        allids={z[&#x27;id&#x27;] for z in entries(p,m)}
+        if not set(keep)&lt;=allids:raise ValueError(&#x27;選取了不存在的範例&#x27;)
+        files={label:request.files.getlist(label) for label in (&#x27;screw&#x27;,&#x27;normal&#x27;)}
+        if sum(map(len,files.values()))&gt;100:raise ValueError(&#x27;每次最多新增 100 張&#x27;)
+        for label in files:
+            count=sum(n in keep for n in m[&#x27;example_bank&#x27;][label][&#x27;ids&#x27;])+len(files[label])
+            if not 3&lt;=count&lt;=500:raise ValueError(&#x27;螺絲與非螺絲各需保留 3～500 張範例&#x27;)
+        snapshot=ModelManager(MODEL_ROOT,allow_cpu=True).snapshot(p.name)
+        if snapshot.error:raise ValueError(snapshot.error)
+        token=&#x27;dino-examples-&#x27;+uuid.uuid4().hex[:16];staging=MODEL_ROOT/(&#x27;.build-&#x27;+token);staging.mkdir();(staging/&#x27;examples&#x27;).mkdir()
+        new=copy.deepcopy(m);new[&#x27;model_id&#x27;]=title;new[&#x27;example_bank&#x27;]={};meta={};seen={};features={}
+        if m.get(&#x27;feature_strategy&#x27;):
+            old_ids=m[&#x27;example_bank&#x27;][&#x27;screw&#x27;][&#x27;ids&#x27;]+m[&#x27;example_bank&#x27;][&#x27;normal&#x27;][&#x27;ids&#x27;]
+            features=dict(zip(old_ids,snapshot.feature_bank))
+        for label in (&#x27;screw&#x27;,&#x27;normal&#x27;):
+            ids=[];vectors=[];bank=m[&#x27;example_bank&#x27;][label]
+            for n,v in zip(bank[&#x27;ids&#x27;],bank[&#x27;embeddings&#x27;]):
+                if n not in keep:continue
+                file,z=source(p,n);sha=z[&#x27;sha256&#x27;]
+                if sha in seen:raise ValueError(&#x27;範例內容重複，請取消重複圖片（也不可在兩類同時使用）&#x27;)
+                seen[sha]=label;dest=hashlib.sha256(n.encode()).hexdigest()+&#x27;.png&#x27;;shutil.copyfile(file,staging/&#x27;examples&#x27;/dest)
+                meta[n]=dict(z,file=dest);ids.append(n);vectors.append(v)
+            for file in files[label]:
+                im=upload_image(file);data=png(im).getvalue();sha=hashlib.sha256(data).hexdigest()
+                if sha in seen:raise ValueError(&#x27;新增圖片重複，或與現有範例重複，請移除重複圖片&#x27;)
+                seen[sha]=label;n=&#x27;upload-&#x27;+sha;dest=n+&#x27;.png&#x27;;(staging/&#x27;examples&#x27;/dest).write_bytes(data)
+                vector=embedding(m,snapshot.session,np.asarray(im,np.float32)/255)
+                if m.get(&#x27;feature_strategy&#x27;):
+                    from dino_paired_optimized import example_features
+                    features[n]=example_features(m,snapshot.session,np.asarray(im,np.float32)/255)
+                meta[n]=dict(file=dest,sha256=sha,name=Path(file.filename.replace(&#x27;\\&#x27;,&#x27;/&#x27;)).name)
+                ids.append(n);vectors.append(vector.tolist())
+            new[&#x27;example_bank&#x27;][label]=dict(ids=ids,embeddings=vectors)
+        if m.get(&#x27;feature_strategy&#x27;):
+            ids=new[&#x27;example_bank&#x27;][&#x27;screw&#x27;][&#x27;ids&#x27;]+new[&#x27;example_bank&#x27;][&#x27;normal&#x27;][&#x27;ids&#x27;]
+            np.savez(staging/new[&#x27;feature_file&#x27;],bank=np.stack([features[n] for n in ids]))
+            new[&#x27;feature_sha256&#x27;]=hashlib.sha256((staging/new[&#x27;feature_file&#x27;]).read_bytes()).hexdigest()
+        new[&#x27;provenance&#x27;]=dict(parent=p.name,method=&#x27;user-edited-examples&#x27;,note=&#x27;Not evaluated on independent test images; not automatically activated&#x27;)
+        new[&#x27;file&#x27;]=&#x27;model.onnx&#x27;;shutil.copyfile(p/m[&#x27;file&#x27;],staging/&#x27;model.onnx&#x27;)
+        (staging/&#x27;manifest.json&#x27;).write_text(json.dumps(new,ensure_ascii=False),encoding=&#x27;utf-8&#x27;);(staging/&#x27;examples.json&#x27;).write_text(json.dumps(meta,ensure_ascii=False),encoding=&#x27;utf-8&#x27;)
+        # Validate under a private parent before making the new version visible.
+        checkparent=staging/&#x27;validation&#x27;;checkparent.mkdir();os.rename(staging/&#x27;manifest.json&#x27;,checkparent/&#x27;manifest.json&#x27;);os.rename(staging/&#x27;model.onnx&#x27;,checkparent/&#x27;model.onnx&#x27;)
+        if m.get(&#x27;feature_strategy&#x27;):os.rename(staging/new[&#x27;feature_file&#x27;],checkparent/new[&#x27;feature_file&#x27;])
+        candidate=ModelManager(staging,allow_cpu=True).snapshot(&#x27;validation&#x27;)
+        if candidate.error:raise ValueError(candidate.error)
+        os.rename(checkparent/&#x27;manifest.json&#x27;,staging/&#x27;manifest.json&#x27;);os.rename(checkparent/&#x27;model.onnx&#x27;,staging/&#x27;model.onnx&#x27;)
+        if m.get(&#x27;feature_strategy&#x27;):os.rename(checkparent/new[&#x27;feature_file&#x27;],staging/new[&#x27;feature_file&#x27;])
+        checkparent.rmdir()
+        os.rename(staging,MODEL_ROOT/token);staging=None
+        return jsonify(directory=token,message=&#x27;新版已建立，尚未啟用。可先檢查圖片，再選擇使用；舊版仍可切回。&#x27;)
+    except (ValueError,OSError,KeyError,TypeError) as e:return jsonify(error=str(e)),400
+    finally:
+        if staging is not None and staging.exists():shutil.rmtree(staging)
+        build_lock.release()
+
+if __name__==&#x27;__main__&#x27;:
+    from flask import Flask
+    from settings_api import settings_api
+    app=Flask(__name__,template_folder=str(RESOURCE_ROOT/&#x27;templates&#x27;),static_folder=str(RESOURCE_ROOT/&#x27;static&#x27;))
+    app.config[&#x27;MAX_CONTENT_LENGTH&#x27;]=40*1024*1024
+    app.register_blueprint(dino_examples);app.register_blueprint(settings_api)
+    app.run(host=&#x27;127.0.0.1&#x27;,port=18767,threaded=True,use_reloader=False)
+</code></pre></details><details class="source" id="src-acquisition-py"><summary>acquisition.py <small>198 行</small></summary><div class="sourcebar"><span>SHA-256 2bb748a7e0ac94d14a950a8a2b1f45e0cb2c454330b327ec8780d3e5b2a5ca3c</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="acquisition.py">&quot;&quot;&quot;Read-only source polling, immutable local snapshots and restart-safe import queue.&quot;&quot;&quot;
+import hashlib
+import json
+import os
+from pathlib import Path
+import sqlite3
+import threading
+import time
+import uuid
+import subprocess
+import sys
+import cv2
+import numpy as np
+from runtime_paths import DATA, STATE, SETTINGS
+from station_settings import acquisition_config, source_scope, in_source
+
+SUFFIXES = {&#x27;.png&#x27;, &#x27;.jpg&#x27;, &#x27;.jpeg&#x27;, &#x27;.tif&#x27;, &#x27;.tiff&#x27;}
+
+def source_images(source):
+    &quot;&quot;&quot;Raise on incomplete directory reads: an offline folder is not an empty one.&quot;&quot;&quot;
+    with os.scandir(source) as entries:
+        for entry in entries:
+            if entry.is_dir(follow_symlinks=False):
+                yield from source_images(Path(entry.path))
+            elif entry.is_file(follow_symlinks=False) and Path(entry.name).suffix.lower() in SUFFIXES:
+                yield Path(entry.path)
+
+class Importer:
+    def __init__(self, config=None, data=DATA, state=STATE, analyze=None, recover=True):
+        self.config = dict(config if config is not None else acquisition_config())
+        self.data, self.state, self.analyze = Path(data), Path(state), analyze
+        self.state.mkdir(parents=True, exist_ok=True)
+        self.db_path = self.state / &#x27;acquisition.sqlite3&#x27;
+        self.status = dict(state=&#x27;disabled&#x27;, error=None, last_scan=None)
+        self.stop_event = threading.Event()
+        self.scan_lock = threading.Lock()
+        self.thread = None
+        with self.connect() as db:
+            db.execute(&#x27;CREATE TABLE IF NOT EXISTS files (source TEXT PRIMARY KEY, size INTEGER, mtime INTEGER, stable_since REAL, state TEXT, local TEXT, sha TEXT, error TEXT, acquired_at TEXT)&#x27;)
+            db.execute(&#x27;CREATE TABLE IF NOT EXISTS events (local TEXT PRIMARY KEY, source TEXT, sha TEXT, acquired_at TEXT, state TEXT, error TEXT)&#x27;)
+            if &#x27;present&#x27; not in {row[1] for row in db.execute(&#x27;PRAGMA table_info(files)&#x27;)}:
+                db.execute(&#x27;ALTER TABLE files ADD COLUMN present INTEGER NOT NULL DEFAULT 1&#x27;)
+            if recover:
+                db.execute(&quot;UPDATE events SET state=&#x27;pending&#x27; WHERE state=&#x27;analyzing&#x27;&quot;)
+
+    def connect(self):
+        return sqlite3.connect(self.db_path, timeout=10)
+
+    def scan_once(self, now=None):
+        if not self.config.get(&#x27;enabled&#x27;, False):
+            self.status.update(state=&#x27;disabled&#x27;); return
+        with self.scan_lock:
+            now = time.time() if now is None else now
+            source = Path(self.config[&#x27;source&#x27;])
+            if not source.is_dir():
+                raise OSError(&#x27;共享資料夾無法連線或無讀取權限&#x27;)
+            # Finish enumeration/stat before changing presence. Partial/failed scans
+            # must retain the last complete inventory and all historical snapshots.
+            inventory = [(path, path.stat()) for path in source_images(source)]
+            seen = {str(path.absolute()) for path, _ in inventory}
+            with self.connect() as db:
+                for path, st in inventory:
+                    if not path.resolve().is_relative_to(source.resolve()):
+                        continue
+                    key = str(path.absolute())
+                    row = db.execute(&#x27;SELECT size,mtime,stable_since,state FROM files WHERE source=?&#x27;, (key,)).fetchone()
+                    if row is None or row[:2] != (st.st_size, st.st_mtime_ns):
+                        db.execute(&#x27;INSERT OR REPLACE INTO files(source,size,mtime,stable_since,state) VALUES(?,?,?,?,?)&#x27;,
+                                   (key, st.st_size, st.st_mtime_ns, now, &#x27;waiting&#x27;))
+                        continue
+                    db.execute(&#x27;UPDATE files SET present=1 WHERE source=?&#x27;, (key,))
+                    if row[3] not in (&#x27;waiting&#x27;, &#x27;retry&#x27;) or now-row[2] &lt; float(self.config.get(&#x27;stable_seconds&#x27;,15)):
+                        continue
+                    local = self.data / &#x27;incoming&#x27; / (uuid.uuid4().hex + path.suffix.lower())
+                    local.parent.mkdir(parents=True, exist_ok=True)
+                    partial = local.with_suffix(local.suffix + &#x27;.partial&#x27;)
+                    try:
+                        # A bounded-size local snapshot; never modify the source.
+                        limit = int(self.config.get(&#x27;max_bytes&#x27;, 100 * 1024 * 1024))
+                        if st.st_size &lt;= 0 or st.st_size &gt; limit:
+                            raise ValueError(&#x27;來源檔案大小超出允許範圍&#x27;)
+                        sha = hashlib.sha256()
+                        count = 0
+                        with path.open(&#x27;rb&#x27;) as src, partial.open(&#x27;wb&#x27;) as dst:
+                            while chunk := src.read(1024*1024):
+                                count += len(chunk)
+                                if count &gt; limit: raise ValueError(&#x27;來源檔案持續增長或過大&#x27;)
+                                sha.update(chunk); dst.write(chunk)
+                        after = path.stat()
+                        if (after.st_size, after.st_mtime_ns) != row[:2] or count != st.st_size:
+                            raise ValueError(&#x27;來源仍在寫入，稍後重試&#x27;)
+                        blob = partial.read_bytes()
+                        decoded = cv2.imdecode(np.frombuffer(blob, np.uint8), cv2.IMREAD_UNCHANGED)
+                        if decoded is None: raise ValueError(&#x27;影像尚未完成或無法解碼&#x27;)
+                        if min(decoded.shape[:2]) &lt; 128 or max(decoded.shape[:2]) &gt; 16000:
+                            raise ValueError(&#x27;影像尺寸不符&#x27;)
+                        os.replace(partial, local)
+                        acquired = time.strftime(&#x27;%Y-%m-%dT%H:%M:%SZ&#x27;,time.gmtime())
+                        db.execute(&quot;INSERT INTO events VALUES(?,?,?,?,?,NULL)&quot;, (local.relative_to(self.data).as_posix(),key,sha.hexdigest(),acquired,&#x27;pending&#x27;))
+                        db.execute(&quot;UPDATE files SET state=&#x27;imported&#x27;,local=?,sha=?,error=NULL,acquired_at=? WHERE source=?&quot;,
+                                   (local.relative_to(self.data).as_posix(), sha.hexdigest(), time.strftime(&#x27;%Y-%m-%dT%H:%M:%SZ&#x27;,time.gmtime()), key))
+                        db.commit()
+                    except (OSError, ValueError) as exc:
+                        partial.unlink(missing_ok=True)
+                        db.execute(&quot;UPDATE files SET state=&#x27;retry&#x27;,error=?,stable_since=? WHERE source=?&quot;, (str(exc), now, key))
+                scope = source_scope(self.config)
+                for (key,) in db.execute(&#x27;SELECT source FROM files&#x27;).fetchall():
+                    if in_source(key, scope[&#x27;path&#x27;]) and key not in seen:
+                        db.execute(&#x27;UPDATE files SET present=0 WHERE source=?&#x27;, (key,))
+                db.commit()
+            self.status.update(state=&#x27;online&#x27;, error=None, last_scan=now, source_id=source_scope(self.config)[&#x27;id&#x27;])
+
+    def process_pending(self):
+        if self.analyze is None: return
+        with self.connect() as db:
+            rows = db.execute(&quot;SELECT e.source,e.local FROM events e JOIN files f ON f.source=e.source AND f.local=e.local WHERE f.present=1 AND e.state IN (&#x27;pending&#x27;,&#x27;analysis_error&#x27;)&quot;).fetchall()
+        for source, local in rows:
+            config = acquisition_config() if self.thread else self.config
+            if not in_source(source, source_scope(config)[&#x27;path&#x27;]):
+                continue
+            if self.stop_event.is_set() or self.thread and not acquisition_config().get(&#x27;enabled&#x27;,False): break
+            with self.connect() as db:
+                db.execute(&quot;UPDATE events SET state=&#x27;analyzing&#x27; WHERE local=?&quot;, (local,))
+            try:
+                self.analyze(self.data / local, Path(source).name)
+                state, error = &#x27;done&#x27;, None
+            except Exception as exc:
+                state, error = &#x27;analysis_error&#x27;, str(exc)
+            with self.connect() as db:
+                db.execute(&#x27;UPDATE events SET state=?,error=? WHERE local=?&#x27;, (state,error,local))
+
+    def metadata(self, include_history=False):
+        with self.connect() as db:
+            query = (&#x27;SELECT local,source,acquired_at,state,error FROM events&#x27; if include_history else
+                     &#x27;SELECT e.local,e.source,e.acquired_at,e.state,e.error FROM events e JOIN files f ON f.source=e.source AND f.local=e.local WHERE f.present=1&#x27;)
+            return {row[0]:dict(source_path=row[1], original_filename=Path(row[1]).name, acquired_at=row[2], state=row[3],error=row[4])
+                    for row in db.execute(query)}
+
+    def info(self):
+        config = acquisition_config() if self.thread else self.config
+        scope = source_scope(config)
+        with self.connect() as db:
+            files = db.execute(&#x27;SELECT source,state FROM files WHERE present=1&#x27;).fetchall()
+            events = db.execute(&#x27;SELECT e.source,e.state FROM events e JOIN files f ON f.source=e.source AND f.local=e.local WHERE f.present=1&#x27;).fetchall()
+        counts, event_counts = {}, {}
+        for rows, target in ((files, counts), (events, event_counts)):
+            for source, state in rows:
+                if in_source(source, scope[&#x27;path&#x27;]):
+                    target[state] = target.get(state, 0) + 1
+        status = dict(self.status)
+        # A successful scan of A does not imply that a newly selected B is online.
+        if status.get(&#x27;source_id&#x27;) != scope[&#x27;id&#x27;] and config.get(&#x27;enabled&#x27;,False):
+            status.update(state=&#x27;waiting&#x27;,error=None,last_scan=None)
+        return dict(status, source=scope, events=sum(event_counts.values()),
+                    enabled=config.get(&#x27;enabled&#x27;,False), counts=counts, event_counts=event_counts)
+
+    def isolated_scan(self):
+        # SMB calls can block inside the OS: bound the complete scan with a killable process.
+        command = [sys.executable, &#x27;--acquisition-scan&#x27;] if getattr(sys, &#x27;frozen&#x27;, False) else [sys.executable, str(Path(__file__).resolve())]
+        result = subprocess.run(command, capture_output=True, text=True, encoding=&#x27;utf-8&#x27;,
+                                timeout=float(self.config.get(&#x27;scan_timeout_seconds&#x27;,30)),
+                                env=dict(os.environ,PYTHONUTF8=&#x27;1&#x27;,PYTHONIOENCODING=&#x27;utf-8&#x27;))
+        if result.returncode:
+            raise OSError(result.stderr.strip()[-1000:] or &#x27;取圖工作程序失敗&#x27;)
+        self.status.update(json.loads(result.stdout))
+
+    def run(self):
+        while not self.stop_event.is_set():
+            self.config = acquisition_config()
+            try:
+                if self.config.get(&#x27;enabled&#x27;,False):
+                    self.isolated_scan()
+                else:
+                    self.status.update(state=&#x27;disabled&#x27;,error=None)
+            except Exception as exc:
+                self.status.update(state=&#x27;offline&#x27;,error=str(exc))
+            try:
+                if self.config.get(&#x27;enabled&#x27;,False):
+                    self.process_pending()
+            except Exception as exc:
+                self.status.update(error=str(exc))
+            self.stop_event.wait(max(1,float(self.config.get(&#x27;poll_seconds&#x27;,3))))
+
+    def start(self):
+        if self.thread and self.thread.is_alive(): return
+        self.thread = threading.Thread(target=self.run,daemon=True,name=&#x27;xray-acquisition&#x27;)
+        self.thread.start()
+
+def scan_worker():
+    worker = Importer(recover=False)
+    try:
+        worker.scan_once()
+        print(json.dumps(worker.status, ensure_ascii=False))
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1)
+
+if __name__ == &#x27;__main__&#x27;: scan_worker()
+</code></pre></details><details class="source" id="src-library-py"><summary>library.py <small>212 行</small></summary><div class="sourcebar"><span>SHA-256 7e34e994dd5a3665df291422cd857d627c35cde9c4b2283f381bf334d33da8bd</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="library.py">&quot;&quot;&quot;Content-based local photo library and reproducible analysis cache.&quot;&quot;&quot;
+from pathlib import Path
+from datetime import datetime, timezone
+import hashlib
+import json
+import re
+import sqlite3
+from detector import ROOT, detect, DETECTOR_VERSION
+from runtime_paths import DATA, OUTPUTS, RESOURCE_ROOT, STATE
+from model_manager import manager
+from machine_profiles import selected_profile, matches, profiles
+from review_workflow import effective_review
+from acquisition import Importer
+from station_settings import source_scope, in_source, detection_threshold
+
+importer = Importer()
+SUFFIXES = {&#x27;.png&#x27;, &#x27;.jpg&#x27;, &#x27;.jpeg&#x27;, &#x27;.tif&#x27;, &#x27;.tiff&#x27;}
+_hash_cache = {}
+
+
+def digest(path):
+    path = Path(path)
+    st = path.stat()
+    key = (str(path.resolve()), st.st_mtime_ns, st.st_size)
+    if key not in _hash_cache:
+        _hash_cache[key] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return _hash_cache[key]
+
+
+def natural_key(value):
+    return [int(s) if s.isdigit() else s.lower() for s in re.split(r&#x27;(\d+)&#x27;, value)]
+
+
+def catalog(scope=None):
+    scope = scope or source_scope()
+    groups = {}
+    reference_hashes = {digest(Path(p[&#x27;reference&#x27;])) for p in profiles() if Path(p[&#x27;reference&#x27;]).is_file()}
+    imported = importer.metadata()
+    for path in DATA.rglob(&#x27;*&#x27;):
+        if not path.is_file() or path.suffix.lower() not in SUFFIXES:
+            continue
+        if not path.resolve().is_relative_to(DATA.resolve()):
+            continue
+        relative = path.relative_to(DATA).as_posix()
+        if relative.startswith(&#x27;incoming/&#x27;):
+            if relative not in imported:
+                continue  # Ignore uncommitted snapshots after interrupted imports.
+            if not in_source(imported[relative][&#x27;source_path&#x27;], scope[&#x27;path&#x27;]):
+                continue
+        elif scope[&#x27;path&#x27;] and not relative.startswith(&#x27;uploads/&#x27; + scope[&#x27;id&#x27;] + &#x27;/&#x27;):
+            continue  # Demo/local files and uploads from other sources are retained, not shown.
+
+        if any(s.startswith(&#x27;.&#x27;) for s in path.relative_to(DATA).parts):
+            continue
+        groups.setdefault(digest(path), []).append(relative)
+    items = []
+    for sha, aliases in groups.items():
+        aliases.sort(key=lambda s: (Path(s).stem.startswith(&#x27;ng_&#x27;), natural_key(s)))
+        filename = aliases[0]
+        items.append(dict(id=sha[:16], sha256=sha, filename=filename, aliases=aliases,
+                          is_reference=sha in reference_hashes,
+                          display_name=imported.get(filename, {}).get(&#x27;original_filename&#x27;, filename),
+                          events=[dict(filename=imported.get(alias, {}).get(&#x27;original_filename&#x27;, alias),
+                                       source_path=imported.get(alias, {}).get(&#x27;source_path&#x27;, str((DATA/alias).resolve())),
+                                       local_path=str((DATA/alias).resolve()),
+                                       acquired_at=imported.get(alias, {}).get(&#x27;acquired_at&#x27;, &#x27;&#x27;)) for alias in aliases]))
+    return sorted(items, key=lambda s: (s[&#x27;is_reference&#x27;], natural_key(s[&#x27;display_name&#x27;])))
+
+
+def select_sample(value):
+    for item in catalog():
+        if value == item[&#x27;id&#x27;] or value in item[&#x27;aliases&#x27;] or any(
+                value == Path(alias).stem for alias in item[&#x27;aliases&#x27;]):
+            return item
+    raise ValueError(&#x27;找不到照片，請重新掃描 data 資料夾&#x27;)
+
+
+def analysis_key(sha, threshold=.13, model_snapshot=None, profile=None):
+    profile = profile or selected_profile()
+    snapshot = model_snapshot or manager.snapshot()
+    build = RESOURCE_ROOT/&#x27;build_fingerprint.txt&#x27;
+    engine = build.read_text(encoding=&#x27;utf-8&#x27;).strip() if build.is_file() else &#x27;|&#x27;.join(digest(RESOURCE_ROOT/p) for p in (&#x27;detector.py&#x27;,&#x27;registration_candidate.py&#x27;,&#x27;single_reference_evidence.py&#x27;,&#x27;wire_review.py&#x27;,&#x27;model_manager.py&#x27;,&#x27;model_adapters.py&#x27;,&#x27;library.py&#x27;,&#x27;machine_profiles.py&#x27;,&#x27;detection_runtime.py&#x27;,&#x27;brightness_fit.py&#x27;,&#x27;dino_adapter.py&#x27;,&#x27;dino_paired_optimized.py&#x27;,&#x27;paired_geometry.py&#x27;))
+    ref = profile[&#x27;reference_sha256&#x27;] + &#x27;|&#x27; + profile[&#x27;id&#x27;]
+    return hashlib.sha256(f&#x27;{engine}|{ref}|{sha}|{float(threshold):.8f}|{snapshot.identity}|{snapshot.error}|{snapshot.requested}&#x27;.encode()).hexdigest()
+
+
+def cached_result(item, threshold=.13, model_snapshot=None, profile=None):
+    key = analysis_key(item[&#x27;sha256&#x27;], threshold, model_snapshot, profile)
+    path = OUTPUTS/key[:12]/&#x27;result.json&#x27;
+    if path.is_file():
+        result = json.loads(path.read_text(encoding=&#x27;utf-8&#x27;))
+        if result.get(&#x27;cache_key&#x27;) == key:
+            return result
+    return None
+
+
+def analysis_failures(profile=None):
+    profile = profile or selected_profile()
+    with sqlite3.connect(STATE/&#x27;results.sqlite3&#x27;) as db:
+        db.execute(&#x27;CREATE TABLE IF NOT EXISTS failures (sha TEXT, machine TEXT, reference TEXT, error TEXT, at TEXT, PRIMARY KEY(sha,machine,reference))&#x27;)
+        return {sha:dict(error=error,at=at) for sha,error,at in db.execute(
+            &#x27;SELECT sha,error,at FROM failures WHERE machine=? AND reference=?&#x27;,
+            (profile[&#x27;id&#x27;],profile[&#x27;reference_sha256&#x27;]))}
+
+
+def record_analysis_failure(sha, profile, error=None):
+    analysis_failures(profile)  # Create the table when upgrading a workspace.
+    with sqlite3.connect(STATE/&#x27;results.sqlite3&#x27;) as db:
+        if error is None:
+            db.execute(&#x27;DELETE FROM failures WHERE sha=? AND machine=? AND reference=?&#x27;,
+                       (sha,profile[&#x27;id&#x27;],profile[&#x27;reference_sha256&#x27;]))
+        else:
+            db.execute(&#x27;INSERT OR REPLACE INTO failures VALUES(?,?,?,?,?)&#x27;,
+                       (sha,profile[&#x27;id&#x27;],profile[&#x27;reference_sha256&#x27;],str(error),datetime.now(timezone.utc).isoformat()))
+
+
+def analyze_file(path, filename, threshold=None, sample_id=None, profile=None):
+    profile = profile or selected_profile()
+    threshold = detection_threshold(profile[&#x27;id&#x27;]) if threshold is None else threshold
+    sha = digest(path)
+    snapshot = manager.snapshot()
+    key = analysis_key(sha, threshold, snapshot, profile)
+    item = dict(sha256=sha)
+    result = cached_result(item, threshold, snapshot, profile)
+    if result is not None:
+        record_analysis_failure(sha, profile)
+        remember_result(result)
+        return dict(result, image_review=effective_review(result))
+    try:
+        result = detect(profile[&#x27;reference&#x27;], path, key[:12], threshold, model_snapshot=snapshot)
+    except Exception as error:
+        record_analysis_failure(sha, profile, error)
+        raise
+    record_analysis_failure(sha, profile)
+    result.update(machine=profile, cache_key=key, source_sha256=sha, source_file=filename,
+                  sample_id=sample_id, analyzed_at=datetime.now(timezone.utc).isoformat())
+    save_result(result)
+    remember_result(result)
+    return result
+
+
+def analyze_sample(item, threshold=None, profile=None):
+    return analyze_file(DATA/item[&#x27;filename&#x27;], item[&#x27;filename&#x27;], threshold, item[&#x27;id&#x27;], profile)
+
+
+def save_result(result):
+    path = OUTPUTS/result[&#x27;name&#x27;]/&#x27;result.json&#x27;
+    tmp = path.with_suffix(&#x27;.tmp&#x27;)
+    tmp.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding=&#x27;utf-8&#x27;)
+    tmp.replace(path)
+
+
+def remember_result(result):
+    # Explicit reanalysis can reuse an older matching cache after rollback. Remember the
+    # chosen run instead of treating the greatest analysis timestamp as permanently active.
+    with sqlite3.connect(STATE/&#x27;results.sqlite3&#x27;) as db:
+        db.execute(&#x27;CREATE TABLE IF NOT EXISTS heads (sha TEXT PRIMARY KEY, run TEXT)&#x27;)
+        db.execute(&#x27;INSERT OR REPLACE INTO heads VALUES(?,?)&#x27;, (result[&#x27;source_sha256&#x27;] + &#x27;|&#x27; + result.get(&#x27;machine&#x27;,{}).get(&#x27;id&#x27;,&#x27;default&#x27;) + &#x27;|&#x27; + result.get(&#x27;machine&#x27;,{}).get(&#x27;reference_sha256&#x27;,&#x27;&#x27;), result[&#x27;name&#x27;]))
+
+
+def latest_results(profile=None):
+    &quot;&quot;&quot;Historical results remain reviewable after model/code updates; never reuse as new cache.&quot;&quot;&quot;
+    profile = profile or selected_profile()
+    threshold = detection_threshold(profile[&#x27;id&#x27;])
+    results = {}
+    for path in OUTPUTS.glob(&#x27;*/result.json&#x27;):
+        try:
+            result = json.loads(path.read_text(encoding=&#x27;utf-8&#x27;))
+            if result.get(&#x27;cache_key&#x27;, &#x27;&#x27;)[:12] != result.get(&#x27;name&#x27;):
+                continue
+            if result.get(&#x27;version&#x27;) != DETECTOR_VERSION or not matches(result, profile) or result.get(&#x27;threshold&#x27;, .13) != threshold:
+                continue
+            sha = result.get(&#x27;source_sha256&#x27;)
+            if sha and result.get(&#x27;analyzed_at&#x27;, &#x27;&#x27;) &gt;= results.get(sha, {}).get(&#x27;analyzed_at&#x27;, &#x27;&#x27;):
+                results[sha] = result
+        except (OSError, ValueError):
+            continue
+    with sqlite3.connect(STATE/&#x27;results.sqlite3&#x27;) as db:
+        db.execute(&#x27;CREATE TABLE IF NOT EXISTS heads (sha TEXT PRIMARY KEY, run TEXT)&#x27;)
+        for head, name in db.execute(&#x27;SELECT sha,run FROM heads&#x27;):
+            sha = head.split(&#x27;|&#x27;)[0]
+            if not re.fullmatch(&#x27;[a-f0-9]{12}&#x27;, name):
+                continue
+            try:
+                selected = json.loads((OUTPUTS/name/&#x27;result.json&#x27;).read_text(encoding=&#x27;utf-8&#x27;))
+                if selected.get(&#x27;version&#x27;) == DETECTOR_VERSION and selected.get(&#x27;source_sha256&#x27;) == sha and selected.get(&#x27;cache_key&#x27;,&#x27;&#x27;)[:12] == name and matches(selected, profile) and selected.get(&#x27;threshold&#x27;, .13) == threshold:
+                    results[sha] = selected
+            except (OSError, ValueError):
+                pass
+    return results
+
+
+def public_catalog(profile=None):
+    profile = profile or selected_profile()
+    scope = source_scope()
+    items = catalog(scope)
+    history = latest_results(profile)
+    failures = analysis_failures(profile)
+    for item in items:
+        result = history.get(item[&#x27;sha256&#x27;])
+        item[&#x27;analysis_error&#x27;] = failures.get(item[&#x27;sha256&#x27;],{}).get(&#x27;error&#x27;) if result is None else None
+        item.pop(&#x27;sha256&#x27;)
+        if result is None:
+            item[&#x27;analysis&#x27;] = None
+        else:
+            review = effective_review(result)
+            item[&#x27;analysis&#x27;] = dict(name=result[&#x27;name&#x27;], high=result[&#x27;high_count&#x27;],
+                                    total=result[&#x27;proposal_count&#x27;], warning=result[&#x27;alignment_warning&#x27;],
+                                    reviewed=len(result.get(&#x27;human_reviews&#x27;, {})),
+                                    image_review=review)
+    return dict(items=items, file_count=sum(len(s[&#x27;aliases&#x27;]) for s in items),
+                unique_count=len(items), model_fingerprint=manager.snapshot().identity, detector_version=DETECTOR_VERSION, detection_threshold=detection_threshold(profile[&#x27;id&#x27;]), source=scope, reference=profile.get(&#x27;reference_name&#x27;,Path(profile[&#x27;reference&#x27;]).name if profile[&#x27;id&#x27;]==&#x27;default&#x27; else profile[&#x27;name&#x27;]+&#x27; 正常參考圖&#x27;), machine=profile)
+</code></pre></details><details class="source" id="src-release_validation-py"><summary>release_validation.py <small>67 行</small></summary><div class="sourcebar"><span>SHA-256 1fdfedb85829e04e82f3493c5b06d5ba9241f16814f79eee8350081d5d64e01d</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="release_validation.py">&quot;&quot;&quot;Explicit one-photo parity diagnostic, usable by source and frozen distributions.&quot;&quot;&quot;
+import hashlib
+import json
+import time
+from dataclasses import replace
+from pathlib import Path
+
+
+def load(path):return json.loads(Path(path).read_text(encoding=&#x27;utf-8&#x27;))
+
+
+def run(config_path):
+    import detector
+    from model_manager import ModelManager
+    from detection_runtime import prepare_reference
+    cfg=load(config_path);out=Path(cfg[&#x27;output&#x27;]);out.mkdir(parents=True,exist_ok=False)
+    snapshot=ModelManager(allow_cpu=True,execution_override=cfg[&#x27;execution&#x27;]).snapshot(cfg[&#x27;model&#x27;])
+    assert not snapshot.error,snapshot.info()
+    calls=[];last=[];session=snapshot.session
+    class TimedSession:
+        def __getattr__(self,name):return getattr(session,name)
+        def run(self,*a,**kw):
+            t=time.perf_counter();result=session.run(*a,**kw);calls.append(time.perf_counter()-t);return result
+    snapshot=replace(snapshot,session=TimedSession())
+    prepare_reference(cfg[&#x27;reference&#x27;],detector.read,detector.structure_mask,detector.machine_mask)
+    original=detector.classify_dino_candidate
+    def classified(*args):
+        value=original(*args);last.append(time.perf_counter());return value
+    detector.classify_dino_candidate=classified
+    start=time.perf_counter()
+    try:result=detector.detect(cfg[&#x27;reference&#x27;],cfg[&#x27;target&#x27;],&#x27;release-parity&#x27;,model_snapshot=snapshot,output_directory=out/&#x27;images&#x27;)
+    finally:detector.classify_dino_candidate=original
+    saved=time.perf_counter()-start;answer=max(last)-start
+    prior_timing=load(cfg[&#x27;golden&#x27;]);prior=load(prior_timing[&#x27;result_path&#x27;])
+    fields=(&#x27;matrix&#x27;,&#x27;rotation_ccw&#x27;,&#x27;mirrored_input&#x27;,&#x27;local_alignment&#x27;,&#x27;coverage&#x27;,&#x27;baseline_candidates&#x27;,&#x27;structure_changes&#x27;,&#x27;source_machine_bbox&#x27;)
+    changes=[key for key in fields if prior[key]!=result[key]]
+    def byid(r):return {c[&#x27;id&#x27;]:c for group in (&#x27;candidates&#x27;,&#x27;filtered_candidates&#x27;) for c in r[group]}
+    a,b=byid(prior),byid(result);assert set(a)==set(b)
+    boxes=[];decisions=[];inputs=[]
+    golden_inputs={z[&#x27;id&#x27;]:z[&#x27;input_hashes&#x27;] for z in prior_timing[&#x27;candidate_timings&#x27;]}
+    for i in a:
+        aa,bb=dict(a[i]),dict(b[i]);ca,cb=aa.pop(&#x27;classification&#x27;),bb.pop(&#x27;classification&#x27;)
+        if aa!=bb:boxes.append(i)
+        pair=cb.get(&#x27;paired_evidence&#x27;,{})
+        if cb[&#x27;status&#x27;]!=&#x27;active&#x27; or cb[&#x27;action&#x27;]!=ca[&#x27;action&#x27;] or any((pair.get(side,{}).get(&#x27;label&#x27;)==&#x27;screw&#x27;)!=ca[side][&#x27;screw&#x27;] for side in (&#x27;reference&#x27;,&#x27;target&#x27;)):decisions.append(i)
+        initial=cb.get(&#x27;paired_recheck&#x27;,{}).get(&#x27;initial&#x27;,pair)
+        hashes={&#x27;base_&#x27;+side:initial[side][&#x27;input_sha256&#x27;] for side in (&#x27;reference&#x27;,&#x27;target&#x27;)}
+        if cb.get(&#x27;paired_recheck&#x27;,{}).get(&#x27;performed&#x27;):
+            hashes.update({&#x27;recheck_&#x27;+side:pair[side][&#x27;input_sha256&#x27;] for side in (&#x27;reference&#x27;,&#x27;target&#x27;)})
+        if hashes!=golden_inputs[i]:inputs.append(i)
+    def pngs(folder):return {p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in Path(folder).glob(&#x27;*.png&#x27;)}
+    ai,bi=pngs(Path(prior_timing[&#x27;result_path&#x27;]).parent),pngs(out/&#x27;images&#x27;)
+    images=[k for k in set(ai)|set(bi) if ai.get(k)!=bi.get(k)]
+    report=dict(success=not any((changes,boxes,decisions,inputs,images)),model=snapshot.info(),pipeline=detector.PIPELINE,
+                detector_version=detector.DETECTOR_VERSION,candidates=len(a),inferences=len(calls),
+                start_to_dino_answer_seconds=answer,start_to_saved_seconds=saved,gpu_or_cpu_inference_calls_seconds=sum(calls),
+                registration_or_audit_changes=changes,candidate_changes=boxes,decision_changes=decisions,input_changes=inputs,
+                image_changes=images,images=len(bi),scope=&#x27;One photo, ready reference and model, no folder wait; no production state written&#x27;)
+    (out/&#x27;verification.json&#x27;).write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding=&#x27;utf-8&#x27;)
+    print(json.dumps(report,ensure_ascii=False,indent=2),flush=True)
+    assert report[&#x27;success&#x27;],report
+    return report
+
+
+if __name__==&#x27;__main__&#x27;:
+    import sys
+    run(sys.argv[1])
+</code></pre></details><details class="source" id="src-verify_optimized_cases-py"><summary>verify_optimized_cases.py <small>41 行</small></summary><div class="sourcebar"><span>SHA-256 695820dd9ade831bbbe327b125886fbd223d90548282df41bb21df4fcd6d7024</span><button class="copy" type="button">複製原始碼</button></div><pre><code data-file="verify_optimized_cases.py">&quot;&quot;&quot;Revalidate the fixed 59 cropped pairs, with actual CPU or GPU inference.&quot;&quot;&quot;
+import json
+import sys
+from pathlib import Path
+import numpy as np
+from PIL import Image
+from model_manager import ModelManager
+from dino_paired_optimized import classify_candidate
+
+ROOT=Path(__file__).resolve().parent
+
+
+def main(execution, output):
+    read=lambda p:json.loads(Path(p).read_text(encoding=&#x27;utf-8&#x27;))
+    plan=read(ROOT/&#x27;workspace/dino-learn-joint-20261103/results.json&#x27;)
+    expected=read(ROOT/&#x27;workspace/dino-four-remaining-20261103/restricted-results.json&#x27;)
+    s=ModelManager(allow_cpu=True,execution_override=execution).snapshot(&#x27;dino-paired-optimized-47-20261104-r3&#x27;)
+    assert not s.error,s.info()
+    rows=[]
+    for z,want in zip(plan,expected):
+        assert z[&#x27;key&#x27;]==want[&#x27;key&#x27;]
+        arrays=[np.asarray(Image.open(Path(z[&#x27;source&#x27;])/f).convert(&#x27;L&#x27;),np.float32)/255 for f in (&#x27;reference.png&#x27;,&#x27;aligned.png&#x27;)]
+        # These are already PNG-quantized report frames. Pass the exact same values
+        # through the production classifier, including its one-frame quantization.
+        p=classify_candidate(s,arrays[1],arrays[0],z[&#x27;c&#x27;]);pair=p.get(&#x27;paired_evidence&#x27;,{})
+        assert p[&#x27;status&#x27;]==&#x27;active&#x27;,p
+        sides={side:pair[side][&#x27;label&#x27;]==&#x27;screw&#x27; for side in (&#x27;reference&#x27;,&#x27;target&#x27;)}
+        changes=[side for side in sides if sides[side]!=want[&#x27;new&#x27;][side][&#x27;screw&#x27;]]
+        hashes={side:pair[side][&#x27;input_sha256&#x27;] for side in sides}
+        assert hashes==want[&#x27;input_hashes&#x27;],(z[&#x27;number&#x27;],&#x27;input mismatch&#x27;)
+        assert not changes and (p[&#x27;action&#x27;]!=&#x27;discard&#x27;)==want[&#x27;new&#x27;][&#x27;keep&#x27;],(z[&#x27;number&#x27;],changes)
+        rows.append(dict(number=z[&#x27;number&#x27;],group=z[&#x27;group&#x27;],**sides,keep=p[&#x27;action&#x27;]!=&#x27;discard&#x27;,decision_changes=changes))
+        if len(rows)%10==0:print(execution,len(rows),&#x27;/59 unchanged&#x27;,flush=True)
+    summary=dict(success=True,execution=execution,model=s.info(),cases=len(rows),decision_changes=0,
+                 original_screws_correct=sum(r[&#x27;keep&#x27;] for r in rows if r[&#x27;group&#x27;]==&#x27;original_screw&#x27;),
+                 normal_false_alarms=sum(r[&#x27;keep&#x27;] for r in rows if r[&#x27;group&#x27;]==&#x27;normal&#x27;),rows=rows)
+    Path(output).write_text(json.dumps(summary,ensure_ascii=False,indent=2),encoding=&#x27;utf-8&#x27;)
+    print(json.dumps({k:v for k,v in summary.items() if k!=&#x27;rows&#x27;},ensure_ascii=False),flush=True)
+
+
+if __name__==&#x27;__main__&#x27;:main(*sys.argv[1:])
+</code></pre></details></section><footer>以工作目錄原始碼與目前r3 manifest核對產生；附錄每份程式列SHA-256。文件無外部CDN、字型、網路API或追蹤程式。</footer></main><script>document.querySelector('#expand').onclick=()=>document.querySelectorAll('.source').forEach(x=>x.open=true);document.querySelector('#collapse').onclick=()=>document.querySelectorAll('.source').forEach(x=>x.open=false);document.querySelector('#print').onclick=()=>window.print();document.querySelector('#filter').oninput=e=>{const q=e.target.value.toLowerCase();document.querySelectorAll('nav a').forEach(a=>a.hidden=!a.textContent.toLowerCase().includes(q));};document.querySelectorAll('.copy').forEach(b=>b.onclick=async()=>{const code=b.closest('.source').querySelector('code');try{await navigator.clipboard.writeText(code.textContent);b.textContent='已複製';}catch(e){const r=document.createRange();r.selectNodeContents(code);const s=window.getSelection();s.removeAllRanges();s.addRange(r);b.textContent='已選取，請按 Ctrl+C';}});</script></body></html>

@@ -62,7 +62,8 @@ def set_detection_settings():
 @app.get('/api/health')
 def health():
     from launch import workspace_identity
-    return jsonify(service='xray-poc', version=5, detector_version=DETECTOR_VERSION, startup_protocol=2, workspace_id=workspace_identity(WORK_ROOT))
+    from detection_runtime import PIPELINE
+    return jsonify(service='xray-poc', version=5, detector_version=DETECTOR_VERSION, pipeline=PIPELINE, startup_protocol=2, workspace_id=workspace_identity(WORK_ROOT))
 
 @app.get('/')
 def index():
@@ -331,7 +332,8 @@ def too_large(e):
 
 @app.get('/api/station')
 def station_status():
-    return jsonify(acquisition=importer.info(), model=manager.snapshot().info())
+    from detection_runtime import PIPELINE
+    return jsonify(acquisition=importer.info(), model=manager.snapshot().info(), pipeline=PIPELINE)
 
 
 @app.post('/api/reports/screws/preview')
@@ -397,6 +399,15 @@ def screw_report():
 
 
 def start_background():
+    # Warm only the selected reference and model, never reanalyse old photos.
+    from detection_runtime import prepare_reference
+    from detector import structure_mask, machine_mask
+    try:
+        profile=selected_profile()
+        prepare_reference(profile['reference'],read,structure_mask,machine_mask)
+        manager.snapshot()
+    except (ValueError,OSError):
+        pass  # Existing UI reports missing/unconfigured references normally.
     def analyze_import(path, filename):
         with analysis_lock:
             return analyze_file(path, filename)

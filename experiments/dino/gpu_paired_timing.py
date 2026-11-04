@@ -6,7 +6,11 @@ OUT=ROOT/'workspace/dino-gpu-paired-timing-20261104';OUT.mkdir(exist_ok=True)
 def save(n,d):(OUT/n).write_text(json.dumps(d,ensure_ascii=False,indent=2),encoding='utf-8')
 def load(p):return json.loads(Path(p).read_text(encoding='utf-8'))
 def state():
-    g=ET.fromstring(subprocess.check_output(['nvidia-smi','-q','-x'],creationflags=subprocess.CREATE_NO_WINDOW)).find('gpu')
+    # Some Windows drivers emit process paths in the local code page inside XML.
+    # Those names are not used here; replace undecodable bytes so a Chinese
+    # portable path cannot hide the ASCII power/clock/thermal measurements.
+    raw=subprocess.check_output(['nvidia-smi','-q','-x'],creationflags=subprocess.CREATE_NO_WINDOW)
+    g=ET.fromstring(raw.decode('utf-8',errors='replace')).find('gpu')
     def value(path):return g.findtext(path)
     return dict(wall=time.time(),monotonic=time.perf_counter(),name=value('product_name'),pstate=value('performance_state'),
         sm=value('clocks/sm_clock'),memory=value('clocks/mem_clock'),utilization=value('utilization/gpu_util'),

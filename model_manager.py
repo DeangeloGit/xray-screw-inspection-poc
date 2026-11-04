@@ -23,6 +23,7 @@ class Snapshot:
     error: str = None
     requested: str = None
     requested_backend: str = None
+    feature_bank: object = None
 
     def info(self):
         return dict(model_id=self.manifest['model_id'], fingerprint=self.identity,
@@ -32,7 +33,8 @@ class Snapshot:
                     providers=self.session.get_providers() if self.session else [],
                     execution='gpu' if self.session and any(p in self.session.get_providers() for p in ('DmlExecutionProvider','CUDAExecutionProvider')) else 'cpu',
                     gpu_device=getattr(self.session, 'device', None),
-                    decision_policy=self.manifest.get('decision_policy'))
+                    decision_policy=self.manifest.get('decision_policy'),
+                    feature_strategy=self.manifest.get('feature_strategy'))
 
     def classify(self, crop, candidate_box=None, reference_crop=None):
         base = dict(model_id=self.manifest['model_id'], action='manual_review')
@@ -44,7 +46,11 @@ class Snapshot:
                 from model_adapters import classify
                 from dino_adapter import PAIRED_POLICY, classify_pair
                 if m['backend'] == 'dino_onnx' and m.get('decision_policy') == PAIRED_POLICY:
-                    prediction = classify_pair(m, self.session, crop, reference_crop)
+                    if m.get('feature_strategy'):
+                        from dino_paired_optimized import classify_pair as optimized_pair
+                        prediction = optimized_pair(m,self.session,crop,reference_crop,self.feature_bank)
+                    else:
+                        prediction = classify_pair(m, self.session, crop, reference_crop)
                 else:
                     prediction = classify(m, self.session, crop, candidate_box=candidate_box)
                 base['action'] = 'discard' if prediction['filter_recommendation'] in ('non_screw_suggestion','exclude') else 'manual_review'
@@ -83,7 +89,7 @@ class ModelManager:
                 if self.signature is None:
                     return self.current
                 return Snapshot(self.current.manifest, self.current.identity, self.current.session,
-                                '找不到 active.json，保留先前模型', self.current.requested)
+                                '找不到 active.json，保留先前模型', self.current.requested, feature_bank=self.current.feature_bank)
             requested = None
             m = None
             try:
@@ -104,6 +110,7 @@ class ModelManager:
                 if not isinstance(m.get('model_id'), str) or not m['model_id']:
                     raise ValueError('缺少 model_id')
                 session = None
+                feature_bank = None
                 signature = fingerprint([pointer.hex(), manifest_bytes.hex()])
                 execution = (self.execution_override or dino_execution()) if m['backend'] == 'dino_onnx' else None
                 if execution not in (None, 'cpu', 'gpu'):
@@ -118,6 +125,15 @@ class ModelManager:
                     # Immutable version folders: check stat changes as well as active/manifest changes.
                     stat = path.stat()
                     signature = fingerprint([signature, stat.st_size, stat.st_mtime_ns])
+                    if m.get('feature_strategy'):
+                        from dino_paired_optimized import STRATEGY
+                        if m['backend']!='dino_onnx' or m['feature_strategy']!=STRATEGY:
+                            raise ValueError('不支援的範例特徵策略')
+                        feature_path=(directory/m['feature_file']).resolve()
+                        if feature_path.parent!=directory or feature_path.suffix!='.npz':
+                            raise ValueError('範例特徵必須位於模型版本目錄')
+                        fs=feature_path.stat()
+                        signature=fingerprint([signature,fs.st_size,fs.st_mtime_ns])
                 elif m['backend'] != 'noop':
                     raise ValueError('不支援的模型 backend')
                 if signature == self.signature:
@@ -126,6 +142,14 @@ class ModelManager:
                     payload = path.read_bytes()
                     if hashlib.sha256(payload).hexdigest() != m['sha256']:
                         raise ValueError('模型 SHA-256 不符')
+                    if m.get('feature_strategy'):
+                        import io
+                        from dino_paired_optimized import validate_bank
+                        feature_payload=feature_path.read_bytes()
+                        if hashlib.sha256(feature_payload).hexdigest()!=m['feature_sha256']:
+                            raise ValueError('DINO 範例特徵 SHA-256 不符')
+                        with np.load(io.BytesIO(feature_payload),allow_pickle=False) as bank_file:
+                            feature_bank=validate_bank(m,bank_file['bank'])
                     if m['backend']=='onnx':
                         if m.get('input_size') != [224, 224] or m.get('output') != 'logits':
                             raise ValueError('不支援的模型輸入輸出契約')
@@ -182,12 +206,12 @@ class ModelManager:
                 if execution == 'gpu':
                     identity_parts.append(['directml-fixed224-v1', session.runtime_version, session.device])
                 identity = fingerprint(identity_parts)
-                self.current = Snapshot(m, identity, session, requested=requested)
+                self.current = Snapshot(m, identity, session, requested=requested, feature_bank=feature_bank)
                 self.signature = signature
                 return self.current
             except Exception as exc:
                 # Keep the previous validated session, clearly reporting requested/effective versions.
                 return Snapshot(self.current.manifest, self.current.identity, self.current.session, ('尚未安裝模型推論套件，請先安裝 onnxruntime（Mac／CPU）或 onnxruntime-gpu（IPC／GPU）' if isinstance(exc, ModuleNotFoundError) and exc.name == 'onnxruntime' else str(exc)), requested,
-                                m.get('backend') if isinstance(m, dict) else None)
+                                m.get('backend') if isinstance(m, dict) else None, feature_bank=self.current.feature_bank)
 
 manager = ModelManager()

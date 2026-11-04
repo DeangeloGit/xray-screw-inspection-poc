@@ -15,7 +15,8 @@ _sessions = weakref.WeakSet()
 
 
 def runtime_python():
-    for path in (INSTALL_ROOT / 'runtime-gpu/python.exe',
+    for path in (INSTALL_ROOT / 'runtime-gpu/XRayGpuWorker.exe',
+                 INSTALL_ROOT / 'runtime-gpu/python.exe',
                  INSTALL_ROOT / 'workspace/venvs/dino-directml/Scripts/python.exe'):
         if path.is_file():
             return path
@@ -42,8 +43,9 @@ def _exchange(process, result, header, payload):
 class GpuSession:
     def __init__(self, path, sha256):
         self.lock = threading.Lock()
-        self.process = subprocess.Popen([str(runtime_python()), '-u', str(RESOURCE_ROOT / 'gpu_worker.py'),
-            str(Path(path).resolve()), sha256], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        executable=runtime_python()
+        command=([str(executable)] if executable.name=='XRayGpuWorker.exe' else [str(executable),'-u',str(RESOURCE_ROOT/'gpu_worker.py')])
+        self.process = subprocess.Popen(command+[str(Path(path).resolve()), sha256], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
         _sessions.add(self)
         try:

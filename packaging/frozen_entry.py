@@ -22,6 +22,10 @@ def main():
     if '--self-test' in sys.argv:
         from portable_release_check import run
         return run(root)
+    if '--verify-release' in sys.argv:
+        from release_validation import run
+        run(sys.argv[sys.argv.index('--verify-release')+1])
+        return 0
     if '--acquisition-scan' in sys.argv:
         from acquisition import scan_worker
         scan_worker()
@@ -42,8 +46,8 @@ def main():
             temporary = settings_path.with_suffix('.portable.tmp')
             temporary.write_text(json.dumps(settings, ensure_ascii=False, indent=2), encoding='utf-8')
             os.replace(temporary, settings_path)
-    print('X-RAY DINO 2026-11-03 | Windows x64 | CPU', flush=True)
-    print('本包預設啟用 47＋65 範例及參照圖＋待測圖雙圖判斷，與完整報告規則一致。', flush=True)
+    print('X-RAY DINO r3 2026-11-04 | Windows x64 | CPU / GPU', flush=True)
+    print('47＋65 範例、參照圖＋待測圖；已整合驗證過的辨識與合併加速方法。', flush=True)
     print('資料儲存位置：'+str(workspace)+'；請保持視窗開啟。', flush=True)
     import launch
     # Windows can allow another listener on a reused fixed port. An OS-selected

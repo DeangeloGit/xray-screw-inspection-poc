@@ -1,5 +1,15 @@
 # Windows／Mac 加密資料移交
 
+## Windows 同步核對：2026-11-05
+
+已同步 Mac 的 `3a2adde` 規劃並保留本機 r3 修改。Windows 工具已建置於 `dist/XRayTransfer/XRayTransfer.exe`，原生介面缺件檢查通過；合成資料的加密、解密、路徑重定位、人工紀錄保留與拒絕覆寫測試通過。本機模型及原有 22 份 r3 核心程式快照核對一致，沒有執行圖資檢測。
+
+已補上本機 `workspace/windows-check` 的自動辨識，以及 r3 `feature_file` 的存在／SHA-256 檢查。正式移交除了 ONNX、47＋65 範例，也必須包含 r3 的 `paired-features.npz`。
+
+**尚未完成正式雲端移交。** Windows 預設位置未找到 Mac 的同一把外部金鑰，沒有另建替代金鑰，也沒有匯出或上傳正式私人資料。Mac 規劃已在 Git；本機後續 r3 修改以 `checkpoint-2026-11-05-dino-r3-rd-handoff` 保存並推送；Mac 必須取用這個 checkpoint 或更新的分支，不能只匯入資料包就假設程式也是 r3。現有 r3 可攜 EXE 在此啟動契約加入前已打包；匯入工作區目前可用更新後的原始碼 `launch.py` 啟動，舊包保持原樣。
+
+核對紀錄：`docs/checkpoints/windows-handoff-sync-20261105.json`。
+
 沿用 TCOOL 學習題庫專案的方式：**本機一致性備份 → 加密 → Google Drive 專用資料夾 → 下載比對 → 解密及隔離還原**。程式透過 Git 更新，私人模型、圖資與人工紀錄透過加密資料包移交。
 
 ## 已設定的位置

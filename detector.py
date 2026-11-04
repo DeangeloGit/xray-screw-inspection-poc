@@ -6,8 +6,10 @@ import json
 
 from runtime_paths import WORK_ROOT as ROOT
 from model_manager import manager
+from detection_runtime import CURRENT, detection, directions, parallel_map, PIPELINE
+from brightness_fit import brightness
 
-DETECTOR_VERSION = 12
+DETECTOR_VERSION = 13
 
 
 def write_image(path, image):
@@ -38,16 +40,14 @@ def register(ref, raw):
 def _register_orientation(ref, raw):
     cv2.setRNGSeed(7)
     orb = cv2.ORB_create(nfeatures=7000)
-    kr, dr = orb.detectAndCompute((ref * 255).astype('uint8'), None)
+    context = CURRENT.get()
+    kr, dr = context.reference.features if context and ref is context.reference.small else orb.detectAndCompute((ref * 255).astype('uint8'), None)
+    prepared_directions = directions(raw, dr)
     best = None
     for rotation in range(4):
-        rotated = np.rot90(raw, rotation).copy()
-        s = 1536 / max(rotated.shape)
-        target = cv2.resize(rotated, None, fx=s, fy=s)
-        kt, dt = orb.detectAndCompute((target * 255).astype('uint8'), None)
-        if dt is None or dr is None:
+        target, s, kt, dt, pairs = prepared_directions[rotation]
+        if pairs is None:
             continue
-        pairs = cv2.BFMatcher(cv2.NORM_HAMMING).knnMatch(dt, dr, k=2)
         good = [m for pair in pairs if len(pair) == 2
                 for m, n in [pair] if m.distance < 0.72 * n.distance]
         if len(good) < 10:
@@ -75,6 +75,9 @@ def _register_orientation(ref, raw):
 
 
 def structure_mask(ref):
+    context = CURRENT.get()
+    if context and ref is context.reference.small:
+        return context.reference.structure
     mask = (ref < 0.65).astype('uint8')
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((31, 31), np.uint8))
     n, labels, stats, _ = cv2.connectedComponentsWithStats(mask)
@@ -86,6 +89,9 @@ def structure_mask(ref):
 
 def machine_mask(ref):
     """Inspect the main body envelope, including bright cavities and side recesses."""
+    context = CURRENT.get()
+    if context and ref is context.reference.small:
+        return context.reference.machine
     structure = structure_mask(ref).astype('uint8')
     contours, _ = cv2.findContours(structure, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
@@ -100,21 +106,7 @@ def machine_mask(ref):
 
 def compensate_brightness(ref, target):
     """Robust local affine exposure fit; strong residuals cannot train away objects."""
-    weights = np.ones_like(ref, dtype=np.float32)
-    def average(a):
-        return cv2.boxFilter(a, -1, (101, 101), normalize=True, borderType=cv2.BORDER_REFLECT)
-    for _ in range(3):
-        mass = np.maximum(average(weights), .01)
-        mean_ref = average(weights * ref) / mass
-        mean_target = average(weights * target) / mass
-        variance = np.maximum(average(weights * ref * ref) / mass - mean_ref**2, 0)
-        covariance = average(weights * ref * target) / mass - mean_ref * mean_target
-        gain = np.clip((covariance + .002) / (variance + .002), .6, 1.6)
-        offset = np.clip(mean_target - gain * mean_ref, -.25, .25)
-        predicted = np.clip(gain * ref + offset, 0, 1)
-        error = np.abs(predicted - target)
-        weights = np.minimum(1, .04 / np.maximum(error, .0001)) ** 2
-    return predicted
+    return brightness(ref, target)
 
 
 def correlation(a, b, mask):
@@ -306,12 +298,13 @@ def structure_change_evidence(ref, target, candidate, threshold):
 def proposals(ref, target, mask, threshold, structure_changes=None):
     predicted = compensate_brightness(ref, target)
     residual = cv2.erode(predicted, np.ones((7, 7), np.uint8)) - target
-    candidates, _ = candidates_from_residual(ref, target, mask, threshold, predicted, residual)
+    shared_arrays = (cv2.erode(predicted, np.ones((15, 15), np.uint8)), predicted-target)
+    candidates, _ = candidates_from_residual(ref, target, mask, threshold, predicted, residual, shared_arrays)
     # Tight-tolerance recovery: small objects beside existing dark structures can
     # be erased by the main 3px tolerance. Require compact, novel, predominantly
     # one-sided evidence before retaining a 1px-tolerance candidate.
     tight_residual = cv2.erode(predicted, np.ones((3, 3), np.uint8)) - target
-    recovered, _ = candidates_from_residual(ref, target, mask, threshold, predicted, tight_residual)
+    recovered, _ = candidates_from_residual(ref, target, mask, threshold, predicted, tight_residual, shared_arrays)
     for candidate in recovered:
         c = candidate
         if not (25 <= c['area'] <= 600 and max(c['w'], c['h']) <= 50
@@ -331,32 +324,37 @@ def proposals(ref, target, mask, threshold, structure_changes=None):
             x, y, w, h = (c[k] for k in ('x','y','w','h'))
             residual[y:y+h,x:x+w] = np.maximum(residual[y:y+h,x:x+w], tight_residual[y:y+h,x:x+w])
     retained = []
-    for c in candidates:
-        evidence = structure_change_evidence(ref, target, c, threshold)
-        explained = bool(evidence and evidence['context_supported'] and evidence['sim'] >= .65
-                         and evidence['ratio'] <= .2 and evidence['remaining'] < 12)
-        if not explained:
-            from single_reference_evidence import explain
-            context_evidence = explain(ref, target, c, threshold)
-            if context_evidence:
-                c['single_reference_evidence'] = context_evidence
-                explained = True
-        c['change_evidence'] = evidence
-        c['change_type'] = 'existing_structure_change' if explained else 'unexplained_object_candidate'
+    for c, explained in parallel_map(lambda c: check_candidate(ref, target, c, threshold), candidates, 1):
         if explained:
             if structure_changes is not None:
                 structure_changes.append(c)
         else:
-            from wire_review import review_evidence
-            wire = review_evidence(ref, target, c, threshold)
-            if wire:
-                c['wire_review'] = wire
             retained.append(c)
     retained.sort(key=lambda c:c['score'], reverse=True)
     return retained, residual
 
 
-def candidates_from_residual(ref, target, mask, threshold, predicted, residual):
+def check_candidate(ref, target, c, threshold):
+    evidence = structure_change_evidence(ref, target, c, threshold)
+    explained = bool(evidence and evidence['context_supported'] and evidence['sim'] >= .65
+                     and evidence['ratio'] <= .2 and evidence['remaining'] < 12)
+    if not explained:
+        from single_reference_evidence import explain
+        context_evidence = explain(ref, target, c, threshold)
+        if context_evidence:
+            c['single_reference_evidence'] = context_evidence
+            explained = True
+    c['change_evidence'] = evidence
+    c['change_type'] = 'existing_structure_change' if explained else 'unexplained_object_candidate'
+    if not explained:
+        from wire_review import review_evidence
+        wire = review_evidence(ref, target, c, threshold)
+        if wire:
+            c['wire_review'] = wire
+    return c, explained
+
+
+def candidates_from_residual(ref, target, mask, threshold, predicted, residual, shared_arrays=None):
     binary = ((residual > threshold) & mask).astype('uint8')
     binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN,
                               cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
@@ -372,8 +370,7 @@ def candidates_from_residual(ref, target, mask, threshold, predicted, residual):
 
     n, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
     candidates = []
-    normal_nearby = cv2.erode(predicted, np.ones((15, 15), np.uint8))
-    signed_difference = predicted - target
+    normal_nearby, signed_difference = shared_arrays if shared_arrays is not None else (cv2.erode(predicted, np.ones((15, 15), np.uint8)), predicted-target)
     for i in range(1, n):
         x, y, w, h, area = map(int, stats[i])
         if not (12 <= area <= 1800 and 4 <= max(w, h) <= 110):
@@ -457,11 +454,17 @@ def source_points(points, reg, flow, raw_shape):
 
 
 def detect(reference, target, name, threshold=.13, model_snapshot=None, output_directory=None):
+    with detection(reference, read, structure_mask, machine_mask):
+        return _detect(reference, target, name, threshold, model_snapshot, output_directory)
+
+
+def _detect(reference, target, name, threshold=.13, model_snapshot=None, output_directory=None):
     model_snapshot = model_snapshot or manager.snapshot()
     if not np.isfinite(threshold) or not .03 <= threshold <= .4:
         raise ValueError('門檻需介於 0.03 與 0.40')
-    ref, raw = read(reference), read(target)
-    r = cv2.resize(ref, None, fx=1536/max(ref.shape), fy=1536/max(ref.shape))
+    context = CURRENT.get()
+    ref, raw = context.reference.full, read(target)
+    r = context.reference.small
     reg = register(r, raw)
     mask = machine_mask(r) & reg['valid']
     total = max(int(machine_mask(r).sum()), 1)
@@ -500,11 +503,12 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
                    max(0, int(machine_points[:, 1].min())-35),
                    min(raw.shape[1], int(machine_points[:, 0].max())+35),
                    min(raw.shape[0], int(machine_points[:, 1].max())+35)]
+    zero_flow = np.zeros_like(flow)
     for i, c in enumerate(baseline, 1):
         c['id'] = i
         x, y, w, h = [c[k] for k in ('x', 'y', 'w', 'h')]
         p = source_points([[x-25, y-25], [x+w+25, y-25],
-                           [x+w+25, y+h+25], [x-25, y+h+25]], reg, np.zeros_like(flow), raw.shape)
+                           [x+w+25, y+h+25], [x-25, y+h+25]], reg, zero_flow, raw.shape)
         b0 = np.floor(p.min(axis=0)).astype(int)
         b1 = np.ceil(p.max(axis=0)).astype(int)+1
         crop = raw[b0[1]:b1[1], b0[0]:b1[0]]
@@ -528,18 +532,20 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
         c['crop_box'] = list(map(int, box))
         crop = (raw[box[1]:box[3], box[0]:box[2]]*255).astype('uint8')
         write_image(str(out/f'crop_{i}.png'), crop)
-        if model_snapshot.manifest.get('preprocessing') == 'aligned-gray-tight12-v1':
+        if model_snapshot.manifest.get('backend') == 'dino_onnx':
+            c['classification'] = classify_dino_candidate(model_snapshot, corrected, r, c)
+        elif model_snapshot.manifest.get('preprocessing') == 'aligned-gray-tight12-v1':
             cx, cy, cw, ch = (c[k] for k in ('x','y','w','h'))
             ai_crop = corrected[max(0,cy-12):cy+ch+12, max(0,cx-12):cx+cw+12]
             # Match the previously evaluated PNG crop quantization exactly.
             ai_crop = (np.clip(ai_crop,0,1)*255).astype('uint8').astype('float32')/255
         else:
             ai_crop = raw[box[1]:box[3], box[0]:box[2]]
-        if model_snapshot.manifest.get('backend')=='yolo_onnx':
+        if model_snapshot.manifest.get('backend') == 'dino_onnx':
+            pass
+        elif model_snapshot.manifest.get('backend')=='yolo_onnx':
             x0,y0=max(0,cx-12),max(0,cy-12)
             c['classification'] = model_snapshot.classify(ai_crop, candidate_box=[cx-x0,cy-y0,cx-x0+cw,cy-y0+ch])
-        elif model_snapshot.manifest.get('backend') == 'dino_onnx':
-            c['classification'] = classify_dino_candidate(model_snapshot, corrected, r, c)
         else:
             c['classification'] = model_snapshot.classify(ai_crop)
         x, y, w, h = [c[k] for k in ('x', 'y', 'w', 'h')]
@@ -565,7 +571,7 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
     heat[~mask] = 0
     write_image(str(out/'difference.png'), cv2.applyColorMap((heat*255).astype('uint8'), cv2.COLORMAP_INFERNO))
     n_high = sum(c['priority'] == 'high' for c in candidates)
-    result = dict(model=model_snapshot.info(), version=DETECTOR_VERSION, name=name, status='需人工複核',
+    result = dict(model=model_snapshot.info(), version=DETECTOR_VERSION, pipeline=PIPELINE, name=name, status='需人工複核',
                   rotation_ccw=reg['rotation']*90, mirrored_input=reg.get('mirrored',False),
                   orientation_evidence=reg.get('orientation_evidence'), inliers=reg['inliers'], threshold=threshold,
                   source_shape=list(raw.shape), source_machine_bbox=machine_box, preview_scale=preview_scale,
@@ -585,6 +591,9 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
 
 def classify_dino_candidate(snapshot, target, reference, candidate):
     """Same coordinates, padding and PNG quantization as the frozen report."""
+    if snapshot.manifest.get('feature_strategy') == 'contrast-global-local-half-v1':
+        from dino_paired_optimized import classify_candidate
+        return classify_candidate(snapshot, target, reference, candidate)
     x, y, w, h = (candidate[k] for k in ('x', 'y', 'w', 'h'))
     region = (slice(max(0, y-12), y+h+12), slice(max(0, x-12), x+w+12))
     crops = [(np.clip(im[region], 0, 1)*255).astype('uint8').astype('float32')/255

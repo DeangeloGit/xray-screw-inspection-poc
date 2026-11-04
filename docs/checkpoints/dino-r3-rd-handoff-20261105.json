@@ -1,0 +1,93 @@
+{
+  "date": "2026-11-05",
+  "checkpoint_tag": "checkpoint-2026-11-05-dino-r3-rd-handoff",
+  "branch": "codex/next-development-20261103",
+  "base_mac_sync_commit": "3a2addeb069e5bb409e37967079cc3abad78348a",
+  "pipeline": "dino-combined-20261104-r3",
+  "detector_version": 13,
+  "artifacts": [
+    {
+      "role": "rd_kit",
+      "path": "dist/XRay-RD-r3-Reproduction-20261105.zip",
+      "bytes": 539333208,
+      "sha256": "5c73ade2f16dcc61ae8920f56b29103d87349ab966f24235aa3100b8a3c52802",
+      "stored_in_public_git": false
+    },
+    {
+      "role": "portable",
+      "path": "dist/XRayReview-DINO-Optimized-r3-20261104-Windows-x64.zip",
+      "bytes": 471952919,
+      "sha256": "baa6b48bb5a83b7a0072af92d57038e1671a1010eee9b7072c1a81e8a32ab82b",
+      "stored_in_public_git": false
+    },
+    {
+      "role": "transfer_tool",
+      "path": "dist/XRayTransfer-Windows-20261105.zip",
+      "bytes": 17980658,
+      "sha256": "f5288e2d0ba19e949be7bbfcad2c7d64df88e5489af4d5dcc86741cfca698649",
+      "stored_in_public_git": false
+    }
+  ],
+  "model": {
+    "directory": "dino-paired-optimized-47-20261104-r3",
+    "sha256": "f22797eabf810a75e41de68d378541ebea372122b25c4ce3ef25ff618250c20a",
+    "feature_strategy": "contrast-global-local-half-v1",
+    "feature_sha256": "de920d9986bce02b3e8447520a4a634c55a8f8f39876a12d562e04b66d5b378a",
+    "screw_examples": 47,
+    "normal_examples": 65,
+    "decision_policy": "dino-top3-target-and-reference-v1"
+  },
+  "source_core_sha256": {
+    "detector.py": "4385f027e2188e64b3d140b78b158aaaad766c177874a1ef4d769dd526b485ed",
+    "detection_runtime.py": "896738d00a7c8149f78dfb0a9961ed3ba68069dc3a42cf0fe9f86bc60c11be84",
+    "brightness_fit.py": "6402d60a52a1b2307253aebe981aa00d33d4b7fffec240e0ede643f04a387c0f",
+    "registration_candidate.py": "753dd000f54cca4d5e8247be98c67bb6792494298c4c91b0b66be7dbb756826d",
+    "single_reference_evidence.py": "e75d069421ab8d28f23bdb23c6ab4f7de70af10cc653ea3b41e78ab591eab51e",
+    "wire_review.py": "81ef9bd4b3a9e6d477cfba70d7140457ade03ce953b04908e6d1df17a112d4c8",
+    "dino_adapter.py": "dd7443bbd5d757738aaa1b94c98b971746042d447434d5b78f3cb5b17ff10926",
+    "dino_paired_optimized.py": "68bedeed3430b43743c3c14dec8c248394fe0b9b4d11c49a99c90c02384b9def",
+    "paired_geometry.py": "3f4968207cc64a200c894b7f8211f3d83036275175b5b5182576caf7c087a049",
+    "model_manager.py": "abbe032ec7fe51917e6cb3b353814c438e243258a6f9bfe1dd0d3d1395915485",
+    "model_adapters.py": "e3aed92c8ff8458af76efa3ba581c0b1b5a4d1bdf8c39e83a28606868beec447",
+    "gpu_runtime.py": "1520407d997bf57f612c509e3dd3974d2870681e2f10def5e39c657eec8513fa",
+    "gpu_worker.py": "24e40925a099e2006ea8279e7f46b50c4f311894b9ee65ecc0027c4de7a1e322",
+    "gpu_devices.py": "0e295e7a76f4968f2763d0c8be932dd86cb2ddab632624bfb91aa4e1b4502a0e",
+    "gpu_protocol.py": "a33100a1cba4a0ccd2e92ffbd7ecfe223de3c3bd37107322407c06a2b6694004",
+    "runtime_paths.py": "721ec871535efdc85bec45465b1e1e2a4cdd389abdf9b865ed1b7a91e01e0a66",
+    "station_settings.py": "e2d3dfaeb09226711860d2c35012414c1922dc52b9a32de83796008c61840fff",
+    "dino_examples.py": "072ed6878c68e2364357d2cf232f9eb2b87718b268f1be2cf2a00bc4bae6c27d",
+    "acquisition.py": "2bb748a7e0ac94d14a950a8a2b1f45e0cb2c454330b327ec8780d3e5b2a5ca3c",
+    "library.py": "7e34e994dd5a3665df291422cd857d627c35cde9c4b2283f381bf334d33da8bd",
+    "release_validation.py": "1fdfedb85829e04e82f3493c5b06d5ba9241f16814f79eee8350081d5d64e01d",
+    "verify_optimized_cases.py": "695820dd9ade831bbbe327b125886fbd223d90548282df41bb21df4fcd6d7024"
+  },
+  "rd_html": {
+    "path": "docs/XRAY_R3_RD_IMPLEMENTATION_20261104.html",
+    "sha256": "4c7f1ce2fdeb9432fe109236b2de048facbf9649ddb3a5fb4f35ed397e2f994e"
+  },
+  "historical_verification": {
+    "single_candidates": 137,
+    "inferences": 276,
+    "output_images": 368,
+    "fixed_cases": 59,
+    "normal_controls": 50,
+    "decision_changes": 0,
+    "original_screws_correct": 2
+  },
+  "scope": "Existing validated r3 results preserved; checkpoint itself does not rerun detection",
+  "artifact_source_relationship": "All 22 RD core source snapshots match checkpoint working files. Existing portable and RD EXE predate Mac handoff launch contract; use source launch.py for imported workspaces until EXE rebuilt.",
+  "drive": {
+    "folder_url": "https://drive.google.com/drive/folders/1QBfJNjDh9RpPe6bNr3HpC7ZBrCDkDzi2",
+    "config": "config/handoff-drive.json",
+    "guide": "docs/STATION_HANDOFF.md",
+    "encryption": "XRAYENC1 / scrypt / AES-256-GCM",
+    "key_pending_windows": true,
+    "key_in_git": false,
+    "key_in_drive": false,
+    "real_private_upload_done": false,
+    "cloud_verified": false,
+    "unattended_rclone_configured": false
+  },
+  "private_checkpoint": "workspace/checkpoints/2026-11-05-dino-r3-rd-handoff",
+  "prior_private_checkpoint": "workspace/checkpoints/2026-11-04-dino-performance-research"
+}

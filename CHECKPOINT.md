@@ -1,4 +1,24 @@
-# 最新 Checkpoint：2026-11-04 DINO辨識與效能研究
+# 最新 Checkpoint：2026-11-05 r3 正式流程、RD 交接與 Drive 移交
+
+Tag：`checkpoint-2026-11-05-dino-r3-rd-handoff`；分支：`codex/next-development-20261103`。
+
+[版本與交付校驗紀錄](docs/checkpoints/dino-r3-rd-handoff-20261105.json) · [RD 核心流程 HTML](docs/XRAY_R3_RD_IMPLEMENTATION_20261104.html) · [Windows／Mac 加密移交方式](docs/STATION_HANDOFF.md)。
+
+目前正式程式為 r3，pipeline=`dino-combined-20261104-r3`、DETECTOR_VERSION=13。47 張螺絲＋65 張正常、參照圖＋待測圖、整體與局部特徵各半及一次受限補看已整合；CPU／GPU 保留選擇。對齊／明暗／候選核對合併加速與參照資料重用已啟用。不得把下方歷史 r2／僅離線實驗狀態當成目前版本。
+
+本機私人交付：`dist/XRay-RD-r3-Reproduction-20261105.zip`、`dist/XRayReview-DINO-Optimized-r3-20261104-Windows-x64.zip`、`dist/XRayTransfer-Windows-20261105.zip`；名稱、大小及 SHA-256 見版本紀錄。公開 Git 只保存程式、HTML 與校驗／交接資訊，不包含私人權重、範例、圖資、完整檢測報告或 ZIP。
+
+既有驗證：來源程式與可攜 EXE 在 CPU／GPU 的同一張圖 137 候選、276 推論、368 張輸出一致；59 固定案例一致，50 個正常對照無誤報。這不是獨立全圖資準確率，5 個目視疑似位置仍有 3 個未判出。本次 checkpoint 不重跑檢測。
+
+Mac 的加密移交工具已同步，Windows 原生工具已建置及缺件檢查通過，合成加密往返與 r3 特徵完整性測試通過。現有 r3 可攜 EXE 在匯入啟動契約加入前建置，故啟動新匯入工作區先使用此 checkpoint 的原始碼 `launch.py`；未重建舊包，不能宣稱舊 EXE 已有此新功能。
+
+金鑰由使用者之後從 Mac 另行帶入 Windows，不能新建替代、寫入 Git／移交包／Drive。正式私人資料尚未上傳，`cloud_verified=false`，也沒有設定無人值守 rclone。後續先停寫來源站台，使用同一把金鑰匯出，再上傳指定 Drive，下載回比 SHA-256 並隔離還原，才可稱跨機移交成功。
+
+本機私人 checkpoint：`workspace/checkpoints/2026-11-05-dino-r3-rd-handoff`；保留歷史 checkpoint。外部 Pictures/X-Ray 原始圖留原處，內部模型、工作區、設定及紀錄備份獨立保存，不更改原資料。
+
+---
+
+# 歷史 Checkpoint：2026-11-04 DINO辨識與效能研究
 
 Tag：`checkpoint-2026-11-04-dino-performance-research`；分支：`codex/next-development-20261103`。
 

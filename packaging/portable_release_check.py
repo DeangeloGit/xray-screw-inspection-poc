@@ -39,6 +39,10 @@ def run(root):
             import numpy as np
             active = manager.snapshot()
             assert not active.error, active.info()
+            from detection_runtime import PIPELINE
+            assert PIPELINE=='dino-combined-20261104-r3'
+            assert active.manifest.get('feature_strategy')=='contrast-global-local-half-v1'
+            assert active.feature_bank.shape==(112,8,2,384)
             assert len(active.manifest['example_bank']['screw']['ids']) == 47
             assert len(active.manifest['example_bank']['normal']['ids']) == 65
             example = next((models / active.requested / 'examples').glob('*.png'))
@@ -74,6 +78,9 @@ def run(root):
                 listing = client.get('/api/dino/examples?model=' + active.requested)
                 assert listing.status_code == 200, listing.json
                 data = listing.json
+                config=client.get('/api/settings').json
+                assert config['gpu_runtime_installed'] and config['dino_execution']=='cpu'
+                assert client.get('/api/health').json['pipeline']==PIPELINE
                 assert len(data['examples']) == 112, data.keys()
                 assert all(x['available'] for x in data['examples'])
                 preview = client.post('/api/dino/preview', data=dict(model=active.requested,
@@ -81,7 +88,7 @@ def run(root):
                 assert preview.status_code == 200, preview.data[:500]
                 assert Image.open(io.BytesIO(preview.data)).size == (224, 224)
                 from machine_profiles import public_profiles
-                assert sum(p['ready'] for p in public_profiles()['items']) == 4
+                assert sum(p['ready'] for p in public_profiles()['items']) == len(settings['machine_profiles'])
                 old = manager.snapshot('dino-examples-a3b8c97aa539')
                 assert not old.error and len(old.manifest['example_bank']['screw']['ids']) == 31
                 report['checks'].append('112 example images, actual-input preview and original DINO rollback model')
@@ -98,7 +105,9 @@ def run(root):
                     selected = client.post('/api/settings/models/select', json=dict(directory=version))
                     assert selected.status_code == 200, selected.json
                     assert manager.snapshot().requested == version
-                report['checks'].append('Four machine references; save new example version, activate and switch back')
+                    assert manager.snapshot().feature_bank.shape==(112,8,2,384)
+                report['checks'].append('All saved machine references; save new example version, activate and switch back')
+                report['checks'].append('r3 optimized features retained through example editing; CPU/GPU selection UI and bundled GPU runtime present')
             # SQLite context managers commit but leave cyclic connections for GC.
             gc.collect()
         report['success'] = True

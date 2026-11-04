@@ -61,7 +61,8 @@ def layout(root, config=None):
     root = Path(root).expanduser().resolve()
     config = Path(config).expanduser().resolve() if config else root / 'config/station.json'
     settings = read(config) if config.exists() else {}
-    work = resolve_setting(settings['workspace'], config) if settings.get('workspace') else root
+    default_work = root / 'workspace/windows-check' if not config.exists() and (root/'workspace/windows-check/state/ui_settings.json').is_file() else root
+    work = resolve_setting(settings['workspace'], config) if settings.get('workspace') else default_work
     models = resolve_setting(settings['model_root'], config) if settings.get('model_root') else root / 'models'
     ui = read(work / 'state/ui_settings.json') if (work / 'state/ui_settings.json').exists() else {}
     return dict(root=root, config=config, settings=settings, work=work, models=models, ui=ui)
@@ -141,6 +142,17 @@ def validate_station(base, require_dino=True, work=None, models=None):
                 errors.append('DINO 輸入或 top3 判斷契約不符')
             if m.get('decision_policy') != POLICY:
                 errors.append('預設模型未啟用 DINO 雙圖規則')
+            if m.get('feature_strategy'):
+                if m['feature_strategy'] != 'contrast-global-local-half-v1':
+                    errors.append('不支援的 DINO 特徵策略')
+                feature = safe_name(m.get('feature_file',''))
+                if len(feature.parts) != 1:
+                    raise ValueError('r3 特徵檔必須直接位於模型版本目錄')
+                feature_path = models / version / feature
+                if not feature_path.is_file():
+                    errors.append('缺少 r3 整體／局部特徵檔')
+                elif sha(feature_path) != m.get('feature_sha256'):
+                    errors.append('r3 整體／局部特徵檔校驗失敗')
             meta = read(models / version / 'examples.json')
             for label in ('screw', 'normal'):
                 bank = m['example_bank'][label]

@@ -1,0 +1,25 @@
+{
+  "date": "2026-11-05",
+  "synced_mac_commit": "3a2addeb069e5bb409e37967079cc3abad78348a",
+  "workflow": "Git source plus encrypted Drive station snapshots",
+  "drive_folder": "https://drive.google.com/drive/folders/1QBfJNjDh9RpPe6bNr3HpC7ZBrCDkDzi2",
+  "r3_source_snapshot_preserved": true,
+  "mac_r3_code_not_yet_pushed": true,
+  "git_stash_kept_as_recovery_copy": true,
+  "synthetic_transfer_tests_pass": true,
+  "synthetic_r3_feature_integrity_tests_pass": true,
+  "windows_native_ui_selfcheck_pass": true,
+  "native_exe": "C:\\Users\\Deangelo_Hu\\Documents\\ChatGPT\\X-RAY檢測\\dist\\XRayTransfer\\XRayTransfer.exe",
+  "real_station_exported": false,
+  "real_cloud_roundtrip_verified": false,
+  "model_loaded_by_inference": false,
+  "detection_rerun": false,
+  "key_default_path_exists": false,
+  "limitations": [
+    "Mac key must be transferred independently; no new replacement key generated",
+    "r3 changes still need a Git checkpoint before a Mac checkout can run the same source",
+    "Existing r3 portable EXE predates handoff launch contract; use updated launch.py for imported workspaces until rebuilt"
+  ],
+  "historical_sync_snapshot": true,
+  "superseded_by_checkpoint_tag": "checkpoint-2026-11-05-dino-r3-rd-handoff"
+}

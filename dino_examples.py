@@ -44,6 +44,12 @@ def upload_image(file):
     except (UnidentifiedImageError,OSError,Image.DecompressionBombError) as e:raise ValueError('無法讀取圖片，請使用 PNG、JPG 或單頁 TIFF') from e
 def png(im):
     b=io.BytesIO();im.save(b,format='PNG');b.seek(0);return b
+
+def actual_input(m, crop):
+    if m.get('feature_strategy'):
+        from dino_paired_optimized import adjusted_image
+        return adjusted_image(m,crop)
+    return input_image(m,crop)
 @dino_examples.get('/engineer/dino-examples')
 def page():return render_template('dino_examples.html')
 @dino_examples.get('/api/dino/examples')
@@ -68,7 +74,7 @@ def image():
         file,_=source(p,name)
         with Image.open(file) as im:
             im=im.convert('RGB')
-            if request.args.get('view')=='input':im=input_image(m,np.asarray(im,np.float32)/255)
+            if request.args.get('view')=='input':im=actual_input(m,np.asarray(im,np.float32)/255)
             else:im.thumbnail((800,800))
             return send_file(png(im),mimetype='image/png',max_age=0)
     except (ValueError,OSError,KeyError) as e:return jsonify(error=str(e)),400
@@ -76,7 +82,7 @@ def image():
 def preview():
     try:
         _,m=model(request.form.get('model'));im=upload_image(request.files['image'])
-        return send_file(png(input_image(m,np.asarray(im,np.float32)/255)),mimetype='image/png')
+        return send_file(png(actual_input(m,np.asarray(im,np.float32)/255)),mimetype='image/png')
     except (ValueError,OSError,KeyError) as e:return jsonify(error=str(e)),400
 @dino_examples.post('/api/dino/build')
 def build():
@@ -96,7 +102,10 @@ def build():
         snapshot=ModelManager(MODEL_ROOT,allow_cpu=True).snapshot(p.name)
         if snapshot.error:raise ValueError(snapshot.error)
         token='dino-examples-'+uuid.uuid4().hex[:16];staging=MODEL_ROOT/('.build-'+token);staging.mkdir();(staging/'examples').mkdir()
-        new=copy.deepcopy(m);new['model_id']=title;new['example_bank']={};meta={};seen={}
+        new=copy.deepcopy(m);new['model_id']=title;new['example_bank']={};meta={};seen={};features={}
+        if m.get('feature_strategy'):
+            old_ids=m['example_bank']['screw']['ids']+m['example_bank']['normal']['ids']
+            features=dict(zip(old_ids,snapshot.feature_bank))
         for label in ('screw','normal'):
             ids=[];vectors=[];bank=m['example_bank'][label]
             for n,v in zip(bank['ids'],bank['embeddings']):
@@ -110,17 +119,27 @@ def build():
                 if sha in seen:raise ValueError('新增圖片重複，或與現有範例重複，請移除重複圖片')
                 seen[sha]=label;n='upload-'+sha;dest=n+'.png';(staging/'examples'/dest).write_bytes(data)
                 vector=embedding(m,snapshot.session,np.asarray(im,np.float32)/255)
+                if m.get('feature_strategy'):
+                    from dino_paired_optimized import example_features
+                    features[n]=example_features(m,snapshot.session,np.asarray(im,np.float32)/255)
                 meta[n]=dict(file=dest,sha256=sha,name=Path(file.filename.replace('\\','/')).name)
                 ids.append(n);vectors.append(vector.tolist())
             new['example_bank'][label]=dict(ids=ids,embeddings=vectors)
+        if m.get('feature_strategy'):
+            ids=new['example_bank']['screw']['ids']+new['example_bank']['normal']['ids']
+            np.savez(staging/new['feature_file'],bank=np.stack([features[n] for n in ids]))
+            new['feature_sha256']=hashlib.sha256((staging/new['feature_file']).read_bytes()).hexdigest()
         new['provenance']=dict(parent=p.name,method='user-edited-examples',note='Not evaluated on independent test images; not automatically activated')
         new['file']='model.onnx';shutil.copyfile(p/m['file'],staging/'model.onnx')
         (staging/'manifest.json').write_text(json.dumps(new,ensure_ascii=False),encoding='utf-8');(staging/'examples.json').write_text(json.dumps(meta,ensure_ascii=False),encoding='utf-8')
         # Validate under a private parent before making the new version visible.
         checkparent=staging/'validation';checkparent.mkdir();os.rename(staging/'manifest.json',checkparent/'manifest.json');os.rename(staging/'model.onnx',checkparent/'model.onnx')
+        if m.get('feature_strategy'):os.rename(staging/new['feature_file'],checkparent/new['feature_file'])
         candidate=ModelManager(staging,allow_cpu=True).snapshot('validation')
         if candidate.error:raise ValueError(candidate.error)
-        os.rename(checkparent/'manifest.json',staging/'manifest.json');os.rename(checkparent/'model.onnx',staging/'model.onnx');checkparent.rmdir()
+        os.rename(checkparent/'manifest.json',staging/'manifest.json');os.rename(checkparent/'model.onnx',staging/'model.onnx')
+        if m.get('feature_strategy'):os.rename(checkparent/new['feature_file'],staging/new['feature_file'])
+        checkparent.rmdir()
         os.rename(staging,MODEL_ROOT/token);staging=None
         return jsonify(directory=token,message='新版已建立，尚未啟用。可先檢查圖片，再選擇使用；舊版仍可切回。')
     except (ValueError,OSError,KeyError,TypeError) as e:return jsonify(error=str(e)),400
