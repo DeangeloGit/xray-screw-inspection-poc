@@ -1,0 +1,49 @@
+{
+  "checkpoint": "checkpoint-2026-11-05-dino-r3-overkill-pilot",
+  "branch": "codex/next-development-20261103",
+  "source_commit": "478c272a8503bb7df2e676cb59bf585bac21301e",
+  "version": "dino-r3-overkill-pilot-20261105",
+  "model": "dino-paired-optimized-47-20261104-r3",
+  "example_counts": {
+    "screw": 47,
+    "normal": 65
+  },
+  "reference_pair_rule": true,
+  "default_execution": "cpu",
+  "cpu_gpu_selectable": true,
+  "formal_local_opt_in_only": true,
+  "archive": {
+    "name": "XRayReview-DINO-r3-Overkill-Pilot-20261105-Windows-x64.zip",
+    "bytes": 318588694,
+    "sha256": "69a3d6fc766ed625a4183fae385e58ccb418a91c1f0f07733724a88a8e9aa41c",
+    "distribution": "local private Windows download"
+  },
+  "verification": {
+    "photo_samples": {
+      "source-gpu": 7,
+      "portable-cpu": 7,
+      "portable-gpu": 4
+    },
+    "portable_selftest": true,
+    "cached_structure_checks": 201,
+    "known_false": {
+      "wire": {
+        "total": 11,
+        "removed": 11
+      },
+      "board": {
+        "total": 18,
+        "removed": 17
+      },
+      "hole": {
+        "total": 11,
+        "removed": 11
+      }
+    }
+  },
+  "reports": {
+    "before": "workspace/dino-combined-full-validation-20261105/report/index.html",
+    "pilot": "workspace/dino-overkill-pilot-20261105/index.html"
+  },
+  "local_handoff": "workspace/checkpoints/2026-11-05-dino-r3-overkill-pilot/START-HERE.md"
+}

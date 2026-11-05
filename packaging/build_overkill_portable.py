@@ -63,7 +63,7 @@ def build():
 完整解壓縮後，雙擊 XRayReview.exe。可直接使用，無須安裝 Python。
 DINO 預設使用 47 張螺絲、65 張正常範例與雙圖。工程頁可切換 CPU／GPU，預設 CPU。
 此包內建本輪的差分補送、DINO 重看與線材、板件、孔位三項檢查。
-只有內附的 47＋65 範例版本啟用試驗規則。另存範例版本會回到 r3 原判斷。
+試驗規則限定內附的 47＋65 範例庫。範例庫有變動時會沿用 r3 原判斷。
 同批案例中，原先辨認的 40 框過殺擋下 39 框。MPT10 六處與 MPT11 10.png 保住。
 請用新的資料夾執行。自動取圖預設關閉。資料和複判寫入此包的 workspace。
 此包用於離線驗證。同批調整後的結果仍待不同圖資驗證。
@@ -82,6 +82,10 @@ def seal(checks):
     assert all(digest(ROOT/p)==h for p,h in manifest['source_sha256'].items())
     receipt=[json.loads(Path(p).read_text(encoding='utf8')) for p in checks]
     assert receipt and all(r['success'] for r in receipt)
+    policy=manifest['experimental_policy']
+    verified={(r['model']['execution'],len(r['results'])) for r in receipt if r.get('experimental_policy')==policy}
+    assert verified=={('gpu',7),('cpu',7),('gpu',4)}
+    assert any(r.get('checks') and r['model']['execution']=='cpu' for r in receipt)
     (OUT/'release-checks').mkdir(exist_ok=True)
     for i,r in enumerate(receipt):
         save(OUT/'release-checks'/f'verification-{i+1}.json',r)
