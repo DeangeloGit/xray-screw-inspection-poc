@@ -295,11 +295,12 @@ def structure_change_evidence(ref, target, candidate, threshold):
                 offset=float(offset), ratio=ratio, remaining=int(remaining))
 
 
-def proposals(ref, target, mask, threshold, structure_changes=None):
+def proposals(ref, target, mask, threshold, structure_changes=None, similarity_recoveries=None):
     predicted = compensate_brightness(ref, target)
     residual = cv2.erode(predicted, np.ones((7, 7), np.uint8)) - target
     shared_arrays = (cv2.erode(predicted, np.ones((15, 15), np.uint8)), predicted-target)
-    candidates, _ = candidates_from_residual(ref, target, mask, threshold, predicted, residual, shared_arrays)
+    candidates, _ = candidates_from_residual(ref, target, mask, threshold, predicted, residual, shared_arrays,
+                                             similarity_recoveries=similarity_recoveries)
     # Tight-tolerance recovery: small objects beside existing dark structures can
     # be erased by the main 3px tolerance. Require compact, novel, predominantly
     # one-sided evidence before retaining a 1px-tolerance candidate.
@@ -354,7 +355,8 @@ def check_candidate(ref, target, c, threshold):
     return c, explained
 
 
-def candidates_from_residual(ref, target, mask, threshold, predicted, residual, shared_arrays=None):
+def candidates_from_residual(ref, target, mask, threshold, predicted, residual, shared_arrays=None,
+                             similarity_recoveries=None):
     binary = ((residual > threshold) & mask).astype('uint8')
     binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN,
                               cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
@@ -395,14 +397,22 @@ def candidates_from_residual(ref, target, mask, threshold, predicted, residual, 
         shape_similarity = matching_structure(ref, target, x, y, w, h)
         # Correlation ignores brightness offsets/gain; suppress a close existing
         # shape only when the local template has a strong match.
-        if shape_similarity >= .85:
-            continue
         if area < 40 and (shape_similarity > .55 or normal_support > .5):
             continue
-        candidates.append(dict(shape_similarity=round(shape_similarity, 3), x=x, y=y, w=w, h=h, area=area, score=round(score, 4),
-                               normal_support=round(normal_support, 3),
-                               aspect=round(float(aspect), 2), fill=round(area/(w*h), 3),
-                               bipolar=round(bipolar, 3), contrast=round(contrast, 4)))
+        if shape_similarity >= .85 and similarity_recoveries is None:
+            continue
+        candidate = dict(shape_similarity=round(shape_similarity, 3), x=x, y=y, w=w, h=h, area=area, score=round(score, 4),
+                         normal_support=round(normal_support, 3),
+                         aspect=round(float(aspect), 2), fill=round(area/(w*h), 3),
+                         bipolar=round(bipolar, 3), contrast=round(contrast, 4))
+        if shape_similarity >= .85:
+            from overkill_pilot import similarity_recovery
+            evidence = similarity_recovery(ref, target, candidate, threshold, structure_change_evidence)
+            if evidence:
+                candidate.update(shape_similarity=shape_similarity, recovery='overkill_pilot_similarity', pilot_context=evidence)
+                similarity_recoveries.append(candidate)
+        else:
+            candidates.append(candidate)
     candidates.sort(key=lambda c: c['score'], reverse=True)
     return candidates, residual
 
@@ -460,6 +470,8 @@ def detect(reference, target, name, threshold=.13, model_snapshot=None, output_d
 
 def _detect(reference, target, name, threshold=.13, model_snapshot=None, output_directory=None):
     model_snapshot = model_snapshot or manager.snapshot()
+    import overkill_pilot
+    pilot_enabled = overkill_pilot.enabled(model_snapshot)
     if not np.isfinite(threshold) or not .03 <= threshold <= .4:
         raise ValueError('門檻需介於 0.03 與 0.40')
     context = CURRENT.get()
@@ -474,11 +486,22 @@ def _detect(reference, target, name, threshold=.13, model_snapshot=None, output_
     baseline, _ = legacy_proposals(r, reg['aligned'], structure_mask(r) & reg['valid'], threshold)
     corrected, flow, regions = refine(r, reg['aligned'], structure_mask(r) & reg['valid'])
     structure_changes = []
-    candidates, residual = proposals(r, corrected, mask, threshold, structure_changes)
-    for c in candidates:
+    recovered = [] if pilot_enabled else None
+    candidates, residual = proposals(r, corrected, mask, threshold, structure_changes, recovered)
+    if recovered:
+        additions = []
+        for candidate in sorted(recovered, key=lambda c: -c['score']):
+            if not overkill_pilot.overlapping(candidate, candidates):
+                candidate, explained = check_candidate(r, corrected, candidate, threshold)
+                if not explained:
+                    additions.append(candidate)
+    else:
+        additions = []
+    for c in candidates + additions:
         c['reasons'] = prioritize(c)
         c['priority'] = 'review' if c['reasons'] else 'high'
     candidates.sort(key=lambda c: (c['priority'] != 'high', -c['score']))
+    candidates.extend(additions)
     for i, c in enumerate(candidates, 1):
         c['id'] = i
         x, y, w, h = [c[k] for k in ('x', 'y', 'w', 'h')]
@@ -534,6 +557,9 @@ def _detect(reference, target, name, threshold=.13, model_snapshot=None, output_
         write_image(str(out/f'crop_{i}.png'), crop)
         if model_snapshot.manifest.get('backend') == 'dino_onnx':
             c['classification'] = classify_dino_candidate(model_snapshot, corrected, r, c)
+            if pilot_enabled:
+                ref_u8, target_u8 = context.arrays(r, corrected)
+                c['classification'] = overkill_pilot.apply(model_snapshot, ref_u8, target_u8, c, c['classification'])
         elif model_snapshot.manifest.get('preprocessing') == 'aligned-gray-tight12-v1':
             cx, cy, cw, ch = (c[k] for k in ('x','y','w','h'))
             ai_crop = corrected[max(0,cy-12):cy+ch+12, max(0,cx-12):cx+cw+12]
@@ -585,6 +611,8 @@ def _detect(reference, target, name, threshold=.13, model_snapshot=None, output_
                   high_count=n_high, review_count=len(candidates)-n_high, candidates=candidates,
                   wire_review_count=sum(bool(c.get('wire_review')) for c in candidates),
                   warning='紅框為規則優先候選，不是 AI 確認螺絲；黃色候選仍需查看。無紅框不代表正常。')
+    if pilot_enabled:
+        result['experimental_policy'] = overkill_pilot.VERSION
     (out/'result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     return result
 

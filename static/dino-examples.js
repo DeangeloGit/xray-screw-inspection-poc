@@ -40,5 +40,7 @@ function embedLegacy(){
 if(parent!==window){new ResizeObserver(()=>parent.postMessage({type:'dino-height',height:document.body.scrollHeight},location.origin.replace(':18767',':18766'))).observe(document.body)}
 const section=root.closest('#dino-section');let started=false;
 function start(){if(!started){started=true;load(new URLSearchParams(location.search).get('dino_model'))}}
-if(section){section.addEventListener('toggle',()=>{if(section.open)start()});if(location.hash==='#dino-examples'){section.open=true;start()}else if(section.open)start()}else start();
+function openManager(){if(!section)return;section.open=true;start();section.scrollIntoView({block:'start',behavior:'smooth'})}
+document.getElementById('manage-dino-examples')?.addEventListener('click',openManager);
+if(section){section.addEventListener('toggle',()=>{if(section.open)start()});window.addEventListener('hashchange',()=>{if(location.hash==='#dino-examples')openManager()});if(location.hash==='#dino-examples')openManager();else if(section.open)start()}else start();
 })();

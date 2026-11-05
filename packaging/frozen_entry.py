@@ -16,6 +16,9 @@ def main():
     os.environ['XRAY_CONFIG'] = str(config)
     os.environ['XRAY_WORKSPACE'] = str(workspace)
     os.environ['PYTHONUTF8'] = '1'
+    pilot = (root / 'config/overkill-pilot.enabled').is_file()
+    if pilot:
+        os.environ['XRAY_OVERKILL_PILOT'] = '1'
     for stream in (sys.stdout, sys.stderr):
         if stream and hasattr(stream, 'reconfigure'):
             stream.reconfigure(encoding='utf-8', errors='replace')
@@ -25,6 +28,10 @@ def main():
     if '--verify-release' in sys.argv:
         from release_validation import run
         run(sys.argv[sys.argv.index('--verify-release')+1])
+        return 0
+    if '--verify-overkill-pilot' in sys.argv:
+        from overkill_release_validation import run
+        run(sys.argv[sys.argv.index('--verify-overkill-pilot') + 1])
         return 0
     if '--acquisition-scan' in sys.argv:
         from acquisition import scan_worker
@@ -46,8 +53,9 @@ def main():
             temporary = settings_path.with_suffix('.portable.tmp')
             temporary.write_text(json.dumps(settings, ensure_ascii=False, indent=2), encoding='utf-8')
             os.replace(temporary, settings_path)
-    print('X-RAY DINO r3 2026-11-04 | Windows x64 | CPU / GPU', flush=True)
-    print('47＋65 範例、參照圖＋待測圖；已整合驗證過的辨識與合併加速方法。', flush=True)
+    version = 'r3 過殺改善試驗版 2026-11-05' if pilot else 'r3 2026-11-04'
+    print(f'X-RAY DINO {version} | Windows x64 | CPU / GPU', flush=True)
+    print('47＋65 範例、參照圖＋待測圖。', flush=True)
     print('資料儲存位置：'+str(workspace)+'；請保持視窗開啟。', flush=True)
     import launch
     # Windows can allow another listener on a reused fixed port. An OS-selected
