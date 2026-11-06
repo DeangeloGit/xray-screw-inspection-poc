@@ -1,7 +1,7 @@
 # X-RAY 續作入口
 
 目前續作分支：`4r`。
-Checkpoint：`checkpoint-2026-11-06-dino-4r-integrated-bank`。
+Checkpoint：`checkpoint-2026-11-06-dino-4r-mac-handoff`。
 
 先讀 [Mac續作與資料匯入](docs/CHECKPOINT_DINO_4R_MAC_CONTINUE_20261106.md)，再讀 [本輪整合與驗證](docs/CHECKPOINT_DINO_4R_INTEGRATED_BANK_20261106.md)。
 

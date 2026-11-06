@@ -1,6 +1,6 @@
 # 4r 整合參考庫：Mac 續作入口
 
-本次續作分支是 `4r`，checkpoint 標籤是 `checkpoint-2026-11-06-dino-4r-integrated-bank`。目前實驗版本為 `curated_v5_review`；正式流程、模型預設、原始圖資及既有人工答案未改。
+本次續作分支是 `4r`，checkpoint 標籤是 `checkpoint-2026-11-06-dino-4r-mac-handoff`。目前實驗版本為 `curated_v5_review`；正式流程、模型預設、原始圖資及既有人工答案未改。
 
 **私人移交包目前仍待加密、上傳、下載回比及隔離還原驗證。** 這份文件本身不是雲端移交成功證據。只有本次移交收據確認 `cloud_verified=true`，才能稱雲端驗證完成；GitHub checkpoint 是否已推送，也須核對實際遠端分支／標籤。
 
@@ -24,7 +24,7 @@ Git保存程式和公開說明；加密移交包保存模型、圖資、報告�
 
 在Mac使用新的Git checkout或先保護既有未提交工作，取得遠端 `4r` 和上述 checkpoint 標籤，核對兩者實際 commit。不要覆寫現有Mac工作區，也不要把Windows的 `.venv` 帶過去使用。
 
-私人資料依 [Windows／Mac加密移交說明](STATION_HANDOFF.md) 匯入**全新的資料夾**。本次經使用者明確同意，改用另建的本次專用解鎖檔 `XRay-4r-20261106.key`，由使用者以USB等方式另外帶回Mac。它與原Mac金鑰不同，匯入本包時必須指定本次檔案；原Mac金鑰保持不動。金鑰不放入Git、私人包或Drive。先完成SHA-256回比、加密認證、檔案檢查及隔離還原，再使用匯入資料。
+私人資料依 [Windows／Mac加密移交說明](STATION_HANDOFF.md) 匯入**全新的資料夾**。使用者已在Windows下載資料夾提供原本的 `backup.key`，本次使用這個32 bytes金鑰。Mac使用對應原金鑰；先前另建的 `XRay-4r-20261106.key` 未用於本次移交，請勿拿錯。金鑰不放入Git、私人包或Drive。先完成SHA-256回比、加密認證、檔案檢查及隔離還原，再使用匯入資料。
 
 匯入預設CPU、關閉自動監看、不重跑檢測。核對 `IMPORT-RECEIPT.json` 的來源commit、來源包校驗碼與路徑對照。移交成功只代表檔案／還原驗證成功，不等於Mac已完成ONNX推論或準確率驗收。
 
