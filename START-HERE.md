@@ -1,5 +1,7 @@
 # X-RAY 續作入口
 
+KPH33 SKU=1006A 最新研究接續：先讀 [KPH33 補充包說明](docs/CHECKPOINT_KPH33_20261110.md)。它需要下述已驗證的精簡站台與另外加密的 KPH33 證據補充包；不可把歷史結果稱為新環境重驗。
+
 目前續作分支：`4r`。
 Checkpoint：`checkpoint-2026-11-09-dino-4r-lean-mac-verified`。
 

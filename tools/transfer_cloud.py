@@ -9,6 +9,22 @@ import station_transfer as transfer
 import transfer_crypto as crypto
 
 
+def supplement_roundtrip(original, downloaded, keyfile, receipt=None):
+    """Verify an evidence supplement independently of a full station package."""
+    from kph33_supplement import restore
+    original, downloaded = Path(original).resolve(), Path(downloaded).resolve()
+    if transfer.sha(original) != transfer.sha(downloaded):
+        raise ValueError('Drive 下載與本機原檔 SHA-256 不符')
+    with tempfile.TemporaryDirectory(prefix='xray-kph33-cloud-restore-') as temp:
+        restored = restore(downloaded, keyfile, Path(temp)/'isolated')
+    result = dict(ok=True, cloud_verified=True, isolated_restore_verified=True,
+                  supplement_only=True, sha256=transfer.sha(downloaded),
+                  archive=original.name, files=restored['files'],
+                  at=datetime.now(timezone.utc).isoformat())
+    if receipt: transfer.write(receipt, result)
+    return result
+
+
 def roundtrip(original,downloaded,keyfile,receipt=None):
     original,downloaded=Path(original).resolve(),Path(downloaded).resolve()
     with original.open('rb') as f:
@@ -47,12 +63,14 @@ def upload_rclone(archive,keyfile,remote,receipt=None):
 def main():
     parser=argparse.ArgumentParser(description='Drive 下載回比及隔離還原驗收')
     parser.add_argument('archive');parser.add_argument('--key-file',required=True)
+    parser.add_argument('--supplement',action='store_true',help='Verify KPH33 evidence supplement, not a complete station')
     group=parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--downloaded');group.add_argument('--rclone-remote')
     parser.add_argument('--receipt')
     args=parser.parse_args()
     try:
-        if args.downloaded:result=roundtrip(args.archive,args.downloaded,args.key_file,args.receipt)
+        if args.supplement and not args.downloaded:raise ValueError('Supplement verification requires an actual downloaded file')
+        if args.downloaded:result=(supplement_roundtrip if args.supplement else roundtrip)(args.archive,args.downloaded,args.key_file,args.receipt)
         else:result=upload_rclone(args.archive,args.key_file,args.rclone_remote,args.receipt)
         import json;print(json.dumps(result,ensure_ascii=False,indent=2));return 0
     except (OSError,ValueError,subprocess.CalledProcessError) as e:
