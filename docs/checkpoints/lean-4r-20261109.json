@@ -1,5 +1,5 @@
 {
-  "checkpoint": "checkpoint-2026-11-09-dino-4r-lean-mac",
+  "checkpoint": "checkpoint-2026-11-09-dino-4r-lean-mac-verified",
   "scope": "lean_4r_continuation_not_full_original_station_backup",
   "selected_files": 9403,
   "selected_bytes": 562065089,
@@ -20,7 +20,7 @@
   "report_photos": 100,
   "report_candidates": 8335,
   "excluded": [
-    "Other98 raw test photos",
+    "Unselected raw test photos",
     "Historical model versions",
     "Old full reports and repeated crops",
     "Intermediate feature caches",
@@ -33,7 +33,14 @@
   "additional_B_examples_verified": 15,
   "windows_cpu_four_cases_passed": true,
   "mac_execution_verified": false,
-  "cloud_verified": false,
+  "cloud_verified": true,
   "key_choice": "User-provided original backup.key; key not in Git or bundle",
-  "production_changed": false
+  "production_changed": false,
+  "data_checkpoint": "checkpoint-2026-11-09-dino-4r-lean-mac",
+  "data_source_commit": "28370db245e21d9bbea0d4ffdf7effa7ed8c6ba7",
+  "encrypted_bytes": 540115114,
+  "sha256": "47fa703ef38efdb169e7177a3d576b28f01c065ee1c49531ff1e624f25c99227",
+  "isolated_restore_verified": true,
+  "cloud_receipt": "lean-4r-20261109-cloud-verification.json",
+  "transport_parts": 6
 }

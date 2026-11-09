@@ -1,0 +1,109 @@
+{
+  "ok": true,
+  "cloud_verified": true,
+  "isolated_restore_verified": true,
+  "sha256": "47fa703ef38efdb169e7177a3d576b28f01c065ee1c49531ff1e624f25c99227",
+  "at": "2026-11-09T00:36:29.938087+00:00",
+  "archive": "XRay-4r-Lean-20261109.xray.enc",
+  "files": 9406,
+  "source_commit": "28370db245e21d9bbea0d4ffdf7effa7ed8c6ba7",
+  "scope": "lean_4r_continuation_not_full_original_station_backup",
+  "delivery_checkpoint": "checkpoint-2026-11-09-dino-4r-lean-mac-verified",
+  "data_checkpoint": "checkpoint-2026-11-09-dino-4r-lean-mac",
+  "encrypted_bytes": 540115114,
+  "selected_source_files": 9403,
+  "selected_source_bytes": 562065089,
+  "transport": "connected_google_drive_six_encrypted_parts",
+  "part_count": 6,
+  "parts": [
+    {
+      "filename": "XRay-4r-Lean-20261109.xray.enc.part001",
+      "bytes": 100663296,
+      "sha256": "e9fecdab9b2393436274d9760f6685ee1d1eefd1465e7a53a9b9c78f6ca573e1"
+    },
+    {
+      "filename": "XRay-4r-Lean-20261109.xray.enc.part002",
+      "bytes": 100663296,
+      "sha256": "9cf10f6372962251bb5356401e1e7815956b58c351b13f377931307436068a7a"
+    },
+    {
+      "filename": "XRay-4r-Lean-20261109.xray.enc.part003",
+      "bytes": 100663296,
+      "sha256": "f719828367bbd3f06aef49da364e8d6657c2644eeca1a601778f1370e3c0a647"
+    },
+    {
+      "filename": "XRay-4r-Lean-20261109.xray.enc.part004",
+      "bytes": 100663296,
+      "sha256": "09bf7e8e7cf3d2226c163aa98c533e7a0ea6916333de1db1904ab0dadd161e0f"
+    },
+    {
+      "filename": "XRay-4r-Lean-20261109.xray.enc.part005",
+      "bytes": 100663296,
+      "sha256": "fdf850129c0be06656a292d0a573362e5f57268ad62cebaf53afd26a171ba2dd"
+    },
+    {
+      "filename": "XRay-4r-Lean-20261109.xray.enc.part006",
+      "bytes": 36798634,
+      "sha256": "f1f17cc90ed707b761baf1e0300bdf5ffa611aa50fa51875f9b2b4e22b9fae6f"
+    }
+  ],
+  "drive_folder": "https://drive.google.com/drive/folders/1QBfJNjDh9RpPe6bNr3HpC7ZBrCDkDzi2",
+  "drive_files": [
+    {
+      "name": "XRay-4r-Lean-20261109.xray.enc.part001",
+      "id": "1hdbmmRXxqbKO99LpZQJmn9q2twe5W6x0",
+      "url": "https://drive.google.com/file/d/1hdbmmRXxqbKO99LpZQJmn9q2twe5W6x0/view?usp=drivesdk"
+    },
+    {
+      "name": "XRay-4r-Lean-20261109.xray.enc.part002",
+      "id": "1EwLFlkcS-qAS-OHZf84hpTEBzPzOLIOa",
+      "url": "https://drive.google.com/file/d/1EwLFlkcS-qAS-OHZf84hpTEBzPzOLIOa/view?usp=drivesdk"
+    },
+    {
+      "name": "XRay-4r-Lean-20261109.xray.enc.part003",
+      "id": "1xOOWKVZoVi0wdGyL5qrvQrVIKZ_94lIc",
+      "url": "https://drive.google.com/file/d/1xOOWKVZoVi0wdGyL5qrvQrVIKZ_94lIc/view?usp=drivesdk"
+    },
+    {
+      "name": "XRay-4r-Lean-20261109.xray.enc.part004",
+      "id": "1ClUJgvLl1ro7KRJZfuSXS2hw6CO34K7K",
+      "url": "https://drive.google.com/file/d/1ClUJgvLl1ro7KRJZfuSXS2hw6CO34K7K/view?usp=drivesdk"
+    },
+    {
+      "name": "XRay-4r-Lean-20261109.xray.enc.part005",
+      "id": "1Q6N9SNrkaiuVVmRpp3hDy_UJU0lbxrwH",
+      "url": "https://drive.google.com/file/d/1Q6N9SNrkaiuVVmRpp3hDy_UJU0lbxrwH/view?usp=drivesdk"
+    },
+    {
+      "name": "XRay-4r-Lean-20261109.xray.enc.part006",
+      "id": "16YV3prIa8l4rpxcSvpHl3Z0aDOxoFnHA",
+      "url": "https://drive.google.com/file/d/16YV3prIa8l4rpxcSvpHl3Z0aDOxoFnHA/view?usp=drivesdk"
+    },
+    {
+      "name": "XRay-4r-Lean-20261109.xray.enc.parts.json",
+      "id": "1YJKbKHGh6--Tg2eGCC4WJDDaAc3eelDH",
+      "url": "https://drive.google.com/file/d/1YJKbKHGh6--Tg2eGCC4WJDDaAc3eelDH/view?usp=drivesdk"
+    },
+    {
+      "name": "XRay-4r-Lean-20261109.xray.enc.sha256",
+      "id": "1nM_BX4cmqfmHuQumo6ZdURCc4j2GKSou",
+      "url": "https://drive.google.com/file/d/1nM_BX4cmqfmHuQumo6ZdURCc4j2GKSou/view?usp=drivesdk"
+    }
+  ],
+  "downloaded_manifest_matches": true,
+  "downloaded_original_sha_sidecar_matches": true,
+  "formal_reference_images_verified": 112,
+  "integrated_reference_images_verified": 141,
+  "additional_B_reference_images_verified": 15,
+  "windows_cpu_four_cases_passed": true,
+  "mac_execution_verified": false,
+  "production_changed": false,
+  "key_choice": "User-provided original backup.key; key excluded from Git and Drive",
+  "raw_images": [
+    "Golden",
+    "ng-128",
+    "ng-135"
+  ],
+  "can_rerun_full100": false,
+  "scope_note": "Archived exclusion wording is descriptive only; the explicit allowlist and SHA inventory determine contents. Only three raw images are selected."
+}

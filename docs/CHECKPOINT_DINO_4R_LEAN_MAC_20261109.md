@@ -1,8 +1,14 @@
 # 4r 精簡 Mac 續作包（2026-11-09）
 
-分支 `4r`；checkpoint `checkpoint-2026-11-09-dino-4r-lean-mac`。這是使用者要求的必要資料續作包，**不是原站台完整備份，也不含全批原始測試圖資**。正式站台與47＋65雙圖設定未改。
+分支 `4r`；checkpoint `checkpoint-2026-11-09-dino-4r-lean-mac-verified`。這是使用者要求的必要資料續作包，**不是原站台完整備份，也不含全批原始測試圖資**。正式站台與47＋65雙圖設定未改。
 
 清單核對：9,403個來源檔案，未壓縮536.03 MiB，較原15.45 GiB減少96.6%；其中完整報告與連結證據398.83 MiB。Windows已用新CPU入口實際重判四例並通過；這不代表Mac實機驗收。
+
+## 雲端移交已完成
+
+已從Drive實際下載六段、重組成515.1 MiB原加密包，整包SHA-256、解密認證、9,406個檔案校驗及隔離還原均通過。[驗收收據](checkpoints/lean-4r-20261109-cloud-verification.json)。資料包來源commit為 `28370db245e21d9bbea0d4ffdf7effa7ed8c6ba7`，包內原始checkpoint／清單及歷史證據保持不變；最新交付標籤另包含切片重組工具與驗證紀錄。
+
+整包SHA-256：`47fa703ef38efdb169e7177a3d576b28f01c065ee1c49531ff1e624f25c99227`。
 
 ## 保留什麼
 
@@ -12,7 +18,7 @@
 - 原始影像僅Golden、128、135；兩張案例的完整候選支援及對位影像，不能縮成僅幾個答案框。
 - 原答案、人工確認、B部位修正紀錄、#7無法判定、穩定性及失敗範例證據。
 
-排除其他98張原始測試照片、所有歷史模型、舊報告、重複候選裁圖、中間特徵快取、瀏覽器資料、Python環境、安裝包及原站台照片索引DB。原始來源均保留在公司，不刪除。
+排除未選用的原始測試照片、所有歷史模型、舊報告、重複候選裁圖、中間特徵快取、瀏覽器資料、Python環境、安裝包及原站台照片索引DB。原始來源均保留在公司，不刪除。
 
 具體檔案及SHA在資料包的 `archives/LEAN-SCOPE.json`，大小摘要在本次移交收據。工具的 `complete=true` 僅表示這個選擇性研究站台滿足模型／還原契約，不代表原站台全部資料都已備份。
 
@@ -28,15 +34,32 @@ GitHub是公開儲存庫，只存程式、說明與清單。私人DINO參考圖�
 
 先取得本checkpoint或更新的 `4r`，使用新的checkout／資料夾；保護Mac既有未提交工作，不覆寫舊資料。
 
+需要 **Python 3.12以上**（固定的NumPy版本要求）；不要直接沿用舊的系統Python或3.11環境。以下以Python 3.12為例，若已安裝較新版本，可換成該執行檔。
+
 ```sh
-python3 -m venv .venv
+python3.12 --version
+python3.12 -m venv .venv
 .venv/bin/python -m pip install -r requirements-cpu.txt cryptography==50.0.2
 ```
 
-從專用Drive資料夾下載 `XRay-4r-Lean-20261109.xray.enc` 及同名 `.sha256`；核對 `XRay-4r-Lean-20261109-cloud-verification.json` 是否明列本包SHA、`cloud_verified=true` 和 `isolated_restore_verified=true`。只有README不代表上傳完成。
+加密包為540,115,114 bytes（515.1 MiB）。Drive連接工具前端單檔上限512 MiB，內部傳輸上限100 MiB，因此保留原加密內容，分成六段、每段最多96 MiB傳送，沒有增減圖資或重新加密。從[專用Drive資料夾](https://drive.google.com/drive/folders/1QBfJNjDh9RpPe6bNr3HpC7ZBrCDkDzi2)下載以下八個檔案，放在同一個資料夾（以下假設為Downloads）：
+
+- `XRay-4r-Lean-20261109.xray.enc.part001`
+- `XRay-4r-Lean-20261109.xray.enc.part002`
+- `XRay-4r-Lean-20261109.xray.enc.part003`
+- `XRay-4r-Lean-20261109.xray.enc.part004`
+- `XRay-4r-Lean-20261109.xray.enc.part005`
+- `XRay-4r-Lean-20261109.xray.enc.part006`
+- `XRay-4r-Lean-20261109.xray.enc.parts.json`
+- `XRay-4r-Lean-20261109.xray.enc.sha256`
+
+若連接器把下載檔名額外加上 `.bin` 或 `.txt`，先還原成上面列出的原檔名；檔案內容不用轉換。
+
+另外核對 `XRay-4r-Lean-20261109-cloud-verification.json` 是否明列本包SHA、`cloud_verified=true` 和 `isolated_restore_verified=true`。只有README不代表上傳完成。先用新工具逐段驗證與重組至新的資料夾，再匯入：
 
 ```sh
-.venv/bin/python tools/station_transfer.py import "$HOME/Downloads/XRay-4r-Lean-20261109.xray.enc" --destination "$HOME/XRay-4r-20261109" --key-file "$HOME/.config/xray-transfer/backup.key"
+.venv/bin/python tools/transfer_parts.py join "$HOME/Downloads/XRay-4r-Lean-20261109.xray.enc.parts.json" --output "$HOME/XRay-4r-download-20261109/XRay-4r-Lean-20261109.xray.enc"
+.venv/bin/python tools/station_transfer.py import "$HOME/XRay-4r-download-20261109/XRay-4r-Lean-20261109.xray.enc" --destination "$HOME/XRay-4r-20261109" --key-file "$HOME/.config/xray-transfer/backup.key"
 .venv/bin/python tools/lean_4r_probe.py --station "$HOME/XRay-4r-20261109" --output "$HOME/XRay-4r-file-check-20261109"
 ```
 

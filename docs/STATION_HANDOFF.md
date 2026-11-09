@@ -1,5 +1,9 @@
 # Windows／Mac 加密資料移交
 
+## 最新移交：2026-11-09
+
+4r精簡續作包已使用使用者提供的原backup.key，完成Drive實際上傳、下載回比與隔離還原。這份包只保留Golden／128／135原圖、必要DINO參考庫與最新完整報告，並非原站台完整備份。因連接器限制分成六段；Mac請依 [本次精簡續作說明](CHECKPOINT_DINO_4R_LEAN_MAC_20261109.md) 操作，需要Python 3.12以上。驗證收據見 [此處](checkpoints/lean-4r-20261109-cloud-verification.json)。以下11月5日狀態屬歷史紀錄，日常完整站台移交說明仍予保留。
+
 ## Windows 同步核對：2026-11-05
 
 已同步 Mac 的 `3a2adde` 規劃並保留本機 r3 修改。Windows 工具已建置於 `dist/XRayTransfer/XRayTransfer.exe`，原生介面缺件檢查通過；合成資料的加密、解密、路徑重定位、人工紀錄保留與拒絕覆寫測試通過。本機模型及原有 22 份 r3 核心程式快照核對一致，沒有執行圖資檢測。
