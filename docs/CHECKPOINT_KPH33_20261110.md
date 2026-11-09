@@ -16,3 +16,7 @@ python tools/kph33_supplement.py restore "$HOME/KPH33-download-20261110/KPH33-4r
 還原工具不覆寫既有目錄，AES-GCM 認證後逐檔核對 SHA-256，不匯入或覆寫站台。完整報告是 `evaluation/report/index.html`，逐處對帳是 `evaluation/report/decision.html`。原計畫與結果的 Windows 絕對路徑保留為歷史證據，在 Mac 或 Gemini 建立新實驗時應產生新的路徑及計畫，不要改寫舊 plan/hash 假裝原始驗證。此補充包不是針對 Mac 的推論驗收。
 
 後續：先釐清電池外緣遮罩與三處差分碎片，對比未對齊、既有對齊及新色調對齊；DINO 固定同一裁圖比較新舊庫。先做局部實驗，保護原有命中與誤報，完整回歸須另取全部必要原圖。正式流程未改。
+
+## 2026-11-10 雲端驗收
+
+補充包 227,641,504 bytes（約 217 MiB），三段；整包 SHA-256：`03f8f7d70816b360c0b8035eb9f528affd3cc07e2a44e26a3c02f1e908829c70`。三段、清單及校驗檔已從專用 Drive 實際下載，逐段及整包回比後，以原金鑰完成 1,756 檔隔離還原。驗收為補充包，不宣稱它本身是完整站台或 Mac 推論驗收。[驗收收據](checkpoints/kph33-20261110-cloud-verification.json)。
