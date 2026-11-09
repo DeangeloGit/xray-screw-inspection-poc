@@ -1,0 +1,39 @@
+{
+  "checkpoint": "checkpoint-2026-11-09-dino-4r-lean-mac",
+  "scope": "lean_4r_continuation_not_full_original_station_backup",
+  "selected_files": 9403,
+  "selected_bytes": 562065089,
+  "reason_bytes": {
+    "副庫、參考圖與人工紀錄": 13247192,
+    "兩張續作所需對位影像與候選": 8101243,
+    "實際整合主庫及141參考圖": 3628251,
+    "最新完整報告與連結證據": 418203737,
+    "答案與驗證紀錄": 18324940,
+    "正式DINO模型與112參考圖": 93091656,
+    "續作影像：Golden、128、135": 7468070
+  },
+  "raw_images": [
+    "Golden",
+    "ng-128",
+    "ng-135"
+  ],
+  "report_photos": 100,
+  "report_candidates": 8335,
+  "excluded": [
+    "Other98 raw test photos",
+    "Historical model versions",
+    "Old full reports and repeated crops",
+    "Intermediate feature caches",
+    "Browser profile and runtime caches",
+    "Original station acquisition/results databases",
+    "Python environments and installers"
+  ],
+  "formal_examples_verified": 112,
+  "integrated_examples_verified": 141,
+  "additional_B_examples_verified": 15,
+  "windows_cpu_four_cases_passed": true,
+  "mac_execution_verified": false,
+  "cloud_verified": false,
+  "key_choice": "User-provided original backup.key; key not in Git or bundle",
+  "production_changed": false
+}
