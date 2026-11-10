@@ -65,7 +65,7 @@ def restore(archive,key,destination):
    names=z.namelist()
    if len(names)!=len(set(names)):raise ValueError('Duplicate zip entries')
    manifest=json.loads(z.read('SUPPLEMENT-MANIFEST.json'))
-   if manifest.get('format')!='KPH33-evidence-supplement-v2':raise ValueError('Wrong supplement format')
+   if manifest.get('format') not in ('KPH33-evidence-supplement-v2','XRAY-4R-REFERENCE-SUPPLEMENT-v1'):raise ValueError('Wrong supplement format')
    rows=manifest['files'];paths=[r['path'] for r in rows]
    if set(names)!={'SUPPLEMENT-MANIFEST.json',*('blobs/'+r['sha256'] for r in rows)} or len(paths)!=len(set(paths)) or len(paths)!=len({p.casefold() for p in paths}):raise ValueError('Inventory mismatch')
    for row in rows:
