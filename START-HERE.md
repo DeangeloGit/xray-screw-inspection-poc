@@ -1,5 +1,7 @@
 # X-RAY 續作入口
 
+**最新 5r 換電腦移交：**已使用原金鑰上傳 2026-11-13 最小必要補充包（7 段），並完成實際下載回比、解密及 18,617 檔隔離還原。換電腦先讀 [5r 移交步驟](docs/CHECKPOINT_5R_TRANSFER_20261113.md)及[驗證收據](docs/checkpoints/5r-minimal-20261113-cloud-verification.json)，搭配下列既有 Lean、參考圖與 KPH33 包；金鑰另外安全取得。GitHub 不含私人資料，這也不是新機推論驗收。
+
 **5r 新聊天室交接：**目前分支是 `5r`，從 4r commit `bcc6c07` 建立。先讀 [5r 開發交接](docs/CHECKPOINT_5R_START_20261113.md)及[局部複核最新交接](docs/CHECKPOINT_5R_LOCAL_REVIEW_20261113.md)，再依下方要求核對私人模型與圖庫。已新增可選的警報後段局部複核；原始偵測流程及基礎 5r 入口仍保留。
 
 **5r 資料夾批次功能：**已新增 NG 未檢出／OK 誤報的照片張數統計與完整報告；入口、隔離站台建立及操作方式見 [5r 資料夾批次檢測](docs/5R_FOLDER_BATCH.md)。沿用 4r 偵測演算法，不代表辨識效果已完成全批驗收。

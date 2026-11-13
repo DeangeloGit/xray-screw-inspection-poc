@@ -6,7 +6,7 @@
 
 - 基礎 5r：`experiments/dino/live5r_service.py`，預設 18766，沿用原判斷。
 - 局部複核 5r：`.venv/Scripts/python.exe experiments/dino/live5r_local_service.py`，預設 18767；本機入口 `http://127.0.0.1:18767/5r/batch`。
-- 隔離工作區：`workspace/5r-local-review-20261113`。私人套件位於其 `local-review/`，不在 Git，也尚未上傳 Drive。
+- 隔離工作區：`workspace/5r-local-review-20261113`。私人套件位於其 `local-review/`，不在 Git；已納入 [2026-11-13 最小必要移交包](CHECKPOINT_5R_TRANSFER_20261113.md)，完成 Drive 下載回比與隔離還原。
 
 新 checkout 不能只下載程式就啟動局部複核。先依 START-HERE 驗證 Lean、最新參考圖補充包及 KPH33 補充包，再依移交規則另取得本次私人套件。缺件即停止，不可建立空庫或替代金鑰。`prepare_5r_home.py` 只建立基礎站，不能替代本次私人套件移交。套件檢查資料及程式 SHA；修改受驗證程式後須重新驗證，不可只改雜湊冒充驗收。
 

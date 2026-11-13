@@ -1,0 +1,7 @@
+# Preserve the exact bytes of the qualified 5r policies on Windows and Mac.
+experiments/dino/live4r_service.py text eol=crlf
+experiments/dino/live5r_service.py text eol=lf
+experiments/dino/live5r_local_service.py text eol=lf
+experiments/dino/live5r_review.py text eol=lf
+experiments/dino/alarm_review5r.py text eol=lf
+experiments/dino/local_object5r.py text eol=lf

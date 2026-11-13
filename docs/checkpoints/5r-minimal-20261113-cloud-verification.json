@@ -1,0 +1,133 @@
+{
+  "ok": true,
+  "cloud_verified": true,
+  "isolated_restore_verified": true,
+  "supplement_only": true,
+  "sha256": "8d616398595955603d1d336c3cc25aba9b1990c7627b84bed3f9300eaf8701fb",
+  "archive": "XRay-5r-Minimal-20261113.xray.enc",
+  "files": 18617,
+  "at": "2026-11-13T11:36:44.130035+00:00",
+  "schema_version": 1,
+  "folder_id": "1QBfJNjDh9RpPe6bNr3HpC7ZBrCDkDzi2",
+  "encrypted_bytes": 675470809,
+  "runtime_source_commit": "d0fe2cddebdc4a7da1d894ade7a36b9641fa200b",
+  "encryption": "XRAYENC1:scrypt:AES-256-GCM",
+  "original_key_authenticated_against": "4r-reference-20261110.xray.enc",
+  "key_included": false,
+  "parts": [
+    {
+      "filename": "XRay-5r-Minimal-20261113.xray.enc.part001",
+      "bytes": 100663296,
+      "sha256": "6d2669b7b95a0c79fca232f0b0d1fd37114642a7c85c1048c525a2037cb38c7c",
+      "id": "1Wsfi1rO1N_M6_gsF601ildOoNP4uiiMf",
+      "url": "https://drive.google.com/file/d/1Wsfi1rO1N_M6_gsF601ildOoNP4uiiMf/view?usp=drivesdk"
+    },
+    {
+      "filename": "XRay-5r-Minimal-20261113.xray.enc.part002",
+      "bytes": 100663296,
+      "sha256": "5a718bebb26c4e5a46ce2e3a807c2b1849654a8a0b4eb4e16ef337c464d5b85c",
+      "id": "1Z0VbfK0kT2GzCbNsKzMN_DyvZ3UJ_IwB",
+      "url": "https://drive.google.com/file/d/1Z0VbfK0kT2GzCbNsKzMN_DyvZ3UJ_IwB/view?usp=drivesdk"
+    },
+    {
+      "filename": "XRay-5r-Minimal-20261113.xray.enc.part003",
+      "bytes": 100663296,
+      "sha256": "20c41bacaf6391ddf623e8e5deaa1b5ab9adc8bfcb9f15284c8ed14a05ec689a",
+      "id": "1bZcoSRAU5_gMA7FySYgYC6gdc-js5DIZ",
+      "url": "https://drive.google.com/file/d/1bZcoSRAU5_gMA7FySYgYC6gdc-js5DIZ/view?usp=drivesdk"
+    },
+    {
+      "filename": "XRay-5r-Minimal-20261113.xray.enc.part004",
+      "bytes": 100663296,
+      "sha256": "3eb1dad815bdbbc7d0b4d9047213640ccb52850318c12ae14f595ec770625c3f",
+      "id": "1AR5GQ-SuwD1vozyOxwWMhx6IBoAk8UAy",
+      "url": "https://drive.google.com/file/d/1AR5GQ-SuwD1vozyOxwWMhx6IBoAk8UAy/view?usp=drivesdk"
+    },
+    {
+      "filename": "XRay-5r-Minimal-20261113.xray.enc.part005",
+      "bytes": 100663296,
+      "sha256": "b7e77f4132f3d1217886e24a7eabf97f89042d3caad88212ee1d674bd7f55443",
+      "id": "1I41XpqVUWQPV7KHoaYAJVjaFz_JkVTeQ",
+      "url": "https://drive.google.com/file/d/1I41XpqVUWQPV7KHoaYAJVjaFz_JkVTeQ/view?usp=drivesdk"
+    },
+    {
+      "filename": "XRay-5r-Minimal-20261113.xray.enc.part006",
+      "bytes": 100663296,
+      "sha256": "d465e1c1cec13643b96da46536339bdc6e65b827e1e70129a0b8d2e23d677538",
+      "id": "1HKKODrXT9EETW2IFAq066CTaTnlf0a1X",
+      "url": "https://drive.google.com/file/d/1HKKODrXT9EETW2IFAq066CTaTnlf0a1X/view?usp=drivesdk"
+    },
+    {
+      "filename": "XRay-5r-Minimal-20261113.xray.enc.part007",
+      "bytes": 71491033,
+      "sha256": "2610dae72aa56084b9608448046074a44c758e99c39a71f5cb85229e1b553a4d",
+      "id": "1SfmE_WIgmUWFwiitPOCbg5Y7bKUAl43j",
+      "url": "https://drive.google.com/file/d/1SfmE_WIgmUWFwiitPOCbg5Y7bKUAl43j/view?usp=drivesdk"
+    }
+  ],
+  "sidecars": [
+    {
+      "name": "XRay-5r-Minimal-20261113.xray.enc.parts.json",
+      "id": "1vNr4YhtW3trWprcfmUp5cnKYNr-YNbHV",
+      "url": "https://drive.google.com/file/d/1vNr4YhtW3trWprcfmUp5cnKYNr-YNbHV/view?usp=drivesdk",
+      "sha256": "3a3a3081e69f46c27aad70e92903cb8f99b79e07382b1817f92c4ee2dd2c9532"
+    },
+    {
+      "name": "XRay-5r-Minimal-20261113.xray.enc.sha256",
+      "id": "196a-PVY36tCSMnuHngnAUCnjXgVBj-Eu",
+      "url": "https://drive.google.com/file/d/196a-PVY36tCSMnuHngnAUCnjXgVBj-Eu/view?usp=drivesdk",
+      "sha256": "9252b95a2bd94f9572f933344263258bb0b4b50b38dd5eb1bb61fb6f106ba8c2"
+    }
+  ],
+  "required_prior_packages": [
+    "XRay-4r-Lean-20261109",
+    "4r-reference-20261110",
+    "KPH33-4r-20261110"
+  ],
+  "scope": {
+    "supplement_only": true,
+    "full_station_backup": false,
+    "raw_KPH33_images": 61,
+    "original_guard_and_reference_images": 2,
+    "original100_raw_corpus_included": false
+  },
+  "report_validation": {
+    "status": "passed",
+    "photos": 161,
+    "candidates": 17759,
+    "html_pages": 181,
+    "references_checked": 143783,
+    "basis": "Report verified in local authenticated restore; actual downloaded archive SHA and every restored file match the same archive."
+  },
+  "station_validation": {
+    "status": "passed",
+    "cpu": true,
+    "watching": false,
+    "inference_run": false,
+    "lean_probe_status": "passed",
+    "reference_files_checked": 294,
+    "details": {
+      "base_bank_matches_validation": true,
+      "bundle": "26c6902dbae3d71f184bb905ccfe5265aea5eac34b3c6e3869861ad94555f669",
+      "fragment_bank": {
+        "normal": 96,
+        "screw": 55
+      },
+      "object_bank": {
+        "normal": 90,
+        "screw": 52
+      },
+      "visible_part_bank": {
+        "normal": 83,
+        "screw": 50
+      }
+    },
+    "basis": "Fresh isolated home assembled from authenticated local restore of the byte-identical archive; downloaded archive separately authenticated and fully restored by transfer_cloud.py."
+  },
+  "known_limitations": [
+    "Requires three prior encrypted packages and separately supplied original key.",
+    "Not a full station or original100 raw-image backup.",
+    "File verification and startup are not new-machine inference acceptance; Mac inference untested."
+  ],
+  "source_station_restarted": true
+}
