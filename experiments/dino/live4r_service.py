@@ -34,9 +34,17 @@ lock=threading.RLock()
 from live4r_examples import LiveBanks
 banks=LiveBanks(BASE,original,snapshot,details,lock)
 banks.register(app,manager)
+reviewer5r=None
+if os.environ.get('XRAY_5R_LOCAL_REVIEW') == '1':
+ if os.environ.get('XRAY_5R_BATCH') != '1':raise RuntimeError('局部複核僅供 5r 隔離服務使用')
+ cv2.setNumThreads(4)
+ from live5r_review import ReviewBundle
+ reviewer5r=ReviewBundle(BASE/'local-review')
+ base_snapshot=manager.snapshot
+ manager.snapshot=lambda version_directory=None:reviewer5r.tagged_snapshot(base_snapshot(version_directory))
 from flask import jsonify
 def immutable_service_settings():
- return jsonify(error='此 4r 實驗服務固定使用 GPU 與 4r 模型；可在範例管理切換已建立的 4r 範例庫。'),409
+ return jsonify(error='此隔離服務固定使用 '+manager.execution_override.upper()+' 與指定的 DINO 流程；可在範例管理切換已建立的範例庫。'),409
 app.view_functions['settings_api.apply_model']=immutable_service_settings
 app.view_functions['settings_api.set_dino_execution']=immutable_service_settings
 def detect_4r(*args,**kwargs):
@@ -44,8 +52,12 @@ def detect_4r(*args,**kwargs):
   cache.clear();selected=kwargs.get('model_snapshot') or manager.snapshot();kwargs['model_snapshot']=selected
   with experiment.four_r(detector,pilot,selected,review,normal):
    result=orig_detect(*args,**kwargs)
-  result['experimental_policy']='4r curated_v5_review + connector';result['experimental_main_bank']={'screw':len(selected.manifest['example_bank']['screw']['ids']),'normal':len(selected.manifest['example_bank']['normal']['ids']),'version':selected.requested,'fingerprint':selected.identity};result['production_changed']=False
   directory=kwargs.get('output_directory')
+  if reviewer5r is not None:
+   directory=Path(directory) if directory is not None else detector.OUTPUTS/result['name']
+   result=reviewer5r.apply(selected,result,directory,review,normal)
+  result['experimental_policy']='4r curated_v5_review + connector';result['experimental_main_bank']={'screw':len(selected.manifest['example_bank']['screw']['ids']),'normal':len(selected.manifest['example_bank']['normal']['ids']),'version':selected.requested,'fingerprint':selected.identity};result['production_changed']=False
+  if reviewer5r is not None:result['experimental_policy']='5r alarm-only local review + 4r curated_v5_review + connector'
   if directory is not None:
    import json
    path=Path(directory)/'result.json';temporary=path.with_suffix('.verified.tmp')
@@ -56,6 +68,7 @@ import machine_tuning
 machine_tuning.detect=detect_4r
 @app.after_request
 def banner(response):
+ if response.direct_passthrough:return response
  if response.content_type and response.content_type.startswith('text/html'):
   html=response.get_data(as_text=True)
   marker='<section class="settings-panel" data-engineer-panel="ai" hidden><h2>AI 辨識模型（選用）</h2>'
@@ -66,7 +79,10 @@ def banner(response):
   html=html.replace('兩類各至少保留 3 張。','此 4r 實驗必須保留原有全部範例，目前只支援新增。')
   if '<body' in html:
    i=html.find('>',html.find('<body'))+1
-   html=html[:i]+'<div style="background:#e5f0ff;color:#172c49;padding:10px;text-align:center;font-weight:bold">4r 實驗服務｜'+('原始 51＋90' if banks.active=='4r-curated-v5-review' else '新增範例版本：尚未回歸驗證')+'｜隔離工作區</div>'+html[i:]
+   label='5r 資料夾驗證' if os.environ.get('XRAY_5R_BATCH')=='1' else '4r 實驗服務'
+   validation_label='原始 51＋90' if banks.active=='4r-curated-v5-review' else '新增範例版本：尚未回歸驗證'
+   if reviewer5r is not None:validation_label='局部複核：本批驗證完成' if reviewer5r.details(banks.current)['base_bank_matches_validation'] else '主庫已變更，局部複核尚未重驗'
+   html=html[:i]+'<div style="background:#e5f0ff;color:#172c49;padding:10px;text-align:center;font-weight:bold">'+label+'｜'+validation_label+'｜隔離工作區</div>'+html[i:]
    response.set_data(html)
  return response
 print('4R READY',banks.current.info(),flush=True)
@@ -80,8 +96,36 @@ def protect_old_tuning():
   try:
    import json
    result=json.loads(path.read_text(encoding='utf8'))
-   if result.get('experimental_policy')!='4r curated_v5_review + connector':return jsonify(error='這份預覽不是完整 4r，請重新試算後再套用'),409
-   if result.get('experimental_main_bank',{}).get('fingerprint')!=banks.current.identity:return jsonify(error='範例庫版本已變更，請重新試算後再套用'),409
+   expected_policy='5r alarm-only local review + 4r curated_v5_review + connector' if reviewer5r is not None else '4r curated_v5_review + connector'
+   if result.get('experimental_policy')!=expected_policy:return jsonify(error='這份預覽不是目前的完整檢測流程，請重新試算後再套用'),409
+   if result.get('experimental_main_bank',{}).get('fingerprint')!=manager.snapshot().identity:return jsonify(error='範例庫或複核版本已變更，請重新試算後再套用'),409
   except (OSError,ValueError):return jsonify(error='找不到完整 4r 預覽，請重新試算'),409
 import launch
-launch.main()
+if os.environ.get('XRAY_5R_BATCH') == '1':
+ from app import analysis_lock
+ from machine_profiles import selected_profile
+ from station_settings import detection_threshold
+ from folder_batch5r import register
+ register(app,BASE/'folder-batches',analysis_lock,lock,detect_4r,manager.snapshot,selected_profile,detection_threshold)
+ @app.get('/api/5r/local-review')
+ def local_review_status():
+  return jsonify(enabled=reviewer5r is not None,details=reviewer5r.details(banks.current) if reviewer5r else None,
+                 qualification=reviewer5r.meta['qualification'] if reviewer5r else None)
+ @app.after_request
+ def five_r_banner(response):
+  if response.direct_passthrough:return response
+  if response.content_type and response.content_type.startswith('text/html'):
+   content=response.get_data(as_text=True).replace('4r 實驗服務｜','5r 資料夾驗證｜')
+   if '<body' in content:
+    i=content.find('>',content.find('<body'))+1
+    local_label='｜局部正反例複核已啟用' if reviewer5r is not None else ''
+    content=content[:i]+'<p style="padding:12px;text-align:center"><a href="/5r/batch">5r：NG／OK 資料夾批次檢測與完整報表</a>'+local_label+'</p>'+content[i:]
+   response.set_data(content)
+  return response
+if os.environ.get('XRAY_5R_BATCH') == '1':
+ port5r=int(os.environ.get('XRAY_5R_PORT','18766'))
+ if not 1024<=port5r<=65535:raise ValueError('XRAY_5R_PORT 必須介於 1024 與 65535')
+ launch.URL='http://127.0.0.1:'+str(port5r)
+ launch.main(ports=(port5r,0))
+else:
+ launch.main()

@@ -49,7 +49,7 @@ def open_local(url):
         webbrowser.open(url)
 
 
-def main():
+def main(ports=(8765, 8766, 18765, 0)):
     from runtime_paths import STATE, WORK_ROOT
     identity = workspace_identity(WORK_ROOT)
     record = STATE/'local-server.json'
@@ -68,7 +68,7 @@ def main():
             open_local(url)
             return
     from app import app, start_background
-    server, failures = bind_server(app)
+    server, failures = bind_server(app, ports=ports)
     url = 'http://127.0.0.1:'+str(server.port)
     info = dict(url=url,port=server.port,pid=os.getpid(),workspace_id=identity,
                 bind_failures=failures,local_only=True,
