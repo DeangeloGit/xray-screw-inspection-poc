@@ -1,10 +1,12 @@
 # X-RAY 續作入口
 
+**5r 新聊天室交接：**目前分支是 `5r`，從 4r commit `bcc6c07` 建立。先讀 [5r 開發交接](docs/CHECKPOINT_5R_START_20261113.md)，再依下方要求核對私人模型與圖庫。尚未對 5r 偵測演算法作任何修改。
+
 **最新 4r 參考圖上傳功能版本：**先讀 [2026-11-10 圖庫版本與啟動說明](docs/CHECKPOINT_4R_REFERENCE_UPLOAD_20261110.md)。除了下方 Lean 包，還必須下載並核對新參考圖補充包，缺件就停止；GitHub 不含私人圖庫。此版本未完成完整回歸。
 
 KPH33 SKU=1006A 最新研究接續：先讀 [KPH33 補充包說明](docs/CHECKPOINT_KPH33_20261110.md)。它需要下述已驗證的精簡站台與另外加密的 KPH33 證據補充包；不可把歷史結果稱為新環境重驗。
 
-目前續作分支：`4r`。
+目前續作分支：`5r`；前一版本為 `4r`。
 入口更新 checkpoint：`checkpoint-2026-11-10-dino-handoff-required`。
 KPH33 資料與雲端驗收 checkpoint：`checkpoint-2026-11-10-kph33-4r-cloud-verified`。
 
