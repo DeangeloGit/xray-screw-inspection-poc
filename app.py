@@ -9,6 +9,7 @@ from reports import export_csv, report_rows
 from review_workflow import effective_review, summarize_positions
 from library import analyze_file, analyze_sample, select_sample, public_catalog, catalog, save_result, importer, latest_results, analysis_failures
 import uuid
+import os
 import hashlib
 from functools import lru_cache
 import json
@@ -29,6 +30,13 @@ jobs_lock = threading.Lock()
 jobs = {}
 from machine_tuning import register_tuning
 register_tuning(app, analysis_lock)
+if os.environ.get('XRAY_5R_LOCAL_REVIEW') == '1':
+    import library
+    from engineering_debug import register as register_engineering_debug
+    register_engineering_debug(app, ROOT/'engineering-traces', analysis_lock,
+                               lambda *args, **kwargs: library.detect(*args, **kwargs),
+                               detection_threshold)
+
 (ROOT/'outputs').mkdir(exist_ok=True)
 
 @app.before_request

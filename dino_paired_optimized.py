@@ -18,6 +18,8 @@ def adjusted_image(m, crop):
 
 
 def features(m, session, im):
+    from engineering_trace import model_image
+    model_image(im)
     a=np.asarray(im,np.float32)/255
     a=(a-np.asarray(m['mean'],np.float32))/np.asarray(m['std'],np.float32)
     raw=np.asarray(session.run(None,{session.get_inputs()[0].name:a.transpose(2,0,1)[None]})[0])

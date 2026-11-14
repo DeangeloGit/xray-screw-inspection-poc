@@ -8,6 +8,7 @@ from runtime_paths import WORK_ROOT as ROOT
 from model_manager import manager
 from detection_runtime import CURRENT, detection, directions, parallel_map, PIPELINE
 from brightness_fit import brightness
+import engineering_trace as trace
 
 DETECTOR_VERSION = 13
 
@@ -307,6 +308,8 @@ def proposals(ref, target, mask, threshold, structure_changes=None, similarity_r
     # be erased by the main 3px tolerance. Require compact, novel, predominantly
     # one-sided evidence before retaining a 1px-tolerance candidate.
     tight_residual = cv2.erode(predicted, np.ones((3, 3), np.uint8)) - target
+    trace.image("residual-main", residual, signed=True)
+    trace.image("residual-tight", tight_residual, signed=True)
     recovered, _ = candidates_from_residual(ref, target, mask, threshold, predicted, tight_residual, shared_arrays)
     for candidate in recovered:
         c = candidate
@@ -357,14 +360,25 @@ def check_candidate(ref, target, c, threshold):
     return c, explained
 
 
+def trace_components(labels, main):
+    if trace.enabled():
+        colors = cv2.applyColorMap(((labels * 53) % 255).astype(np.uint8), cv2.COLORMAP_TURBO)
+        colors[labels == 0] = 0
+        trace.image('components-main' if main else 'components-tight', colors)
+
+
 def candidates_from_residual(ref, target, mask, threshold, predicted, residual, shared_arrays=None,
                              similarity_recoveries=None):
     binary = ((residual > threshold) & mask).astype('uint8')
+    if trace.enabled():
+        trace.image("binary-main" if similarity_recoveries is not None else "binary-tight", binary != 0)
     binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN,
                               cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
     # Separate a compact object from long connected residuals instead of dropping
     # the entire oversized component. Keep ordinary small components intact.
     n, component_labels, component_stats, _ = cv2.connectedComponentsWithStats(binary)
+    if trace.enabled():
+        trace.image("opened-main" if similarity_recoveries is not None else "opened-tight", binary != 0)
     changed = False
     for index, (x, y, w, h, area) in enumerate(component_stats[1:], 1):
         if area > 1800 or max(w, h) > 110:
@@ -380,6 +394,7 @@ def candidates_from_residual(ref, target, mask, threshold, predicted, residual, 
         n, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
     else:
         labels, stats = component_labels, component_stats
+    trace_components(labels, similarity_recoveries is not None)
     candidates = []
     normal_nearby, signed_difference = shared_arrays if shared_arrays is not None else (cv2.erode(predicted, np.ones((15, 15), np.uint8)), predicted-target)
     for i in range(1, n):
@@ -486,17 +501,28 @@ def _detect(reference, target, name, threshold=.13, model_snapshot=None, output_
     context = CURRENT.get()
     ref, raw = context.reference.full, read(target)
     r = context.reference.small
-    reg = register(r, raw)
+    trace.image('decoded', raw)
+    trace.image('machine', context.reference.machine)
+    trace.image('structure', context.reference.structure)
+    with trace.stage('全圖對齊'):
+        reg = register(r, raw)
+    trace.image('global', reg['aligned'])
+    trace.image('valid', reg['valid'])
     mask = machine_mask(r) & reg['valid']
+    trace.image('effective-mask', mask)
     total = max(int(context.reference.machine.sum()), 1)
     coverage = int(mask.sum()) / total
     if coverage < .95:
         raise ValueError('待測影像未完整覆蓋正常參考機體，需重新拍攝／人工確認')
     baseline, _ = legacy_proposals(r, reg['aligned'], structure_mask(r) & reg['valid'], threshold)
-    corrected, flow, regions = refine(r, reg['aligned'], structure_mask(r) & reg['valid'])
+    with trace.stage('局部對齊'):
+        corrected, flow, regions = refine(r, reg['aligned'], structure_mask(r) & reg['valid'])
+    if trace.enabled():
+        trace.image('flow', np.linalg.norm(flow, axis=-1) / 6)
     structure_changes = []
     recovered = [] if pilot_enabled else None
-    candidates, residual = proposals(r, corrected, mask, threshold, structure_changes, recovered)
+    with trace.stage("候選生成（含亮度擬合及補提）"):
+        candidates, residual = proposals(r, corrected, mask, threshold, structure_changes, recovered)
     if recovered:
         additions = []
         for candidate in sorted(recovered, key=lambda c: -c['score']):
@@ -565,7 +591,8 @@ def _detect(reference, target, name, threshold=.13, model_snapshot=None, output_
         crop = (raw[box[1]:box[3], box[0]:box[2]]*255).astype('uint8')
         write_image(str(out/f'crop_{i}.png'), crop)
         if model_snapshot.manifest.get('backend') == 'dino_onnx':
-            c['classification'] = classify_dino_candidate(model_snapshot, corrected, r, c)
+            with trace.candidate(c['id']):
+                c['classification'] = classify_dino_candidate(model_snapshot, corrected, r, c)
             if pilot_enabled:
                 ref_u8, target_u8 = context.arrays(r, corrected)
                 c['classification'] = overkill_pilot.apply(model_snapshot, ref_u8, target_u8, c, c['classification'])

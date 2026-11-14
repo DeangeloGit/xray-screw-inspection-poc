@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>工程模式 · 影像逐步追蹤</title><link rel="stylesheet" href="/static/app.css">
+<body><main class="engineer-shell"><p><a href="/engineer">返回工程設定</a></p>
+<h1>影像逐步追蹤</h1>
+<p>選一組正常參照圖和待測圖。工程檢測會保存中間圖、候選裁切和耗時，並產出可離線查看的 HTML。</p>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+{% if report %}<p role="status"><a href="{{ report }}">開啟本次 27 步報告</a> · <a href="{{ report }}" download="XRAY-RD.html">下載 HTML</a></p>{% endif %}
+<form method="post" enctype="multipart/form-data" class="form-stack">
+<label>正常參照圖<input type="file" name="reference" accept=".png,.jpg,.jpeg,.tif,.tiff" required></label>
+<label>待測圖<input type="file" name="target" accept=".png,.jpg,.jpeg,.tif,.tiff" required></label>
+<button class="primary">執行並產生工程報告</button>
+</form></main></body></html>

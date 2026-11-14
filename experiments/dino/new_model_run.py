@@ -99,8 +99,14 @@ class TensorCache:
         if key in self.values:
             self.hits += 1
             self.values.move_to_end(key)
+            from engineering_trace import inference
+            inference(True, 0)
             return self.values[key]
+        from engineering_trace import inference
+        from time import perf_counter
+        start = perf_counter()
         value = self.session.run(outputs, inputs)
+        inference(False, perf_counter() - start)
         self.fresh += 1
         self.values[key] = value
         if len(self.values) > self.limit:
@@ -169,6 +175,8 @@ def four_r(detector, pilot, snapshot, review_bank, normal_bank):
         if similarity_recoveries is None:
             raise ValueError('4r requires enabled pilot proposal recovery')
         predicted = detector.compensate_brightness(ref, target)
+        from engineering_trace import image
+        image("brightness", predicted)
         cs, residual = original_proposals(ref, target, mask, threshold,
                                           structure_changes, similarity_recoveries, predicted=predicted)
         cs += improvement_policy.supplemental(

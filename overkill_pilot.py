@@ -74,7 +74,7 @@ def apply(snapshot, ref, target, candidate, prediction):
             weights = core_mask(manifest, left, right)
             if weights is not None:
                 images = [adjusted_image(manifest, im) for im in (left, right)]
-                margins = combined(compare_scores(snapshot, images, weights))
+                margins = side_recovery_margins(snapshot, images, weights)
                 if margins and margins[0] < 0 <= margins[1]:
                     sides = [dict(label='screw' if score >= 0 else 'non_screw', screw_margin=score,
                                   input_sha256=hashlib.sha256(im.tobytes()).hexdigest())
@@ -271,29 +271,41 @@ def select(c,pad):
     return np.s_[max(0,y-pad):y+h+pad,max(0,x-pad):x+w+pad]
 
 
-def compare_scores(snap,views,mask=None):
-    m=snap.manifest
-    pos=len(m['example_bank']['screw']['ids'])
-    bank=snap.feature_bank
-    local,focused,side=[],[],[]
-    for im in views:
-        a=np.asarray(im,np.float32)/255
-        a=(a-np.asarray(m['mean'],np.float32))/np.asarray(m['std'],np.float32)
-        raw=snap.session.run(None,{snap.session.get_inputs()[0].name:a.transpose(2,0,1)[None]})[0][0]
-        vectors=[raw[1:].mean(axis=0)]
-        vectors.append((raw[1:]*mask[:,None]).sum(axis=0))
-        vectors=[v/np.linalg.norm(v) for v in vectors]
-        margins=[]
-        for i,v in enumerate(vectors):
-            similarities=bank[:,0,1]@v
-            margins.append(float(np.sort(similarities[:pos])[-3:].mean()-np.sort(similarities[pos:])[-3:].mean()))
-            if i==0:
-                side_scores=similarities[[j-1 for j in sorted(SIDE_SCREWS)]]
-                head_scores=similarities[[j-1 for j in range(1,pos+1) if j not in SIDE_SCREWS]]
-                side.append(float(np.sort(side_scores)[-3:].mean()-np.sort(head_scores)[-3:].mean()))
-        local.append(margins[0])
-        focused.append(margins[1])
-    return dict(local=local,focused=focused,side_margin=side)
+def score_view(snapshot, image, mask):
+    manifest = snapshot.manifest
+    pos = len(manifest['example_bank']['screw']['ids'])
+    bank = snapshot.feature_bank
+    from engineering_trace import model_image
+    model_image(image)
+    a = np.asarray(image, np.float32) / 255
+    a = (a - np.asarray(manifest['mean'], np.float32)) / np.asarray(manifest['std'], np.float32)
+    raw = snapshot.session.run(None, {snapshot.session.get_inputs()[0].name: a.transpose(2, 0, 1)[None]})[0][0]
+    vectors = [raw[1:].mean(axis=0), (raw[1:] * mask[:, None]).sum(axis=0)]
+    local, focused = [bank[:, 0, 1] @ (v / np.linalg.norm(v)) for v in vectors]
+    margins = [float(np.sort(v[:pos])[-3:].mean() - np.sort(v[pos:])[-3:].mean())
+               for v in (local, focused)]
+    side = local[[j - 1 for j in sorted(SIDE_SCREWS)]]
+    head = local[[j - 1 for j in range(1, pos + 1) if j not in SIDE_SCREWS]]
+    return dict(local=margins[0], focused=margins[1],
+                side_margin=float(np.sort(side)[-3:].mean() - np.sort(head)[-3:].mean()))
+
+
+def compare_scores(snapshot, views, mask=None):
+    scores = [score_view(snapshot, image, mask) for image in views]
+    return {key: [score[key] for score in scores] for key in ('local', 'focused', 'side_margin')}
+
+
+def side_recovery_margins(snapshot, images, weights):
+    if os.environ.get('XRAY_5R_LOCAL_REVIEW') != '1':
+        return combined(compare_scores(snapshot, images, weights))
+    reference, target = images
+    target_score = score_view(snapshot, target, weights)
+    # These are the same necessary conditions used by combined() and apply().
+    target_margin = (target_score['local'] + target_score['focused']) / 2
+    if target_score['side_margin'] <= 0 or not target_margin >= 0:
+        return []
+    ref_score = score_view(snapshot, reference, weights)
+    return combined({key: [ref_score[key], target_score[key]] for key in target_score})
 
 
 def core_mask(m,left,right):

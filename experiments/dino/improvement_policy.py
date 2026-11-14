@@ -67,7 +67,10 @@ def scores(snapshot,ref,target,c,pad, *, stop_on_target_failure=False):
     bank=snapshot.feature_bank;n=len(m['example_bank']['screw']['ids']);result=[]
     crops = (right, left) if stop_on_target_failure else (left, right)
     for crop in crops:
-        im=adjusted_image(m,crop);a=np.asarray(im,np.float32)/255
+        im=adjusted_image(m,crop)
+        from engineering_trace import model_image
+        model_image(im)
+        a=np.asarray(im,np.float32)/255
         a=(a-np.asarray(m['mean'],np.float32))/np.asarray(m['std'],np.float32)
         raw=snapshot.session.run(None,{snapshot.session.get_inputs()[0].name:a.transpose(2,0,1)[None]})[0][0]
         v=np.stack([raw[0],raw[1:].mean(axis=0),(raw[1:]*weights[:,None]).sum(axis=0)])
