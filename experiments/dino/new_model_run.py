@@ -168,24 +168,26 @@ def four_r(detector, pilot, snapshot, review_bank, normal_bank):
     def proposals(ref, target, mask, threshold, structure_changes=None, similarity_recoveries=None):
         if similarity_recoveries is None:
             raise ValueError('4r requires enabled pilot proposal recovery')
+        predicted = detector.compensate_brightness(ref, target)
         cs, residual = original_proposals(ref, target, mask, threshold,
-                                          structure_changes, similarity_recoveries)
+                                          structure_changes, similarity_recoveries, predicted=predicted)
         cs += improvement_policy.supplemental(
-            ref, target, mask, detector.compensate_brightness(ref, target),
+            ref, target, mask, predicted,
             cs + list(similarity_recoveries))
         oldadd = []
         for candidate in sorted(similarity_recoveries, key=lambda c: -c['score']):
             if not original_overlap(candidate, cs):
                 checked, explained = original_check(ref, target, copy.deepcopy(candidate), threshold)
+                state.setdefault('recovery_checks', {})[id(candidate)] = (checked, explained)
                 if not explained:
                     oldadd.append(checked)
-        qr, qt = [(np.clip(a, 0, 1) * 255).astype('uint8').astype('float32') / 255
-                  for a in (ref, target)]
+        qr, qt = CURRENT.get().arrays(ref, target)
+        existing_boxes = {policy.box(c) for c in cs + oldadd}
         extras = []
         for part in policy.geometry.proposals(qr, qt):
             part = {k: v for k, v in part.items() if k != 'mask'}
             x, y, w, h = part['box']
-            if any(policy.box(c) == tuple(part['box']) for c in cs + oldadd):
+            if tuple(part['box']) in existing_boxes:
                 continue
             extras.append(dict(x=x, y=y, w=w, h=h, area=part['area'], score=-1.,
                                normal_support=0., aspect=max(w, h) / min(w, h),
@@ -205,14 +207,22 @@ def four_r(detector, pilot, snapshot, review_bank, normal_bank):
             raise ValueError('Fresh detector context is required')
         qr, qt = context.arrays(ref, target)
         # Frozen final replay used saved PNG arrays; match that quantization.
-        pred, _check = terminal.apply(snapshot, qr, qt, pred, review_bank, normal_bank)
+        pred, _check = terminal.apply(snapshot, qr, qt, pred, review_bank, normal_bank,
+                                      decision_only=os.environ.get('XRAY_5R_LOCAL_REVIEW') == '1')
         # Keep upstream old_kept unchanged: terminal filtering must not alter
         # the established visible-part duplicate-suppression semantics.
         return pred
 
+    def check_candidate(ref, target, candidate, threshold):
+        if candidate.get('recovery') == 'r4_visible_part':
+            return candidate, False
+        cached = state.get('recovery_checks', {}).get(id(candidate))
+        if cached is not None:
+            return copy.deepcopy(cached[0]), cached[1]
+        return original_check(ref, target, candidate, threshold)
+
     try:
-        detector.check_candidate = lambda ref, tar, c, t: ((c, False) if c.get('recovery') == 'r4_visible_part'
-                                                         else original_check(ref, tar, c, t))
+        detector.check_candidate = check_candidate
         pilot.overlapping = lambda c, previous: (any(policy.box(c) == policy.box(p) for p in previous)
                                                  if c.get('recovery') == 'r4_visible_part'
                                                  else original_overlap(c, previous))

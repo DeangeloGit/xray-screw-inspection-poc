@@ -95,11 +95,16 @@ def report(directory, job):
             + body + '</html>', encoding='utf-8')
     def card(c):
         row, candidate, state, key, group = c
+        reference = candidate.get('classification', {}).get('paired_evidence', {}).get('reference', {})
+        evidence_note = '<p>待測未達門檻，參照分數未計算。</p>' if reference.get('evaluated') is False else ''
+        experiment = candidate.get('classification', {}).get('r4_experiment', {})
+        if experiment.get('skipped') == 'geometry_ineligible':
+            evidence_note += '<p>物件範圍未達門檻，補提階段的雙尺寸分數未計算。</p>'
         return (f'<article id="case-{key}"><h3>{esc(row["file"])} #{esc(candidate["id"])}：{state}</h3>'
                 f'<p>分類：待確認（無人工類型標記） · <a href="machine.html">返回此機種</a> · '
                 f'<a href="groups.html#group-{group}">查看同類案例</a> · '
                 f'<a href="photo-{row["id"]}.html#case-{key}">查看照片</a></p>'
-                f'<p>左：參照圖；右：待測圖。框數不是螺絲顆數。</p><img loading="lazy" src="images/{key}.jpg"></article>')
+                + evidence_note + f'<p>左：參照圖；右：待測圖。框數不是螺絲顆數。</p><img loading="lazy" src="images/{key}.jpg"></article>')
     (directory / 'images').mkdir(exist_ok=True)
     for row in rows:
         if row['status'] != 'done':

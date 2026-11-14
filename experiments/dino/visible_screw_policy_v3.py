@@ -1,9 +1,9 @@
 """Runtime B-part rescue. Opaque rectangles are proposal context, never model input."""
-import hashlib,json,copy
+import hashlib,json,copy,os
 import numpy as np
 import correspondence_policy as base
 import visible_screw_geometry_v2 as geometry
-from dino_adapter import paired_decision
+from dino_adapter import PAIRED_POLICY, paired_decision
 from dino_paired_optimized import adjusted_image,features
 VERSION='4r-visible-screw-part-v3-20261106';BANK=None;CONFIG=None
 def configure(bank,config):
@@ -34,12 +34,29 @@ class Objects:
             if contain>=.25:choices.append((iou,contain,box(c),c))
         return max(choices,key=lambda z:z[:3])[-1] if choices else None
 
-def classify_part(snapshot,ref,target,extent):
-    pair={}
-    for side,a in [('reference',ref),('target',target)]:
-        crop=geometry.part_image(a,extent);im=adjusted_image(snapshot.manifest,crop);v=features(snapshot.manifest,snapshot.session,im);s=score(v)
-        pair[side]=dict(s,label='screw' if s['screw_margin']>=0 else 'non_screw',input_sha256=hashlib.sha256(im.tobytes()).hexdigest(),score_kind='exposed_part_50_positive_77_normal')
-    return pair
+def score_part(snapshot, array, extent):
+    crop = geometry.part_image(array, extent)
+    image = adjusted_image(snapshot.manifest, crop)
+    vector = features(snapshot.manifest, snapshot.session, image)
+    result = score(vector)
+    return dict(result, label='screw' if result['screw_margin'] >= 0 else 'non_screw',
+                input_sha256=hashlib.sha256(image.tobytes()).hexdigest(),
+                score_kind='exposed_part_50_positive_77_normal')
+
+
+def classify_part(snapshot, ref, target, extent):
+    """Compute both scores for offline evidence and diagnostic callers."""
+    return dict(reference=score_part(snapshot, ref, extent),
+                target=score_part(snapshot, target, extent))
+
+
+def classify_part_for_decision(snapshot, ref, target, extent):
+    measured = score_part(snapshot, target, extent)
+    if measured['screw_margin'] < CONFIG['target_min']:
+        return dict(target=measured, reference=dict(
+            evaluated=False, reason='target_below_visible_confidence_threshold'))
+    return dict(reference=score_part(snapshot, ref, extent), target=measured)
+
 
 def classify(snapshot,ref,target,query,objects):
     if query.get('recovery')!='r4_visible_part':
@@ -50,10 +67,23 @@ def classify(snapshot,ref,target,query,objects):
     context=CURRENT.get();qr,qt=context.arrays(ref,target) if context else [(np.clip(a,0,1)*255).astype('uint8').astype('float32')/255 for a in (ref,target)]
     canonical=objects.resolve_part(query)
     if canonical is None:raise ValueError('No image-derived exposed part supports this query')
-    extent=box(canonical);pair=classify_part(snapshot,qr,qt,extent);pred=paired_decision(pair['target'],pair['reference']);rules=[]
+    extent = box(canonical)
+    if os.environ.get('XRAY_5R_LOCAL_REVIEW') == '1':
+        pair = classify_part_for_decision(snapshot, qr, qt, extent)
+    else:
+        pair = classify_part(snapshot, qr, qt, extent)
+    reference_skipped = pair['reference'].get('evaluated') is False
+    if reference_skipped:
+        pred = dict(pair['target'], label='non_screw', decision_policy=PAIRED_POLICY,
+                    filter_recommendation='exclude', paired_evidence=pair)
+    else:
+        pred = paired_decision(pair['target'], pair['reference'])
+    rules = []
     if pair['target']['screw_margin']<CONFIG['target_min']:rules.append('r4_visible_confidence')
     if any(base.stability_policy.overlap(extent,b)[0]>=.8 for b in objects.old_kept):rules.append('r4_visible_duplicate')
     if rules:pred['filter_recommendation']='exclude'
     ident=hashlib.sha256(json.dumps([extent,canonical['visible_part']['occluder_box']]).encode()).hexdigest()[:16]
     pred.update(status='active',model_id=snapshot.manifest['model_id'],action='manual_review' if pred['filter_recommendation']=='keep' else 'discard',canonical_object=dict(version=VERSION,box=list(extent),query_box=list(box(query)),object_id=ident,reason='exposed_part_outside_occluder',fresh_inference=True),r4_experiment=dict(rules=rules),visible_part_experiment=dict(geometry=canonical['visible_part'],target_min=CONFIG['target_min'],occluder_pixels_in_input=0,uses_context_pixels=False,bank='47+3 B parts /65+12 reference normal parts'),decision_reason='4r 可見螺絲部位複核：模型只看遮擋物外側的局部與同位置參照，黑塊本體不輸入；'+('待測支持螺絲、參照不支持，保留。' if pred['filter_recommendation']=='keep' else '局部雙圖／信心條件未通過，或已有同物件警報，排除。'))
+    if reference_skipped:
+        pred['decision_reason'] = '待測未達可見部位門檻，參照分數未計算'
     return pred

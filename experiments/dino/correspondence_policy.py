@@ -11,10 +11,14 @@ class Objects(stability_policy.Objects):
     def __init__(self,ref,target,candidates):
         super().__init__(ref,target,candidates)
         self.contour_support=[]
+        self.contours_by_box = {}
         for obj in self.objects:
             c=obj['canonical']
             if max(c['w'],c['h'])<=32:
-                for g in contours(target,c):
+                extent = box(c)
+                if extent not in self.contours_by_box:
+                    self.contours_by_box[extent] = contours(target,c)
+                for g in self.contours_by_box[extent]:
                     if g['coverage']>=.5 and max(g['box'][2:])<=32:
                         self.contour_support.append((g['box'],obj))
     def resolve(self,query):
@@ -83,7 +87,9 @@ def classify(snapshot,ref,target,query,objects):
                 meta['consensus']=dict(reference='median_of_three',target='minimum_of_three',reference_max=-.02,target_min=.04)
                 replace(checked,'4r 低對比參照複核：兩圖共用待測明暗尺度，避免放大參照空白紋理；三種取圖的待測皆支持螺絲，參照中位分數支持不像螺絲，保留警報。')
         elif max(canonical['w'],canonical['h'])<=32:
-            candidates=contours(qtar,canonical)
+            candidates = objects.contours_by_box.get(box(canonical))
+            if candidates is None:
+                candidates = contours(qtar, canonical)
             eligible=[g for g in candidates if g['coverage']>=.5 and max(g['box'][2:])<=32 and (g['box'][2]*g['box'][3]>=1.5*canonical['w']*canonical['h'] or g['box'][2]>=1.4*canonical['w'] or g['box'][3]>=1.4*canonical['h'])]
             if eligible:
                 selected=max(eligible,key=lambda g:(g['box'][2]*g['box'][3],g['cutoff']));c=dict(canonical,**dict(zip(('x','y','w','h'),selected['box'])))

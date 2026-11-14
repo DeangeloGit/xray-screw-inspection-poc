@@ -1,4 +1,5 @@
 """Image-only 4r experiments. No answer files, filenames or coordinates are read here."""
+import os
 import hashlib
 import cv2
 import numpy as np
@@ -59,12 +60,13 @@ def supplemental(ref,target,mask,predicted,previous):
     return sorted(rows,key=lambda c:-c['score'])
 
 
-def scores(snapshot,ref,target,c,pad):
+def scores(snapshot,ref,target,c,pad, *, stop_on_target_failure=False):
     left,right=[im[pilot.select(c,pad)] for im in (ref,target)]
     m=snapshot.manifest;weights=pilot.core_mask(m,left,right)
     if weights is None:return None
     bank=snapshot.feature_bank;n=len(m['example_bank']['screw']['ids']);result=[]
-    for crop in (left,right):
+    crops = (right, left) if stop_on_target_failure else (left, right)
+    for crop in crops:
         im=adjusted_image(m,crop);a=np.asarray(im,np.float32)/255
         a=(a-np.asarray(m['mean'],np.float32))/np.asarray(m['std'],np.float32)
         raw=snapshot.session.run(None,{snapshot.session.get_inputs()[0].name:a.transpose(2,0,1)[None]})[0][0]
@@ -73,6 +75,11 @@ def scores(snapshot,ref,target,c,pad):
         similarities=[(bank[:,:,0]@v[0]).max(axis=1),bank[:,0,1]@v[1],bank[:,0,1]@v[2]]
         margins=[float(np.sort(s[:n])[-3:].mean()-np.sort(s[n:])[-3:].mean()) for s in similarities]
         result.append(dict(whole=margins[0],local=margins[1],focused=margins[2],input_sha256=hashlib.sha256(im.tobytes()).hexdigest()))
+        if stop_on_target_failure and len(result) == 1 and not sum(margins)/3 >= .04:
+            return dict(target=result[0], reference=dict(
+                evaluated=False, reason='target_below_two_crop_threshold'))
+    if stop_on_target_failure:
+        result.reverse()
     return dict(reference=result[0],target=result[1])
 
 
@@ -108,14 +115,20 @@ def rejection_rules(ref,target,c,views,geometry):
     return rules,evidence
 
 
-def qualifies(views,geometry):
-    if not geometry or not geometry[0] or geometry[0]['near_share']<.15:return False
-    for p in ('4','8'):
-        pair=views.get(p)
-        if pair is None:return False
-        margins={side:sum(pair[side][k] for k in ('whole','local','focused'))/3 for side in ('reference','target')}
-        if not (margins['reference']<0 and margins['target']>=.04):return False
-    return True
+def geometry_qualifies(geometry):
+    return bool(geometry and geometry[0] and not geometry[0]['near_share'] < .15)
+
+
+def view_qualifies(pair):
+    if pair is None or pair['reference'].get('evaluated') is False:
+        return False
+    margins = {side: sum(pair[side][k] for k in ('whole','local','focused'))/3
+               for side in ('reference','target')}
+    return margins['reference'] < 0 and margins['target'] >= .04
+
+
+def qualifies(views, geometry):
+    return geometry_qualifies(geometry) and all(view_qualifies(views.get(p)) for p in ('4', '8'))
 
 
 def improve(snapshot,ref,target,c,prediction,original_apply):
@@ -126,9 +139,21 @@ def improve(snapshot,ref,target,c,prediction,original_apply):
     if not new and prediction['filter_recommendation']=='keep' and c.get('recovery')!='overkill_pilot_similarity':
         return previous
     if max(c['w'],c['h'])>80:return previous
-    views={str(p):scores(snapshot,ref,target,c,p) for p in (4,8)}
-    geometry=extra_geometry(ref,target,c)
-    meta=dict(version=VERSION,new_proposal=new,views=views,geometry=geometry,rules=[])
+    promotion_only = new or previous['filter_recommendation'] != 'keep'
+    short_circuit = promotion_only and os.environ.get('XRAY_5R_LOCAL_REVIEW') == '1'
+    geometry = extra_geometry(ref, target, c)
+    views = {}
+    meta = dict(version=VERSION, new_proposal=new, views=views, geometry=geometry, rules=[])
+    if short_circuit and not geometry_qualifies(geometry):
+        meta['skipped'] = 'geometry_ineligible'
+    else:
+        for pad in (4, 8):
+            value = scores(snapshot, ref, target, c, pad, stop_on_target_failure=short_circuit)
+            views[str(pad)] = value
+            if short_circuit and not view_qualifies(value):
+                if pad == 4:
+                    meta['skipped_pads'] = [8]
+                break
     if not new and previous['filter_recommendation']=='keep':
         rules,evidence=rejection_rules(ref,target,c,views,geometry);meta.update(rules=rules,filter_evidence=evidence)
         if rules:
@@ -150,5 +175,5 @@ def improve(snapshot,ref,target,c,prediction,original_apply):
         return updated
     if new:
         meta['rules']=['r4_no_consensus']
-        return dict(previous,label='non_screw',action='discard',filter_recommendation='exclude',decision_reason='4r 補提候選未通過雙尺寸螺絲共識或物件範圍檢查；排除',r4_experiment=meta)
+        return dict(previous,label='non_screw',action='discard',filter_recommendation='exclude',decision_reason=('4r 補提候選物件範圍未達門檻，雙尺寸分數未計算' if meta.get('skipped') else '4r 補提候選未通過雙尺寸螺絲共識或物件範圍檢查；排除'),r4_experiment=meta)
     return dict(previous,r4_experiment=meta)

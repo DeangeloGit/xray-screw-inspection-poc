@@ -125,6 +125,7 @@ def refine(ref, aligned, mask):
     y_edges = np.linspace(ys.min(), ys.max() + 1, 4).astype(int)
     shifts = np.zeros((3, 3, 2), np.float32)
     regions = []
+    inner_masks = []
     for row in range(3):
         for col in range(3):
             x0, x1 = x_edges[col:col+2]
@@ -132,6 +133,10 @@ def refine(ref, aligned, mask):
             a = ref[y0:y1, x0:x1].copy()
             b = aligned[y0:y1, x0:x1].copy()
             roi_mask = mask[y0:y1, x0:x1]
+            roi_u8 = roi_mask.astype('uint8')
+            inner = cv2.erode(roi_u8, np.ones((15, 15), np.uint8)) > 0
+            base_inner = correlation(a, b, inner)
+            inner_masks.append((inner, base_inner))
             before = correlation(a, b, roi_mask)
             mat = np.eye(2, 3, dtype=np.float32)
             accepted = False
@@ -141,13 +146,11 @@ def refine(ref, aligned, mask):
                 cc, mat = cv2.findTransformECC(
                     a, b, mat, cv2.MOTION_TRANSLATION,
                     (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 50, .0001),
-                    roi_mask.astype('uint8') * 255, 5)
+                    roi_u8 * 255, 5)
                 corrected = cv2.warpAffine(b, mat, (a.shape[1], a.shape[0]),
                                           flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP,
                                           borderMode=cv2.BORDER_REFLECT)
-                inner = cv2.erode(roi_mask.astype('uint8'), np.ones((15, 15), np.uint8)) > 0
                 after = correlation(a, corrected, inner)
-                base_inner = correlation(a, b, inner)
                 before = base_inner
                 accepted = bool(cc > .82 and np.max(np.abs(mat[:, 2])) <= 6
                                 and after >= base_inner + .0001)
@@ -173,10 +176,8 @@ def refine(ref, aligned, mask):
                                 np.arange(ref.shape[0], dtype='float32'))
     mapx, mapy = base_x + flow[..., 0], base_y + flow[..., 1]
     corrected = cv2.remap(aligned, mapx, mapy, cv2.INTER_LINEAR, borderValue=1)
-    for region in regions:
+    for region, (inner, before) in zip(regions, inner_masks):
         x0, y0, x1, y1 = region['bbox']
-        inner = cv2.erode(mask[y0:y1, x0:x1].astype('uint8'), np.ones((15, 15), np.uint8)) > 0
-        before = correlation(ref[y0:y1, x0:x1], aligned[y0:y1, x0:x1], inner)
         after = correlation(ref[y0:y1, x0:x1], corrected[y0:y1, x0:x1], inner)
         region['before'] = round(before, 4)
         region['after'] = round(after, 4)
@@ -295,8 +296,9 @@ def structure_change_evidence(ref, target, candidate, threshold):
                 offset=float(offset), ratio=ratio, remaining=int(remaining))
 
 
-def proposals(ref, target, mask, threshold, structure_changes=None, similarity_recoveries=None):
-    predicted = compensate_brightness(ref, target)
+def proposals(ref, target, mask, threshold, structure_changes=None, similarity_recoveries=None, *, predicted=None):
+    if predicted is None:
+        predicted = compensate_brightness(ref, target)
     residual = cv2.erode(predicted, np.ones((7, 7), np.uint8)) - target
     shared_arrays = (cv2.erode(predicted, np.ones((15, 15), np.uint8)), predicted-target)
     candidates, _ = candidates_from_residual(ref, target, mask, threshold, predicted, residual, shared_arrays,
@@ -362,15 +364,22 @@ def candidates_from_residual(ref, target, mask, threshold, predicted, residual, 
                               cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)))
     # Separate a compact object from long connected residuals instead of dropping
     # the entire oversized component. Keep ordinary small components intact.
-    _, component_labels, component_stats, _ = cv2.connectedComponentsWithStats(binary)
+    n, component_labels, component_stats, _ = cv2.connectedComponentsWithStats(binary)
+    changed = False
     for index, (x, y, w, h, area) in enumerate(component_stats[1:], 1):
         if area > 1800 or max(w, h) > 110:
             region = (component_labels[y:y+h, x:x+w] == index).astype('uint8')
             separated = cv2.morphologyEx(region, cv2.MORPH_OPEN,
                                          cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)))
-            binary[y:y+h, x:x+w][region > 0] = separated[region > 0]
+            inside = region > 0
+            if not np.array_equal(region[inside], separated[inside]):
+                changed = True
+                binary[y:y+h, x:x+w][inside] = separated[inside]
 
-    n, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
+    if changed:
+        n, labels, stats, _ = cv2.connectedComponentsWithStats(binary)
+    else:
+        labels, stats = component_labels, component_stats
     candidates = []
     normal_nearby, signed_difference = shared_arrays if shared_arrays is not None else (cv2.erode(predicted, np.ones((15, 15), np.uint8)), predicted-target)
     for i in range(1, n):
@@ -479,7 +488,7 @@ def _detect(reference, target, name, threshold=.13, model_snapshot=None, output_
     r = context.reference.small
     reg = register(r, raw)
     mask = machine_mask(r) & reg['valid']
-    total = max(int(machine_mask(r).sum()), 1)
+    total = max(int(context.reference.machine.sum()), 1)
     coverage = int(mask.sum()) / total
     if coverage < .95:
         raise ValueError('待測影像未完整覆蓋正常參考機體，需重新拍攝／人工確認')
