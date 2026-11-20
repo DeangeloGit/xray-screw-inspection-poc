@@ -1,0 +1,331 @@
+{
+  "status": "implemented_shadow_not_improved",
+  "production_changed": false,
+  "automatic_exclusion_enabled": false,
+  "normal_state_confirmed": false,
+  "summary": {
+    "status": "completed",
+    "photos": 185,
+    "scope": "Fresh visible-object shadow segmentation and registration on prior validated outputs; no upstream DINO rerun",
+    "official_unchanged": true,
+    "official_answer_hits": 79,
+    "recommended_answer_hits": 79,
+    "unsafe_geometry_only_answer_hits": 79,
+    "exclusion_suggestions": 0,
+    "geometry_pass_photos": [],
+    "current_official_correct": 22,
+    "current_recommended_correct": 22,
+    "policy_sha256": "2e524b66724d0daab334eaa4ede442a192b2ae006eb5cfa1cc72adb77ae2939d"
+  },
+  "ng129": {
+    "candidate_id": 68,
+    "recommendation": "retain",
+    "mode": "shadow_only",
+    "normal_state_confirmed": false,
+    "automatic_exclusion_allowed": false,
+    "selected_reference_id": "history/ok-030",
+    "target_segmentation": {
+      "box": [
+        1261,
+        1246,
+        1463,
+        1467
+      ],
+      "objects": [
+        {
+          "box": [
+            1267,
+            1380,
+            9,
+            5
+          ],
+          "area": 44,
+          "cutoff": 0.2,
+          "thresholds": [
+            0.2,
+            0.3
+          ],
+          "stability_iou": 0.8148148148148148,
+          "semantic_identity_confirmed": false,
+          "normal_state_confirmed": false,
+          "object_id": 1
+        }
+      ],
+      "border_components_unresolved": 15,
+      "unresolved_merged_regions": [],
+      "query_visible_coverage": 0.0,
+      "segmentation_scope": "stable visible dark regions; not physical layer separation"
+    },
+    "reference_segmentation": {
+      "box": [
+        1261,
+        1246,
+        1463,
+        1467
+      ],
+      "objects": [
+        {
+          "box": [
+            1267,
+            1381,
+            10,
+            6
+          ],
+          "area": 54,
+          "cutoff": 0.3,
+          "thresholds": [
+            0.3,
+            0.4
+          ],
+          "stability_iou": 0.9,
+          "semantic_identity_confirmed": false,
+          "normal_state_confirmed": false,
+          "object_id": 1
+        },
+        {
+          "box": [
+            1415,
+            1423,
+            9,
+            9
+          ],
+          "area": 63,
+          "cutoff": 0.2,
+          "thresholds": [
+            0.2,
+            0.3
+          ],
+          "stability_iou": 0.875,
+          "semantic_identity_confirmed": false,
+          "normal_state_confirmed": false,
+          "object_id": 2
+        }
+      ],
+      "border_components_unresolved": 13,
+      "unresolved_merged_regions": [],
+      "query_visible_coverage": 0.0,
+      "segmentation_scope": "stable visible dark regions; not physical layer separation"
+    },
+    "pairs": [
+      {
+        "target_id": 1,
+        "reference_id": 1,
+        "fits": [
+          {
+            "valid": false,
+            "support_radius": 4,
+            "box": [
+              1263,
+              1376,
+              1280,
+              1389
+            ],
+            "reason": "insufficient_independent_visible_support"
+          },
+          {
+            "valid": true,
+            "support_radius": 8,
+            "box": [
+              1259,
+              1372,
+              1284,
+              1393
+            ],
+            "matrix": [
+              [
+                0.997842045640464,
+                0.0656601245205512,
+                -86.8703698017498
+              ],
+              [
+                -0.0656601245205512,
+                0.997842045640464,
+                88.36633515725998
+              ]
+            ],
+            "angle_degrees": 3.7647564646641456,
+            "maximum_motion": 2.739525004602351,
+            "training_correlation": 0.887732587620409,
+            "heldout_correlation": 0.8632217241904195,
+            "gain": 1.1507281862175394,
+            "offset": -0.028660162412219026,
+            "mask_iou": 0.7818181818181819,
+            "accepted_geometry": false,
+            "candidate_pixels_used": false,
+            "train_pixels": 224,
+            "heldout_pixels": 219
+          }
+        ],
+        "rank": -2.0
+      }
+    ],
+    "matches": [],
+    "query_owners": [],
+    "reason": "overlap_or_unresolved_query_object",
+    "geometric_evidence_passed": false
+  },
+  "audit": {
+    "status": "passed",
+    "all185_source_aligned_result_hashes_unchanged": true,
+    "official_answer_hits": 79,
+    "recommended_answer_hits": 79,
+    "geometry_only_answer_hits": 79,
+    "unknown_3129_3094_official_unchanged": true,
+    "location2300": {
+      "candidate_id": 173,
+      "recommendation": "retain",
+      "mode": "shadow_only",
+      "normal_state_confirmed": false,
+      "automatic_exclusion_allowed": false,
+      "reason": "independent_object_protected",
+      "core": {
+        "extent": [
+          1392,
+          972,
+          16,
+          15
+        ],
+        "windows": [
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 136,
+            "pad": 8,
+            "threshold": 159.0
+          },
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 137,
+            "pad": 12,
+            "threshold": 160.0
+          },
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 137,
+            "pad": 20,
+            "threshold": 160.0
+          }
+        ]
+      }
+    },
+    "tests_passed": 5,
+    "production_runtime_policy_sha256": "a895e2580e58c38cefe4d42161da8a8a9e6b14dbea3cfacfc29eec2d13741616",
+    "production_runtime_matches_previous": true,
+    "private_bank_contract_passed": true,
+    "visual_review": [
+      "ng129-ok030-segmentation.jpg"
+    ],
+    "visual_scope": "Assistant inspected original crops and stable visible regions; overlap unresolved, no new normal labels"
+  },
+  "policy": {
+    "version": "5r-visible-object-shadow-20261120",
+    "sha256": "2e524b66724d0daab334eaa4ede442a192b2ae006eb5cfa1cc72adb77ae2939d",
+    "rules": {
+      "pads": [
+        16,
+        32
+      ],
+      "search": 12,
+      "exclude_border": 4,
+      "minimum_correlation": 0.75,
+      "maximum_offset_disagreement": 2,
+      "gain_bounds": [
+        0.5,
+        2.0
+      ],
+      "residual_threshold": 0.13,
+      "maximum_remaining_fraction": 0.2,
+      "minimum_component_area": 20,
+      "maximum_candidate_side": 80
+    },
+    "levels": [
+      0.2,
+      0.3,
+      0.4,
+      0.5
+    ],
+    "stability_iou": 0.8,
+    "roi_pad": 96,
+    "support_radii": [
+      4,
+      8
+    ],
+    "holdout_block": 4,
+    "mode": "shadow only; never confirm normality or exclude",
+    "reference_selection_sha256": "430a0c57d717d63e321bdca0959f76ebd198a3b41673dc503fa4bdf4b9905757",
+    "manifest_sha256": "ec466f3fcc5561e9cd2b4c5ec7358c0da998e14519324b046d1c7007d7e0aa24"
+  },
+  "report": {
+    "status": "passed",
+    "photos": 185,
+    "candidates": 22387,
+    "groups": {
+      "current": {
+        "status": "passed",
+        "photos": 24,
+        "candidates": 4567,
+        "summary": {
+          "total": 24,
+          "completed": 24,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 10,
+          "ng_missed": 2,
+          "ok_false_alarm": 0,
+          "alarm_photos": 12,
+          "alignment_warnings": 12
+        }
+      },
+      "history-KPH33": {
+        "status": "passed",
+        "photos": 61,
+        "candidates": 9433,
+        "summary": {
+          "total": 61,
+          "completed": 61,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 47,
+          "ng_missed": 13,
+          "ok_false_alarm": 1,
+          "alarm_photos": 2,
+          "alignment_warnings": 3
+        }
+      },
+      "history-MPT10": {
+        "status": "passed",
+        "photos": 100,
+        "candidates": 8387,
+        "summary": {
+          "total": 100,
+          "completed": 99,
+          "errors": 0,
+          "reference_self": 1,
+          "ng_total": 10,
+          "ok_total": 89,
+          "ng_missed": 0,
+          "ok_false_alarm": 0,
+          "alarm_photos": 10,
+          "alignment_warnings": 10
+        }
+      }
+    },
+    "all_images_and_links_verified": true
+  }
+}

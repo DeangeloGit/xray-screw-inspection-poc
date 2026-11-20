@@ -1,0 +1,652 @@
+{
+  "status": "diagnosed_not_safe_to_exclude",
+  "automatic_exclusion_enabled": false,
+  "production_changed": false,
+  "photos": 185,
+  "scope": "Fresh diagnostic ablation on prior validated outputs; no upstream DINO rerun",
+  "current24_correct": 22,
+  "official_answer_hits": 79,
+  "hypothetical_answer_hits": 79,
+  "unknown_3129_3094_unchanged": true,
+  "ng129_retained": true,
+  "ng129_diagnosis": {
+    "candidate_id": 68,
+    "mode": "diagnostic_only",
+    "recommendation": "retain",
+    "automatic_exclusion_allowed": false,
+    "selected_reference_id": "history/ok-030",
+    "ablation": [
+      {
+        "pad": 16,
+        "original_active_pixels": 165,
+        "stages": [
+          {
+            "stage": "identity",
+            "dx": 0,
+            "dy": 0,
+            "gain": 1.0,
+            "offset": 0.0,
+            "outside_MAE": 0.25817614793777466,
+            "outside_correlation": 0.393050725829228,
+            "remaining_fraction": 0.9411007761955261,
+            "largest_residual_component": 158
+          },
+          {
+            "stage": "translation_only",
+            "dx": 4,
+            "dy": 3,
+            "gain": 1.0,
+            "offset": 0.0,
+            "outside_MAE": 0.1649913191795349,
+            "outside_correlation": 0.7179976438876924,
+            "remaining_fraction": 0.5461357831954956,
+            "largest_residual_component": 95
+          },
+          {
+            "stage": "exposure_only",
+            "dx": 0,
+            "dy": 0,
+            "gain": 0.3982935878784458,
+            "offset": 0.16798285475750932,
+            "outside_MAE": 0.24206557869911194,
+            "outside_correlation": 0.3930507289606958,
+            "remaining_fraction": 0.9198036193847656,
+            "largest_residual_component": 177
+          },
+          {
+            "stage": "translation_and_exposure",
+            "dx": 4,
+            "dy": 3,
+            "gain": 0.7243765744545796,
+            "offset": 0.0513184036322023,
+            "outside_MAE": 0.1720632165670395,
+            "outside_correlation": 0.7179976437301647,
+            "remaining_fraction": 0.5089161992073059,
+            "largest_residual_component": 73
+          }
+        ]
+      },
+      {
+        "pad": 32,
+        "original_active_pixels": 165,
+        "stages": [
+          {
+            "stage": "identity",
+            "dx": 0,
+            "dy": 0,
+            "gain": 1.0,
+            "offset": 0.0,
+            "outside_MAE": 0.19066420197486877,
+            "outside_correlation": 0.4057842111890003,
+            "remaining_fraction": 0.9411007761955261,
+            "largest_residual_component": 158
+          },
+          {
+            "stage": "translation_only",
+            "dx": 3,
+            "dy": 2,
+            "gain": 1.0,
+            "offset": 0.0,
+            "outside_MAE": 0.1481742262840271,
+            "outside_correlation": 0.6149852587223349,
+            "remaining_fraction": 0.6412177085876465,
+            "largest_residual_component": 120
+          },
+          {
+            "stage": "exposure_only",
+            "dx": 0,
+            "dy": 0,
+            "gain": 0.3964222387420205,
+            "offset": 0.16664778667034058,
+            "outside_MAE": 0.17239069938659668,
+            "outside_correlation": 0.40578421218254007,
+            "remaining_fraction": 0.9110702276229858,
+            "largest_residual_component": 175
+          },
+          {
+            "stage": "translation_and_exposure",
+            "dx": 3,
+            "dy": 2,
+            "gain": 0.6019763293400067,
+            "offset": 0.10539657327164867,
+            "outside_MAE": 0.1479927897453308,
+            "outside_correlation": 0.6149852588315464,
+            "remaining_fraction": 0.7003333568572998,
+            "largest_residual_component": 134
+          }
+        ]
+      }
+    ],
+    "grid": [
+      {
+        "box": [
+          1261,
+          1246,
+          1328,
+          1319
+        ],
+        "valid": true,
+        "score": 0.5942750937658726,
+        "dx": 0,
+        "dy": 1,
+        "gain": 0.65392722442468,
+        "offset": 0.14346719869957975,
+        "search_boundary": false,
+        "reliable": false,
+        "candidate_pixels_used": false,
+        "cell": "1-1"
+      },
+      {
+        "box": [
+          1328,
+          1246,
+          1395,
+          1319
+        ],
+        "valid": true,
+        "score": 0.5670593617391727,
+        "dx": 2,
+        "dy": 1,
+        "gain": 0.5242305723814287,
+        "offset": 0.14944746647145396,
+        "search_boundary": false,
+        "reliable": false,
+        "candidate_pixels_used": false,
+        "cell": "1-2"
+      },
+      {
+        "box": [
+          1395,
+          1246,
+          1463,
+          1319
+        ],
+        "valid": true,
+        "score": 0.7084345935077077,
+        "dx": -4,
+        "dy": -4,
+        "gain": 0.7471561995678415,
+        "offset": 0.19565580944353012,
+        "search_boundary": false,
+        "reliable": false,
+        "candidate_pixels_used": false,
+        "cell": "1-3"
+      },
+      {
+        "box": [
+          1261,
+          1319,
+          1328,
+          1393
+        ],
+        "valid": true,
+        "score": 0.7867831459353312,
+        "dx": 1,
+        "dy": 1,
+        "gain": 0.8997218246966773,
+        "offset": 0.036107019019261166,
+        "search_boundary": false,
+        "reliable": true,
+        "candidate_pixels_used": false,
+        "cell": "2-1"
+      },
+      {
+        "box": [
+          1328,
+          1319,
+          1395,
+          1393
+        ],
+        "valid": true,
+        "score": 0.6722973411429688,
+        "dx": 3,
+        "dy": 2,
+        "gain": 0.6305377313796259,
+        "offset": 0.08159185992823578,
+        "search_boundary": false,
+        "reliable": false,
+        "candidate_pixels_used": false,
+        "cell": "2-2"
+      },
+      {
+        "box": [
+          1395,
+          1319,
+          1463,
+          1393
+        ],
+        "valid": true,
+        "score": 0.6042409137132717,
+        "dx": -5,
+        "dy": -1,
+        "gain": 0.6336487271062251,
+        "offset": 0.196759501980175,
+        "search_boundary": false,
+        "reliable": false,
+        "candidate_pixels_used": false,
+        "cell": "2-3"
+      },
+      {
+        "box": [
+          1261,
+          1393,
+          1328,
+          1467
+        ],
+        "valid": true,
+        "score": 0.9264803017039132,
+        "dx": 1,
+        "dy": 1,
+        "gain": 0.8312749607976034,
+        "offset": 0.05433463124100971,
+        "search_boundary": false,
+        "reliable": true,
+        "candidate_pixels_used": false,
+        "cell": "3-1"
+      },
+      {
+        "box": [
+          1328,
+          1393,
+          1395,
+          1467
+        ],
+        "valid": true,
+        "score": 0.5477969481541167,
+        "dx": 1,
+        "dy": 1,
+        "gain": 0.5255771863314489,
+        "offset": 0.1324313858742395,
+        "search_boundary": false,
+        "reliable": false,
+        "candidate_pixels_used": false,
+        "cell": "3-2"
+      },
+      {
+        "box": [
+          1395,
+          1393,
+          1463,
+          1467
+        ],
+        "valid": true,
+        "score": 0.7418058821276405,
+        "dx": -9,
+        "dy": -11,
+        "gain": 0.6964942373217348,
+        "offset": 0.2247153153898223,
+        "search_boundary": false,
+        "reliable": false,
+        "candidate_pixels_used": false,
+        "cell": "3-3"
+      }
+    ],
+    "reliable_offset_spread": {
+      "dx": 0,
+      "dy": 0
+    },
+    "advice": "inspect_structure_state_and_separate_registration_anchors",
+    "limitation": "Image correspondence differences do not establish physical component identity, pose or defect label"
+  },
+  "anchor_control": {
+    "scope": "Diagnostic follow-up only; no decision rule changed",
+    "anchor_cells": [
+      "2-1",
+      "3-1"
+    ],
+    "dx": 1,
+    "dy": 1,
+    "ablation": [
+      {
+        "pad": 16,
+        "original_active_pixels": 165,
+        "stages": [
+          {
+            "stage": "identity",
+            "dx": 0,
+            "dy": 0,
+            "gain": 1.0,
+            "offset": 0.0,
+            "outside_MAE": 0.25817614793777466,
+            "outside_correlation": 0.393050725829228,
+            "remaining_fraction": 0.9411007761955261,
+            "largest_residual_component": 158
+          },
+          {
+            "stage": "translation_only",
+            "dx": 1,
+            "dy": 1,
+            "gain": 1.0,
+            "offset": 0.0,
+            "outside_MAE": 0.22698768973350525,
+            "outside_correlation": 0.5105326422283615,
+            "remaining_fraction": 0.8313816785812378,
+            "largest_residual_component": 161
+          },
+          {
+            "stage": "exposure_only",
+            "dx": 0,
+            "dy": 0,
+            "gain": 0.3982935878784458,
+            "offset": 0.16798285475750932,
+            "outside_MAE": 0.24206557869911194,
+            "outside_correlation": 0.3930507289606958,
+            "remaining_fraction": 0.9198036193847656,
+            "largest_residual_component": 177
+          },
+          {
+            "stage": "translation_and_exposure",
+            "dx": 1,
+            "dy": 1,
+            "gain": 0.5172280124622486,
+            "offset": 0.12279575502011245,
+            "outside_MAE": 0.22142456471920013,
+            "outside_correlation": 0.5105326438657465,
+            "remaining_fraction": 0.8125520944595337,
+            "largest_residual_component": 164
+          }
+        ]
+      },
+      {
+        "pad": 32,
+        "original_active_pixels": 165,
+        "stages": [
+          {
+            "stage": "identity",
+            "dx": 0,
+            "dy": 0,
+            "gain": 1.0,
+            "offset": 0.0,
+            "outside_MAE": 0.19066420197486877,
+            "outside_correlation": 0.4057842111890003,
+            "remaining_fraction": 0.9411007761955261,
+            "largest_residual_component": 158
+          },
+          {
+            "stage": "translation_only",
+            "dx": 1,
+            "dy": 1,
+            "gain": 1.0,
+            "offset": 0.0,
+            "outside_MAE": 0.17485299706459045,
+            "outside_correlation": 0.48266483724648596,
+            "remaining_fraction": 0.8313816785812378,
+            "largest_residual_component": 161
+          },
+          {
+            "stage": "exposure_only",
+            "dx": 0,
+            "dy": 0,
+            "gain": 0.3964222387420205,
+            "offset": 0.16664778667034058,
+            "outside_MAE": 0.17239069938659668,
+            "outside_correlation": 0.40578421218254007,
+            "remaining_fraction": 0.9110702276229858,
+            "largest_residual_component": 175
+          },
+          {
+            "stage": "translation_and_exposure",
+            "dx": 1,
+            "dy": 1,
+            "gain": 0.4730443341258291,
+            "offset": 0.1431001495727857,
+            "outside_MAE": 0.16449899971485138,
+            "outside_correlation": 0.48266484387983477,
+            "remaining_fraction": 0.8538120985031128,
+            "largest_residual_component": 175
+          }
+        ]
+      }
+    ]
+  },
+  "existing_registration": [
+    {
+      "key": "history/ng-129",
+      "source_raw_shape": [
+        3072,
+        3072
+      ],
+      "matrix": [
+        [
+          1.0027840361796474,
+          0.005097964313810434,
+          -2.3730034981289645
+        ],
+        [
+          -0.005097964313810434,
+          1.0027840361796474,
+          9.194257939273424
+        ]
+      ],
+      "rotation": 0,
+      "alignment_warning": true,
+      "local_regions": [
+        {
+          "region": "3-3",
+          "bbox": [
+            1192,
+            1110,
+            1436,
+            1468
+          ],
+          "before": 0.6743,
+          "after": 0.6763,
+          "dx": 0.0,
+          "dy": 0.0,
+          "refined": false,
+          "reliable": false
+        }
+      ],
+      "raw_crop_bounds": [
+        2543,
+        2488,
+        2945,
+        2890
+      ]
+    },
+    {
+      "key": "history/ok-030",
+      "source_raw_shape": [
+        3072,
+        3072
+      ],
+      "matrix": [
+        [
+          0.9973486374349357,
+          -0.00011166113789910713,
+          4.815904260832518
+        ],
+        [
+          0.00011166113789910713,
+          0.9973486374349357,
+          -8.016229014000862
+        ]
+      ],
+      "rotation": 0,
+      "alignment_warning": false,
+      "local_regions": [
+        {
+          "region": "3-3",
+          "bbox": [
+            1192,
+            1110,
+            1436,
+            1468
+          ],
+          "before": 0.9515,
+          "after": 0.9616,
+          "dx": -0.335,
+          "dy": 0.268,
+          "refined": true,
+          "reliable": true
+        }
+      ],
+      "raw_crop_bounds": [
+        2557,
+        2522,
+        2960,
+        2925
+      ]
+    }
+  ],
+  "audit": {
+    "status": "passed",
+    "all185_source_aligned_result_hashes_unchanged": true,
+    "official_answer_hits": 79,
+    "hypothetical_answer_hits": 79,
+    "unknown_3129_3094_official_unchanged": true,
+    "location2300": {
+      "candidate_id": 173,
+      "mode": "diagnostic_only",
+      "recommendation": "retain",
+      "automatic_exclusion_allowed": false,
+      "advice": "protect_independent_object",
+      "core": {
+        "extent": [
+          1392,
+          972,
+          16,
+          15
+        ],
+        "windows": [
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 136,
+            "pad": 8,
+            "threshold": 159.0
+          },
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 137,
+            "pad": 12,
+            "threshold": 160.0
+          },
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 137,
+            "pad": 20,
+            "threshold": 160.0
+          }
+        ]
+      }
+    },
+    "tests_passed": 10,
+    "source_originals_inspected": [
+      "ng-129-native-crop.png",
+      "ok-030-native-crop.png"
+    ],
+    "diagnostics_inspected": [
+      "ng129-ok030-wide-grid.jpg",
+      "spatial-correspondence.jpg",
+      "four-way-ablation.jpg"
+    ],
+    "visual_scope": "Assistant image review; not new human defect labels"
+  },
+  "policy": {
+    "version": "5r-structure-cause-audit-20261120",
+    "sha256": "eb40e1fc99eb3e31b4a9a777e3d0d6169f51cf87644ce9e92797683526dd700a",
+    "rules": {
+      "pads": [
+        16,
+        32
+      ],
+      "search": 12,
+      "exclude_border": 4,
+      "minimum_correlation": 0.75,
+      "maximum_offset_disagreement": 2,
+      "gain_bounds": [
+        0.5,
+        2.0
+      ],
+      "residual_threshold": 0.13,
+      "maximum_remaining_fraction": 0.2,
+      "minimum_component_area": 20,
+      "maximum_candidate_side": 80
+    },
+    "grid_padding": 96,
+    "grid_divisions": 3,
+    "mode": "diagnostic only; recommendations cannot exclude",
+    "reference_selection_sha256": "430a0c57d717d63e321bdca0959f76ebd198a3b41673dc503fa4bdf4b9905757",
+    "manifest_sha256": "ec466f3fcc5561e9cd2b4c5ec7358c0da998e14519324b046d1c7007d7e0aa24"
+  },
+  "report": {
+    "status": "passed",
+    "photos": 185,
+    "candidates": 22387,
+    "groups": {
+      "current": {
+        "status": "passed",
+        "photos": 24,
+        "candidates": 4567,
+        "summary": {
+          "total": 24,
+          "completed": 24,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 10,
+          "ng_missed": 2,
+          "ok_false_alarm": 0,
+          "alarm_photos": 12,
+          "alignment_warnings": 12
+        }
+      },
+      "history-KPH33": {
+        "status": "passed",
+        "photos": 61,
+        "candidates": 9433,
+        "summary": {
+          "total": 61,
+          "completed": 61,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 47,
+          "ng_missed": 13,
+          "ok_false_alarm": 1,
+          "alarm_photos": 2,
+          "alignment_warnings": 3
+        }
+      },
+      "history-MPT10": {
+        "status": "passed",
+        "photos": 100,
+        "candidates": 8387,
+        "summary": {
+          "total": 100,
+          "completed": 99,
+          "errors": 0,
+          "reference_self": 1,
+          "ng_total": 10,
+          "ok_total": 89,
+          "ng_missed": 0,
+          "ok_false_alarm": 0,
+          "alarm_photos": 10,
+          "alignment_warnings": 10
+        }
+      }
+    },
+    "all_images_and_links_verified": true
+  },
+  "limits": [
+    "Observed local projection/shape differences do not prove physical cause or normality",
+    "Unconstrained exposure-only fit is a diagnostic control, not a passing decision",
+    "Part-specific normal-pose registration is proposed, not implemented or validated for exclusion",
+    "Diagnostic cannot exclude; unchanged answers do not prove error-reduction effectiveness"
+  ]
+}

@@ -13,3 +13,10 @@ window.aiResultText=function(c){
  else if(c.score_kind==='detector_confidence')detail=' · 螺絲分數 '+c.screw_score.toFixed(3)+'／門檻 '+c.confidence_threshold;
  return 'AI 建議：'+(labels[c.label]||c.label)+detail+' · '+c.model_id+'（仍需人工確認）';
 };
+
+window.confirmedLocalReviewText=function(review,candidateId){
+ if(!review)return '';
+ if(review.status==='unavailable')return ' · U1局部參照複核不可用，原警報保留。';
+ if(review.suggested_exclusions?.includes(candidateId))return ' · U1局部參照複核：建議排除，但正式警報仍保留；請人工確認。';
+ return '';
+};

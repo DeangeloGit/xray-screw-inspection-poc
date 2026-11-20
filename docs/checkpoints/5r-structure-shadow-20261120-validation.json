@@ -1,0 +1,120 @@
+{
+  "status": "shadow_verified_not_effective_for_ng129",
+  "enable_automatic_exclusion": false,
+  "reason": "ng-129 correspondence and remaining-residual checks fail; no actual suggestions in all185",
+  "official_results_unchanged": true,
+  "photos": 185,
+  "current24_accuracy": "22/24",
+  "current24_OK_false_alarms": 0,
+  "current24_NG_no_alarms": 2,
+  "unknown_3129_3094_unchanged": true,
+  "official_answer_hits": 79,
+  "hypothetical_answer_hits": 79,
+  "suggested_exclusions": 0,
+  "shadow_policy": {
+    "sha256": "29e67ca2e9d330e8dd7a9c91fea05254f1eb7887a05dc1586a0380be86e96cc6",
+    "rules": {
+      "pads": [
+        16,
+        32
+      ],
+      "search": 12,
+      "exclude_border": 4,
+      "minimum_correlation": 0.75,
+      "maximum_offset_disagreement": 2,
+      "gain_bounds": [
+        0.5,
+        2.0
+      ],
+      "residual_threshold": 0.13,
+      "maximum_remaining_fraction": 0.2,
+      "minimum_component_area": 20,
+      "maximum_candidate_side": 80
+    },
+    "scope": "Frozen before evaluating 185 images; no tuning after results"
+  },
+  "full_original_image_reruns": [
+    {
+      "key": "NG-000010",
+      "official_candidates_counts_alignment_exact": true,
+      "shadow_matches_full_rerun": true,
+      "result_sha256": "f03f5c15ba8739ed0cbee8cc8b0f82d47216993c67714e8834b606b1789b88e0"
+    },
+    {
+      "key": "ng-129",
+      "official_candidates_counts_alignment_exact": true,
+      "shadow_matches_full_rerun": true,
+      "result_sha256": "7e5241d759cf35b8f21cb33272f9bd727ce6ccbd6609ea81749534326182dd08"
+    }
+  ],
+  "scope": "Fresh shadow on185 prior outputs; two fresh original-image end-to-end integrations; no claim of185 fresh upstream DINO runs",
+  "unit_tests_passed": 29,
+  "visual_review": [
+    "ng-129-diagnostic.jpg",
+    "NG-000010-diagnostic.jpg"
+  ],
+  "visual_scope": "Assistant inspected images; no new human labels",
+  "report": {
+    "status": "passed",
+    "photos": 185,
+    "candidates": 22387,
+    "groups": {
+      "current": {
+        "status": "passed",
+        "photos": 24,
+        "candidates": 4567,
+        "summary": {
+          "total": 24,
+          "completed": 24,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 10,
+          "ng_missed": 2,
+          "ok_false_alarm": 0,
+          "alarm_photos": 12,
+          "alignment_warnings": 12
+        }
+      },
+      "history-KPH33": {
+        "status": "passed",
+        "photos": 61,
+        "candidates": 9433,
+        "summary": {
+          "total": 61,
+          "completed": 61,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 47,
+          "ng_missed": 13,
+          "ok_false_alarm": 1,
+          "alarm_photos": 2,
+          "alignment_warnings": 3
+        }
+      },
+      "history-MPT10": {
+        "status": "passed",
+        "photos": 100,
+        "candidates": 8387,
+        "summary": {
+          "total": 100,
+          "completed": 99,
+          "errors": 0,
+          "reference_self": 1,
+          "ng_total": 10,
+          "ok_total": 89,
+          "ng_missed": 0,
+          "ok_false_alarm": 0,
+          "alarm_photos": 10,
+          "alignment_warnings": 10
+        }
+      }
+    },
+    "scope": "All complete official-result pages plus fresh shadow appendix"
+  },
+  "service": {
+    "mode": "shadow_only",
+    "version": "5r-structure-shadow-20261120"
+  }
+}

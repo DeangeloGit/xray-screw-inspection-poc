@@ -1,0 +1,323 @@
+{
+  "status": "offline_improvement_observed",
+  "automatic_exclusion_enabled": false,
+  "production_changed": false,
+  "normal_annotation_scope": "Only source ng128/130 U1, human confirmed in current user instruction",
+  "summary": {
+    "status": "completed",
+    "photos": 185,
+    "scope": "Fresh confirmed-local-reference shadow review on validated outputs; no upstream DINO rerun",
+    "official_unchanged": true,
+    "official_answer_hits": 79,
+    "hypothetical_answer_hits": 79,
+    "exclusion_suggestions": 4,
+    "suggestion_photos": [
+      {
+        "id": "history/ng-129",
+        "group": "history",
+        "key": "ng-129",
+        "label": "NG",
+        "official_kept": 10,
+        "hypothetical_kept": 9,
+        "official_exact": true,
+        "suggested_ids": [
+          68
+        ]
+      },
+      {
+        "id": "history/ng-131",
+        "group": "history",
+        "key": "ng-131",
+        "label": "NG",
+        "official_kept": 13,
+        "hypothetical_kept": 12,
+        "official_exact": true,
+        "suggested_ids": [
+          131
+        ]
+      },
+      {
+        "id": "history/ng-133",
+        "group": "history",
+        "key": "ng-133",
+        "label": "NG",
+        "official_kept": 13,
+        "hypothetical_kept": 12,
+        "official_exact": true,
+        "suggested_ids": [
+          131
+        ]
+      },
+      {
+        "id": "history/ng-134",
+        "group": "history",
+        "key": "ng-134",
+        "label": "NG",
+        "official_kept": 13,
+        "hypothetical_kept": 12,
+        "official_exact": true,
+        "suggested_ids": [
+          129
+        ]
+      }
+    ],
+    "current_official_correct": 22,
+    "current_hypothetical_correct": 22,
+    "current_photo_decisions_unchanged": true,
+    "policy_sha256": "50ed927ca5d985d01cc82744f51e64758cc5535f66744ef8b66371ffc72e82cc"
+  },
+  "ng129": {
+    "candidate_id": 68,
+    "mode": "offline_shadow_only",
+    "recommendation": "exclude_suggestion",
+    "automatic_exclusion_allowed": false,
+    "target_human_normal_confirmed": false,
+    "comparisons": [
+      {
+        "reference_id": "history/ng-128",
+        "views": [
+          {
+            "valid": true,
+            "pad": 16,
+            "score": 0.992602120883424,
+            "dx": -1,
+            "dy": -1,
+            "gain": 0.9919731948857885,
+            "offset": 0.002379293194792631,
+            "registration_uses_candidate": false,
+            "normal_region_covered": true,
+            "original_active_pixels": 165,
+            "remaining_fraction": 0.04335455596446991,
+            "largest_residual_component": 1
+          },
+          {
+            "valid": true,
+            "pad": 32,
+            "score": 0.9917731006418066,
+            "dx": -1,
+            "dy": -1,
+            "gain": 0.9936092671974788,
+            "offset": -0.002351865420194499,
+            "registration_uses_candidate": false,
+            "normal_region_covered": true,
+            "original_active_pixels": 165,
+            "remaining_fraction": 0.031133592128753662,
+            "largest_residual_component": 1
+          }
+        ],
+        "local_label_covered": true,
+        "correspondence_passed": true,
+        "offset_consistent": true,
+        "residual_explained": true,
+        "passed": true
+      },
+      {
+        "reference_id": "history/ng-130",
+        "views": [
+          {
+            "valid": true,
+            "pad": 16,
+            "score": 0.9981830989131387,
+            "dx": -1,
+            "dy": -1,
+            "gain": 0.9955590563439837,
+            "offset": 0.0023453713473582938,
+            "registration_uses_candidate": false,
+            "normal_region_covered": true,
+            "original_active_pixels": 165,
+            "remaining_fraction": 0.028509967029094696,
+            "largest_residual_component": 0
+          },
+          {
+            "valid": true,
+            "pad": 32,
+            "score": 0.9972961691492108,
+            "dx": -1,
+            "dy": -1,
+            "gain": 0.9938492687903273,
+            "offset": -0.0004196501012773135,
+            "registration_uses_candidate": false,
+            "normal_region_covered": true,
+            "original_active_pixels": 165,
+            "remaining_fraction": 0.02116743102669716,
+            "largest_residual_component": 0
+          }
+        ],
+        "local_label_covered": true,
+        "correspondence_passed": true,
+        "offset_consistent": true,
+        "residual_explained": true,
+        "passed": true
+      }
+    ],
+    "both_references_passed": true,
+    "reason": "two_confirmed_local_references_explain_difference"
+  },
+  "audit": {
+    "status": "passed",
+    "all185_source_aligned_result_hashes_unchanged": true,
+    "official_answer_hits": 79,
+    "hypothetical_answer_hits": 79,
+    "current24_candidates_identical_after_hypothetical_exclusions": true,
+    "unknown_3129_3094_official_and_hypothetical_unchanged": true,
+    "location2300": {
+      "candidate_id": 173,
+      "mode": "offline_shadow_only",
+      "recommendation": "retain",
+      "automatic_exclusion_allowed": false,
+      "target_human_normal_confirmed": false,
+      "reason": "independent_object_protected",
+      "core": {
+        "extent": [
+          1392,
+          972,
+          16,
+          15
+        ],
+        "windows": [
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 136,
+            "pad": 8,
+            "threshold": 159.0
+          },
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 137,
+            "pad": 12,
+            "threshold": 160.0
+          },
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 137,
+            "pad": 20,
+            "threshold": 160.0
+          }
+        ]
+      }
+    },
+    "tests_passed": 6,
+    "production_runtime_policy_sha256": "a895e2580e58c38cefe4d42161da8a8a9e6b14dbea3cfacfc29eec2d13741616",
+    "production_runtime_matches_previous": true,
+    "private_bank_contract_passed": true,
+    "existing_dependencies_SHA_unchanged": true,
+    "official_kept_candidates": 151,
+    "hypothetical_kept_candidates": 147,
+    "visual_review": [
+      "all-four-suggestions.jpg",
+      "ng129-residuals.png",
+      "2300-proof.jpg"
+    ],
+    "normal_annotations_scope": "User confirmed only ng128 U1 and ng130 U1; suggested target regions have no new human labels"
+  },
+  "policy": {
+    "version": "5r-confirmed-local-reference-offline-20261120",
+    "sha256": "50ed927ca5d985d01cc82744f51e64758cc5535f66744ef8b66371ffc72e82cc",
+    "rules": {
+      "pads": [
+        16,
+        32
+      ],
+      "search": 12,
+      "exclude_border": 4,
+      "minimum_correlation": 0.75,
+      "maximum_offset_disagreement": 2,
+      "gain_bounds": [
+        0.5,
+        2.0
+      ],
+      "residual_threshold": 0.13,
+      "maximum_remaining_fraction": 0.2,
+      "minimum_component_area": 20,
+      "maximum_candidate_side": 80
+    },
+    "dependencies": {
+      "structure_shadow5r.py": "29e67ca2e9d330e8dd7a9c91fea05254f1eb7887a05dc1586a0380be86e96cc6",
+      "ok_reference_shadow5r.py": "430a0c57d717d63e321bdca0959f76ebd198a3b41673dc503fa4bdf4b9905757",
+      "structure_cause_shadow5r.py": "eb40e1fc99eb3e31b4a9a777e3d0d6169f51cf87644ce9e92797683526dd700a",
+      "enclosure_rescue5r.py": "a5b0c1277afce115c0c89c23f9823934ecb6d5f485f91d25951c1c96b17b731c"
+    },
+    "confirmed_references_sha256": "ab88bd3b75417dcf0a4ca055d8c4f2b045186949e19aef138ee224d1f811bfd8",
+    "manifest_sha256": "ec466f3fcc5561e9cd2b4c5ec7358c0da998e14519324b046d1c7007d7e0aa24",
+    "mode": "offline only; two references must pass; no production changes"
+  },
+  "report": {
+    "status": "passed",
+    "photos": 185,
+    "candidates": 22387,
+    "groups": {
+      "current": {
+        "status": "passed",
+        "photos": 24,
+        "candidates": 4567,
+        "summary": {
+          "total": 24,
+          "completed": 24,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 10,
+          "ng_missed": 2,
+          "ok_false_alarm": 0,
+          "alarm_photos": 12,
+          "alignment_warnings": 12
+        }
+      },
+      "history-KPH33": {
+        "status": "passed",
+        "photos": 61,
+        "candidates": 9433,
+        "summary": {
+          "total": 61,
+          "completed": 61,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 47,
+          "ng_missed": 13,
+          "ok_false_alarm": 1,
+          "alarm_photos": 2,
+          "alignment_warnings": 3
+        }
+      },
+      "history-MPT10": {
+        "status": "passed",
+        "photos": 100,
+        "candidates": 8387,
+        "summary": {
+          "total": 100,
+          "completed": 99,
+          "errors": 0,
+          "reference_self": 1,
+          "ng_total": 10,
+          "ok_total": 89,
+          "ng_missed": 0,
+          "ok_false_alarm": 0,
+          "alarm_photos": 10,
+          "alignment_warnings": 10
+        }
+      }
+    },
+    "all_images_and_links_verified": true
+  },
+  "limitations": [
+    "Same-batch local-reference evidence, not independent future-data validation",
+    "No new human normal labels for target ng129/ng131/ng133/ng134",
+    "No upstream DINO rerun; shadow replay on validated outputs"
+  ]
+}

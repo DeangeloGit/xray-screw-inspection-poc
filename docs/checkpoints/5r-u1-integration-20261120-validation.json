@@ -1,0 +1,84 @@
+{
+  "status": "passed",
+  "version": "5r-confirmed-U1-suggestions-20261120",
+  "mode": "suggestion_only",
+  "automatic_exclusion": false,
+  "scope": "MPT10 confirmed U1 only; exact validated Golden and two confirmed local references",
+  "reference_package_sha256": "d9aa9df695227796c49069029d4f97f998f75221f65a1884b76cd63670fb26cd",
+  "formal_entry": "live5r_spatial_service.app POST /api/5r/batches",
+  "fresh_complete_detector_photos": 185,
+  "reference_self_comparisons": 1,
+  "retained_candidates": 151,
+  "all_candidates": 22387,
+  "current_24": {
+    "total": 24,
+    "completed": 24,
+    "errors": 0,
+    "reference_self": 0,
+    "ng_total": 14,
+    "ok_total": 10,
+    "ng_missed": 2,
+    "ok_false_alarm": 0,
+    "alarm_photos": 12,
+    "alignment_warnings": 12
+  },
+  "current_correct_photos": 22,
+  "original_manual_marks": 101,
+  "original_hits": 79,
+  "current_hits": 79,
+  "lost_hits": 0,
+  "suggested_exclusions": [
+    {
+      "id": "history/ng-134",
+      "candidate_id": 129
+    },
+    {
+      "id": "history/ng-129",
+      "candidate_id": 68
+    },
+    {
+      "id": "history/ng-131",
+      "candidate_id": 131
+    },
+    {
+      "id": "history/ng-133",
+      "candidate_id": 131
+    }
+  ],
+  "suggestions_remove_official_alarms": false,
+  "localization_2300": {
+    "candidate_id": 173,
+    "core_inside_alarm": true,
+    "raw_tiff_visual_review": "passed"
+  },
+  "unconfirmed_3129_3094": "unchanged",
+  "exact_alarm_geometry_decisions": "passed",
+  "rendered_image_checks": 925,
+  "report_images_verified": 22405,
+  "unpaired_annotations": 12,
+  "same_station_pre_integration_full_api_controls": 3,
+  "older_baseline_scores_identical": false,
+  "legacy_difference_scope": "All measured deltas are retained, without applying a numeric acceptance tolerance or changing any detector threshold. Older GPU/51-positive history and current CPU/52-positive station are different baselines.",
+  "largest_measured_legacy_numeric_delta": 0.03256881237030029,
+  "synthetic_tests": {
+    "integration": 7,
+    "local_policy": 6,
+    "folder_batch": 2,
+    "status": "passed"
+  },
+  "real_image_advisory_checks": 7,
+  "real_image_fault_injections": 6,
+  "http_service": "passed",
+  "installation": "passed",
+  "formal_code_sha256": {
+    "experiments/dino/spatial5r_runtime.py": "5c3a487fdad1430f3cc1f4f1990d1acb4321444c4d16402e5a821bb763fd4481",
+    "experiments/dino/confirmed_local_service5r.py": "a665ad8469c52822f1ae2682fdf04ff44076be57b4b7f48c16bb4e74a9b59043",
+    "experiments/dino/live5r_spatial_service.py": "30c73698b4b0a44347e569f8a5515d69e8cd10828a809769b8c5f96b9a850620",
+    "folder_batch5r.py": "ad53a3d25d8349e4cd628635d6829db2003f74c3629bfab7e683f3a132fcb23e",
+    "static/user.js": "36cd940dd3a31b764ca1800f2403d467547a9c76cf1e5e5fae80061f0b405d83",
+    "static/ai-result.js": "f337b0ab86c600b1b456dd703a401b6a830cb9dd42c39ded3adb8bf18415c9a2"
+  },
+  "full_report": "workspace/u1-integrated-20261120/report/index.html",
+  "private_data_in_git": false,
+  "new_private_package_uploaded": false
+}

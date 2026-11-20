@@ -85,6 +85,7 @@ def report(directory, job):
     rows = job['rows']
     groups = defaultdict(list)
     cases = []
+    local_reviews = {}
     def page(name, title, body):
         (directory / name).write_text('<!doctype html><html lang="zh-Hant"><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width"><title>' + esc(title) + '</title>'
@@ -100,6 +101,11 @@ def report(directory, job):
         experiment = candidate.get('classification', {}).get('r4_experiment', {})
         if experiment.get('skipped') == 'geometry_ineligible':
             evidence_note += '<p>物件範圍未達門檻，補提階段的雙尺寸分數未計算。</p>'
+        local_review = local_reviews.get(row['id'], {})
+        if candidate['id'] in local_review.get('suggested_exclusions', []):
+            evidence_note += '<p><b>局部參照複核：建議排除，但正式警報仍保留。</b>此為自動建議，不是新增人工正常標籤。</p>'
+            if local_review.get('evidence_file') == 'confirmed-local-suggestions.json':
+                evidence_note += f'<p><a href="runs/{esc(row["id"])}/confirmed-local-suggestions.json">查看兩個局部參照的複核證據</a></p>'
         return (f'<article id="case-{key}"><h3>{esc(row["file"])} #{esc(candidate["id"])}：{state}</h3>'
                 f'<p>分類：待確認（無人工類型標記） · <a href="machine.html">返回此機種</a> · '
                 f'<a href="groups.html#group-{group}">查看同類案例</a> · '
@@ -111,6 +117,7 @@ def report(directory, job):
             continue
         path = directory / 'runs' / row['id']
         result = json.loads((path / 'result.json').read_text(encoding='utf-8'))
+        local_reviews[row['id']] = result.get('confirmed_local_review5r', {})
         if row['kept'] != len(result['candidates']) or row['removed'] != len(result['filtered_candidates']):
             raise ValueError('照片候選統計不符：'+row['file'])
         local = []
@@ -137,6 +144,13 @@ def report(directory, job):
                 canvas.save(directory / 'images' / (key+'.jpg'), quality=80)
         if len(ids) != len(set(ids)) or len(ids) != result['pre_ai_count']:
             raise ValueError('候選覆蓋數不符：'+row['file'])
+        local_review = local_reviews[row['id']]
+        local_note = ''
+        if local_review:
+            local_note = '<p>U1局部參照複核：僅顯示建議，所有原警報仍保留；建議 '+str(len(local_review.get('suggested_exclusions', [])))+' 框。'
+            if local_review.get('status') != 'completed':
+                local_note += esc(local_review.get('reason', '未套用'))
+            local_note += '</p>'
         body = (f'<a href="index.html">總結果</a> · <a href="machine.html">返回此機種</a> · '
                 f'<a href="groups.html">查看同類案例</a><h1>{esc(row["file"])}</h1>'
                 f'<p>{esc(verdict(row))}；分類：待確認；保留 {row["kept"]} 框／排除 {row["removed"]} 框。</p>'
@@ -144,7 +158,7 @@ def report(directory, job):
                 f'<div>參照<img src="runs/{row["id"]}/reference.png"></div>'
                 f'<div>待測<img src="runs/{row["id"]}/aligned.png"></div></div>'
                 f'<a href="runs/{row["id"]}/result.json">完整判斷資料</a>'
-                '<h2>全部保留／排除候選</h2>'+(''.join(card(c) for c in local) or '<p>零候選</p>'))
+                +local_note+'<h2>全部保留／排除候選</h2>'+(''.join(card(c) for c in local) or '<p>零候選</p>'))
         page('photo-'+row['id']+'.html', row['file'], body)
     for row in rows:
         if row['status'] == 'error':

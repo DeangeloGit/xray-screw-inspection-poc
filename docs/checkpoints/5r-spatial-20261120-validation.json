@@ -1,0 +1,147 @@
+{
+  "status": "passed_with_documented_limits",
+  "branch": "codex/5r2-inspection-context",
+  "base": "60a44c8033186b8a8d94bc5c263c434ed58a5e5d",
+  "current": {
+    "full_raw_rerun": 24,
+    "original_correct": 16,
+    "regressed": [],
+    "correct": 22,
+    "accuracy": 0.9166666666666666,
+    "ok_false_alarm_before": 3,
+    "ok_false_alarm_after": 0,
+    "ng_no_alarm_before": 5,
+    "ng_no_alarm_after": 2,
+    "unknown_unchanged": [
+      "NG-000002",
+      "NG-000003"
+    ]
+  },
+  "historical": {
+    "photos": 161,
+    "scope": "New stages rerun on frozen base detections; not 161 full raw reruns",
+    "original_kept": 115,
+    "current_kept": 115,
+    "answer_hits_before": 79,
+    "answer_hits_after": 79,
+    "new_false_alarms": 0
+  },
+  "stability": {
+    "tests": 1150,
+    "new_losses": 0,
+    "scope": "New fragment veto on protected historical retained candidates under transformed inputs; not fresh base detector inference"
+  },
+  "entry_full_reruns": 4,
+  "entry_stage_equivalence": [
+    {
+      "key": "OK-000004",
+      "identical": {
+        "candidates": true,
+        "filtered_candidates": true,
+        "matrix": true,
+        "local_alignment": true
+      }
+    },
+    {
+      "key": "NG-000008",
+      "identical": {
+        "candidates": true,
+        "filtered_candidates": true,
+        "matrix": true,
+        "local_alignment": true
+      }
+    },
+    {
+      "key": "ng-135",
+      "identical": {
+        "candidates": false,
+        "filtered_candidates": false,
+        "matrix": true,
+        "local_alignment": true,
+        "all_candidate_geometry_and_decisions": true,
+        "note": "Historical raw replay has score and metadata differences; not byte-identical classification evidence"
+      }
+    }
+  ],
+  "unit_tests": 21,
+  "report": {
+    "status": "passed",
+    "groups": {
+      "history-KPH33": {
+        "status": "passed",
+        "photos": 61,
+        "candidates": 9433,
+        "summary": {
+          "total": 61,
+          "completed": 61,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 47,
+          "ng_missed": 13,
+          "ok_false_alarm": 1,
+          "alarm_photos": 2,
+          "alignment_warnings": 3
+        }
+      },
+      "history-MPT10": {
+        "status": "passed",
+        "photos": 100,
+        "candidates": 8387,
+        "summary": {
+          "total": 100,
+          "completed": 99,
+          "errors": 0,
+          "reference_self": 1,
+          "ng_total": 10,
+          "ok_total": 89,
+          "ng_missed": 0,
+          "ok_false_alarm": 0,
+          "alarm_photos": 10,
+          "alignment_warnings": 10
+        }
+      },
+      "current": {
+        "status": "passed",
+        "photos": 24,
+        "candidates": 4567,
+        "summary": {
+          "total": 24,
+          "completed": 24,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 10,
+          "ng_missed": 2,
+          "ok_false_alarm": 0,
+          "alarm_photos": 12,
+          "alignment_warnings": 12
+        }
+      }
+    },
+    "total_photos": 185,
+    "total_candidates": 22387
+  },
+  "policy_hashes": {
+    "spatial5r.py": "2db72a0ce4881724b78728667cddc7533fa420735ce3109afd2278ea8c6dc781",
+    "fragment_core_guard5r.py": "9ce4e5ab649902e3cea7717eb1e27adb315955d6d16d4f8f7be4dbd1a507236b",
+    "enclosure_guard5r.py": "ed9805913542d9bc0c9970dd0c55ccaac0576ad669d187ceb33a27a226b924fa",
+    "spatial5r_runtime.py": "4a2b865cea2bb3dbf016b0fc6bba1cd7d431106ae5884beac7648ca5346fd4af",
+    "live5r_spatial_service.py": "26aaa8a64e65aaa0beed6031d888f58e411c1711cf2493867d9e4c00b5953a01"
+  },
+  "limits": [
+    "2300 right-edge candidate 173 is covered but still excluded by DINO; other alarms do not establish localization success",
+    "3129 and 3094 defect positions remain unknown; both kept in denominator",
+    "Conservative core protection preserves some existing suspected false alarms in NG photos",
+    "No claim of guaranteed accuracy on unseen images"
+  ],
+  "evidence": {
+    "preflight.json": "a08bb742f9566994c14d477c0103b461127e4963180b9217ec6ea45249b29901",
+    "baseline-equivalence.json": "97c6294ecb6fe6a9a95cd269758c539bc2952fb9e8fa1b48c40b2e1d8ba38034",
+    "answer-verification.json": "803bd81607a97db30d403ccc8c8969cb13112441df21f899c6be41b8543da9c1",
+    "stability-core-protected.json": "fdcfa402f16d5883fb4340a7169391719ba2f269d5bf66231dbee87ed6163658",
+    "service-check.json": "30255f748eba3aaa7caad56d2a33eb8c4f22251825a8e4417da9eeb3ac276cca",
+    "final-core/summary.json": "ec15a01c059fb3143244d992367a8a30683f27720a5f8bfe3f55900d041e53fa",
+    "entry-final/summary.json": "75ba021c4af0138c11f094a6162366fe77999ae40e64c48ad0fa174b80c91375"
+  }
+}

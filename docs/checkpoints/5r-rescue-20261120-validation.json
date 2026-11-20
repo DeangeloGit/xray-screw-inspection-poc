@@ -1,0 +1,242 @@
+{
+  "status": "passed_with_documented_limits",
+  "version": "5r-stable-enclosure-rescue-20261120",
+  "branch": "codex/5r2-inspection-context",
+  "base": "60a44c8033186b8a8d94bc5c263c434ed58a5e5d",
+  "current": {
+    "photos": 24,
+    "OK": 10,
+    "NG": 14,
+    "OK_false_alarms": 0,
+    "NG_no_alarms": 2,
+    "correct": 22,
+    "accuracy": 0.9166666666666666,
+    "retained_candidate_frames": 35,
+    "scope": "Photo-level folder labels; not all-screw localization accuracy"
+  },
+  "prior_22_correct_preserved": true,
+  "unknown_3129_3094_identical": true,
+  "localization_2300": {
+    "status": "passed",
+    "candidate_id": 173,
+    "classification": "keep",
+    "stable_geometry": {
+      "extent": [
+        1392,
+        972,
+        16,
+        15
+      ],
+      "windows": [
+        {
+          "box": [
+            1392,
+            972,
+            16,
+            15
+          ],
+          "area": 136,
+          "pad": 8,
+          "threshold": 159.0
+        },
+        {
+          "box": [
+            1392,
+            972,
+            16,
+            15
+          ],
+          "area": 137,
+          "pad": 12,
+          "threshold": 160.0
+        },
+        {
+          "box": [
+            1392,
+            972,
+            16,
+            15
+          ],
+          "area": 137,
+          "pad": 20,
+          "threshold": 160.0
+        }
+      ]
+    },
+    "source_polygon": [
+      [
+        1422.219970703125,
+        1171.8599853515625
+      ],
+      [
+        1374.8499755859375,
+        1173.780029296875
+      ],
+      [
+        1374.510009765625,
+        1120.1700439453125
+      ],
+      [
+        1421.8800048828125,
+        1118.22998046875
+      ]
+    ],
+    "core_source_polygon": [
+      [
+        1416.2510986328125,
+        1160.332275390625
+      ],
+      [
+        1384.6876220703125,
+        1161.699951171875
+      ],
+      [
+        1384.4971923828125,
+        1131.919189453125
+      ],
+      [
+        1416.0609130859375,
+        1130.547119140625
+      ]
+    ],
+    "core_inside_drawn_alarm": true,
+    "views": [
+      {
+        "pad": 2,
+        "target": 0.11406746506690979,
+        "reference": -0.1400657296180725
+      },
+      {
+        "pad": 4,
+        "target": 0.045050352811813354,
+        "reference": -0.11098234355449677
+      }
+    ],
+    "result_sha256": "f0849b10913485fd3455f915f24b7be48d57c752d450e23ab5904e1155ba2594",
+    "visual_review": "Original TIFF, paired crop, and actual runtime all_overlay crop inspected; screw head and shank are inside candidate173"
+  },
+  "visual_review": {
+    "status": "passed",
+    "review_type": "assistant_visual_inspection_not_a_new_user_annotation",
+    "candidate_id": 173,
+    "physical_object": "visible loose screw head and shank at right enclosure in aligned view",
+    "original_source_view": "Native TIFF is 180 degrees opposite the aligned report",
+    "actual_runtime_alarm_number_visible": 173,
+    "core_inside_source_alarm": true,
+    "images": {
+      "2300-proof.jpg": "e7cd79fb2b307d9016730da4aea97ec6632c7e6ecd44723a35ed20b5a7f42dc3",
+      "2300-runtime-overlay.png": "840c0c4ca6fbe4513fcb099824dfa3eb1c0496aa1302c4fe3162aba17bafd0e7"
+    },
+    "result_sha256": "f0849b10913485fd3455f915f24b7be48d57c752d450e23ab5904e1155ba2594"
+  },
+  "history": {
+    "photos": 161,
+    "new_stage_replay_all_161_passed": true,
+    "full_original_image_reruns": 10,
+    "frozen_base_plus_rescue": 151,
+    "retained_before": 115,
+    "retained_after": 116,
+    "new_rescue_OK_false_alarms": 0,
+    "upstream_differences": [
+      {
+        "key": "ng-129",
+        "added": [
+          68
+        ]
+      }
+    ],
+    "old_answer_hits": 79,
+    "new_answer_hits": 79,
+    "answer_matching_scope": "Recomputed against human marks after fresh full runs of 10 original NG images"
+  },
+  "stability": {
+    "tests": 840,
+    "expected_target_successes": 10,
+    "unexpected_promotions": 0,
+    "scope": "New rescue on transformed frozen candidate inputs; not transformed full detector reruns"
+  },
+  "unit_tests_passed": 26,
+  "policy_hashes": {
+    "spatial5r.py": "2db72a0ce4881724b78728667cddc7533fa420735ce3109afd2278ea8c6dc781",
+    "fragment_core_guard5r.py": "9ce4e5ab649902e3cea7717eb1e27adb315955d6d16d4f8f7be4dbd1a507236b",
+    "enclosure_guard5r.py": "ed9805913542d9bc0c9970dd0c55ccaac0576ad669d187ceb33a27a226b924fa",
+    "enclosure_rescue5r.py": "a5b0c1277afce115c0c89c23f9823934ecb6d5f485f91d25951c1c96b17b731c",
+    "spatial5r_runtime.py": "dfd43f313a4e25b87d9b7d07cb0e00309575d630d0acee7f727bf4428194f1d0",
+    "live5r_spatial_service.py": "3a623e88dd423a1616e60fd853cdf0ad6b97429a97fd1db53660c382223cc2c7"
+  },
+  "report": {
+    "photos": 185,
+    "candidates": 22387,
+    "groups": {
+      "current": {
+        "status": "passed",
+        "photos": 24,
+        "candidates": 4567,
+        "summary": {
+          "total": 24,
+          "completed": 24,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 10,
+          "ng_missed": 2,
+          "ok_false_alarm": 0,
+          "alarm_photos": 12,
+          "alignment_warnings": 12
+        }
+      },
+      "history-KPH33": {
+        "status": "passed",
+        "photos": 61,
+        "candidates": 9433,
+        "summary": {
+          "total": 61,
+          "completed": 61,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 47,
+          "ng_missed": 13,
+          "ok_false_alarm": 1,
+          "alarm_photos": 2,
+          "alignment_warnings": 3
+        }
+      },
+      "history-MPT10": {
+        "status": "passed",
+        "photos": 100,
+        "candidates": 8387,
+        "summary": {
+          "total": 100,
+          "completed": 99,
+          "errors": 0,
+          "reference_self": 1,
+          "ng_total": 10,
+          "ok_total": 89,
+          "ng_missed": 0,
+          "ok_false_alarm": 0,
+          "alarm_photos": 10,
+          "alignment_warnings": 10
+        }
+      }
+    }
+  },
+  "evidence_sha256": {
+    "preflight.json": "79f078d811cb317f7a5a1d711bea5390589c44e556f6f084437a8328ae75bb96",
+    "answer-verification.json": "8415be709428153c4d8087b0cfe5d717d7860172d0b06c7d8e16796666b9d346",
+    "2300-localization.json": "4cf710e0c42d0c1c58b1ded9326397ade2f23c492bca2fe162dd0d15ad6677b3",
+    "visual-review.json": "1fb181058443a3ad24b17467411c9fc2c9375313d6b1dd24f6b35290b18a5975",
+    "service-check.json": "c8ab2ebcfcc12266cfb10b97ce3a8f81e30b0f7a97c9a8ccc776f6f2a2364348",
+    "production-stability.json": "d9b3f72f1b0e0b8384d7feb1b2b395aed1f748ebac57daa61eb0d8388aceb281",
+    "final/summary.json": "e25ee9304a8cb2c61a1ac9b08227f53aace3879913c8dafe8d87ddfb810c23bc",
+    "history-post/summary.json": "6e9a10c1d616b37205fcf76aef3c21412e12456651ada3359d4946c97c5611a8"
+  },
+  "limitations": [
+    "3129 and 3094 positions remain unknown; no relabeling or special case",
+    "Photo accuracy remains 22/24: 2300 already had unrelated alarms, this change repairs localization",
+    "Existing unrelated false alarms in NG photos were conservatively preserved",
+    "Historical full raw reruns cover 10 answered NG images, not all 161",
+    "Historical original bank had 51 screw examples, current station has 52; upstream changes are reported separately from this rescue",
+    "No guarantee of accuracy on unseen images"
+  ]
+}

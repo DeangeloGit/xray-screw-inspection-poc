@@ -1,0 +1,380 @@
+{
+  "status": "implemented_shadow_not_improved",
+  "automatic_exclusion_enabled": false,
+  "production_changed": false,
+  "normal_state_confirmed": false,
+  "photos": 185,
+  "scope": "Fresh split-rigid shadow registration on prior validated outputs; no upstream DINO rerun",
+  "current24_correct": 22,
+  "official_answer_hits": 79,
+  "recommended_answer_hits": 79,
+  "unsafe_geometry_only_answer_hits": 79,
+  "unknown_3129_3094_unchanged": true,
+  "ng129_retained": true,
+  "ng129": {
+    "candidate_id": 68,
+    "mode": "shadow_only",
+    "recommendation": "retain",
+    "normal_state_confirmed": false,
+    "automatic_exclusion_allowed": false,
+    "separator": {
+      "x": 1346,
+      "method": "bright_vertical_separator_in_OK_reference",
+      "semantic_identity_confirmed": false,
+      "normal_state_confirmed": false,
+      "peak": 0.7921568751335144,
+      "median": 0.23529411852359772
+    },
+    "candidate_part": "right",
+    "selected_reference_id": "history/ok-030",
+    "fits": [
+      {
+        "pad": 64,
+        "parts": {
+          "left": {
+            "side": "left",
+            "pad": 64,
+            "box": [
+              1293,
+              1278,
+              1431,
+              1435
+            ],
+            "valid": true,
+            "matrix": [
+              [
+                0.999925904745872,
+                -0.012173126884632032,
+                18.592170378363107
+              ],
+              [
+                0.012173126884632032,
+                0.999925904745872,
+                -14.93160903771718
+              ]
+            ],
+            "angle_degrees": -0.69748602085307,
+            "maximum_motion": 2.9391090562157425,
+            "training_correlation": 0.7733115737337871,
+            "heldout_correlation": 0.756391394260471,
+            "gain": 0.7670218849730192,
+            "offset": 0.0720338902829985,
+            "accepted_geometry": true,
+            "train_pixels": 4160,
+            "heldout_pixels": 4161,
+            "candidate_pixels_used": false,
+            "shape_deformation": false
+          },
+          "right": {
+            "side": "right",
+            "pad": 64,
+            "box": [
+              1293,
+              1278,
+              1431,
+              1435
+            ],
+            "valid": true,
+            "matrix": [
+              [
+                0.9999361925233877,
+                0.01129649865359003,
+                -14.2295512042067
+              ],
+              [
+                -0.01129649865359003,
+                0.9999361925233877,
+                15.754766570815718
+              ]
+            ],
+            "angle_degrees": 0.6472554627637548,
+            "maximum_motion": 1.8837430015211254,
+            "training_correlation": 0.4966774922434959,
+            "heldout_correlation": 0.48631653099236255,
+            "gain": 0.4909637384078648,
+            "offset": 0.1563251738438531,
+            "accepted_geometry": false,
+            "train_pixels": 6340,
+            "heldout_pixels": 6339,
+            "candidate_pixels_used": false,
+            "shape_deformation": false
+          }
+        }
+      },
+      {
+        "pad": 96,
+        "parts": {
+          "left": {
+            "side": "left",
+            "pad": 96,
+            "box": [
+              1261,
+              1246,
+              1463,
+              1467
+            ],
+            "valid": true,
+            "matrix": [
+              [
+                0.9999639043302591,
+                -0.008496472008105457,
+                13.55968003731573
+              ],
+              [
+                0.008496472008105457,
+                0.9999639043302591,
+                -10.005000450046282
+              ]
+            ],
+            "angle_degrees": -0.4868178441682902,
+            "maximum_motion": 2.927559275673127,
+            "training_correlation": 0.8201467608363185,
+            "heldout_correlation": 0.810047194104908,
+            "gain": 0.8376177197703235,
+            "offset": 0.060203956937173786,
+            "accepted_geometry": true,
+            "train_pixels": 9392,
+            "heldout_pixels": 9393,
+            "candidate_pixels_used": false,
+            "shape_deformation": false
+          },
+          "right": {
+            "side": "right",
+            "pad": 96,
+            "box": [
+              1261,
+              1246,
+              1463,
+              1467
+            ],
+            "valid": true,
+            "matrix": [
+              [
+                0.9998705696621814,
+                0.01608862714544193,
+                -21.634458214922006
+              ],
+              [
+                -0.01608862714544193,
+                0.9998705696621814,
+                22.7639400502826
+              ]
+            ],
+            "angle_degrees": 0.9218502057311362,
+            "maximum_motion": 1.7772559455920884,
+            "training_correlation": 0.6881323333108502,
+            "heldout_correlation": 0.6797198658591289,
+            "gain": 0.687432131974463,
+            "offset": 0.11294759515216218,
+            "accepted_geometry": false,
+            "train_pixels": 12596,
+            "heldout_pixels": 12595,
+            "candidate_pixels_used": false,
+            "shape_deformation": false
+          }
+        }
+      }
+    ],
+    "transform_disagreement": 1.0635770259191304,
+    "evaluation": [
+      {
+        "fit_pad": 64,
+        "views": [
+          {
+            "pad": 16,
+            "context_correlation": 0.4970172468276746,
+            "remaining_fraction": 0.9498538374900818,
+            "largest_residual_component": 185
+          },
+          {
+            "pad": 32,
+            "context_correlation": 0.4250252628733681,
+            "remaining_fraction": 0.9498538374900818,
+            "largest_residual_component": 185
+          }
+        ]
+      },
+      {
+        "fit_pad": 96,
+        "views": [
+          {
+            "pad": 16,
+            "context_correlation": 0.45306721820124146,
+            "remaining_fraction": 1.0350104570388794,
+            "largest_residual_component": 184
+          },
+          {
+            "pad": 32,
+            "context_correlation": 0.40141960361742063,
+            "remaining_fraction": 1.0350104570388794,
+            "largest_residual_component": 184
+          }
+        ]
+      }
+    ],
+    "geometric_evidence_passed": false,
+    "reason": "split_registration_insufficient"
+  },
+  "audit": {
+    "status": "passed",
+    "all185_source_aligned_result_hashes_unchanged": true,
+    "official_answer_hits": 79,
+    "recommended_answer_hits": 79,
+    "geometry_only_answer_hits": 79,
+    "unknown_3129_3094_official_unchanged": true,
+    "location2300": {
+      "candidate_id": 173,
+      "mode": "shadow_only",
+      "recommendation": "retain",
+      "normal_state_confirmed": false,
+      "automatic_exclusion_allowed": false,
+      "reason": "independent_object_protected",
+      "core": {
+        "extent": [
+          1392,
+          972,
+          16,
+          15
+        ],
+        "windows": [
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 136,
+            "pad": 8,
+            "threshold": 159.0
+          },
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 137,
+            "pad": 12,
+            "threshold": 160.0
+          },
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 137,
+            "pad": 20,
+            "threshold": 160.0
+          }
+        ]
+      }
+    },
+    "tests_passed": 15,
+    "production_runtime_policy_sha256": "a895e2580e58c38cefe4d42161da8a8a9e6b14dbea3cfacfc29eec2d13741616",
+    "production_runtime_matches_previous": true,
+    "private_bank_contract_passed": true,
+    "visual_review": [
+      "ng129-split-fit.jpg"
+    ],
+    "visual_scope": "Assistant inspected split mask and proposed transformations; not semantic segmentation or new human normal labels"
+  },
+  "policy": {
+    "version": "5r-split-rigid-shadow-20261120",
+    "sha256": "8cf45e40e0ea393d9525277b50da287801f887fd1b64b9bcb4b574ea82f7ac2c",
+    "rules": {
+      "pads": [
+        16,
+        32
+      ],
+      "search": 12,
+      "exclude_border": 4,
+      "minimum_correlation": 0.75,
+      "maximum_offset_disagreement": 2,
+      "gain_bounds": [
+        0.5,
+        2.0
+      ],
+      "residual_threshold": 0.13,
+      "maximum_remaining_fraction": 0.2,
+      "minimum_component_area": 20,
+      "maximum_candidate_side": 80
+    },
+    "fit_pads": [
+      64,
+      96
+    ],
+    "holdout_block": 4,
+    "mode": "shadow only; never confirm normality or exclude",
+    "reference_selection_sha256": "430a0c57d717d63e321bdca0959f76ebd198a3b41673dc503fa4bdf4b9905757",
+    "manifest_sha256": "ec466f3fcc5561e9cd2b4c5ec7358c0da998e14519324b046d1c7007d7e0aa24"
+  },
+  "report": {
+    "status": "passed",
+    "photos": 185,
+    "candidates": 22387,
+    "groups": {
+      "current": {
+        "status": "passed",
+        "photos": 24,
+        "candidates": 4567,
+        "summary": {
+          "total": 24,
+          "completed": 24,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 10,
+          "ng_missed": 2,
+          "ok_false_alarm": 0,
+          "alarm_photos": 12,
+          "alignment_warnings": 12
+        }
+      },
+      "history-KPH33": {
+        "status": "passed",
+        "photos": 61,
+        "candidates": 9433,
+        "summary": {
+          "total": 61,
+          "completed": 61,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 47,
+          "ng_missed": 13,
+          "ok_false_alarm": 1,
+          "alarm_photos": 2,
+          "alignment_warnings": 3
+        }
+      },
+      "history-MPT10": {
+        "status": "passed",
+        "photos": 100,
+        "candidates": 8387,
+        "summary": {
+          "total": 100,
+          "completed": 99,
+          "errors": 0,
+          "reference_self": 1,
+          "ng_total": 10,
+          "ok_total": 89,
+          "ng_missed": 0,
+          "ok_false_alarm": 0,
+          "alarm_photos": 10,
+          "alignment_warnings": 10
+        }
+      }
+    },
+    "all_images_and_links_verified": true
+  },
+  "limitations": [
+    "Spatial split hypotheses are not confirmed semantic segmentation",
+    "Right side may contain multiple superimposed structures; physical normality unconfirmed",
+    "No actual exclusions and no real-data geometry passes; preservation is not efficacy",
+    "Shadow review on previous outputs, not185 fresh upstream DINO runs"
+  ]
+}

@@ -1,0 +1,219 @@
+{
+  "status": "completed_no_safe_exclusion",
+  "automatic_exclusion_enabled": false,
+  "production_pipeline_changed": false,
+  "scope": "Fresh alternative OK-reference shadow review on185 validated outputs; not upstream DINO rerun",
+  "OK_pool_counts": {
+    "KPH33": 57,
+    "MPT10": 89
+  },
+  "ng129_selected_reference": {
+    "source_id": "history/ok-030",
+    "source_path": "C:\\Users\\Deangelo_Hu\\Pictures\\X-Ray\\MPT10\\OK\\CND6440BQ3_2026_11_02_16_22_38_30.tiff",
+    "source_sha256": "a5a0b4e7b8c09cbe62e344aa964de0adb9d7ef67c9f4ba8f9a17a4a95d5c0205",
+    "selection_uses_candidate_pixels": false,
+    "comparison": [
+      {
+        "valid": true,
+        "pad": 16,
+        "score": 0.7179976438876924,
+        "dx": 4,
+        "dy": 3,
+        "gain": 0.7243765744545796,
+        "offset": 0.0513184036322023,
+        "registration_uses_candidate": false,
+        "original_active_pixels": 165,
+        "remaining_fraction": 0.5089161992073059,
+        "largest_residual_component": 73
+      },
+      {
+        "valid": true,
+        "pad": 32,
+        "score": 0.6149852587223349,
+        "dx": 3,
+        "dy": 2,
+        "gain": 0.6019763293400067,
+        "offset": 0.10539657327164867,
+        "registration_uses_candidate": false,
+        "original_active_pixels": 165,
+        "remaining_fraction": 0.7003333568572998,
+        "largest_residual_component": 134
+      }
+    ],
+    "result": "retained: no sufficient correspondence or residual evidence"
+  },
+  "ng129_exclusion_suggested": false,
+  "all185_suggestions": 0,
+  "official_results_unchanged": true,
+  "current24_official_correct": 22,
+  "current24_hypothetical_correct": 22,
+  "official_answer_hits": 79,
+  "hypothetical_answer_hits": 79,
+  "unknown_3129_3094_unchanged": true,
+  "location_2300": "independent_object_protected; #173 kept",
+  "unit_tests_passed": 7,
+  "search_equivalence_checks": 10,
+  "policy": {
+    "version": "5r-ok-context-reference-shadow-20261120",
+    "hashes": {
+      "new": "430a0c57d717d63e321bdca0959f76ebd198a3b41673dc503fa4bdf4b9905757",
+      "previous": "29e67ca2e9d330e8dd7a9c91fea05254f1eb7887a05dc1586a0380be86e96cc6"
+    },
+    "rules": {
+      "pads": [
+        16,
+        32
+      ],
+      "search": 12,
+      "exclude_border": 4,
+      "minimum_correlation": 0.75,
+      "maximum_offset_disagreement": 2,
+      "gain_bounds": [
+        0.5,
+        2.0
+      ],
+      "residual_threshold": 0.13,
+      "maximum_remaining_fraction": 0.2,
+      "minimum_component_area": 20,
+      "maximum_candidate_side": 80
+    },
+    "manifest_sha256": "ec466f3fcc5561e9cd2b4c5ec7358c0da998e14519324b046d1c7007d7e0aa24",
+    "ranking": "max min context correlation only",
+    "status": "frozen before dataset evaluation"
+  },
+  "audit": {
+    "status": "passed",
+    "files_verified_for_all185": true,
+    "optimized_vs_frozen_search_checks": [
+      {
+        "reference": "history/ok-030",
+        "pad": 16,
+        "score_agrees": true
+      },
+      {
+        "reference": "history/ok-030",
+        "pad": 32,
+        "score_agrees": true
+      },
+      {
+        "reference": "history/ok-059",
+        "pad": 16,
+        "score_agrees": true
+      },
+      {
+        "reference": "history/ok-059",
+        "pad": 32,
+        "score_agrees": true
+      },
+      {
+        "reference": "history/ok-049",
+        "pad": 16,
+        "score_agrees": true
+      },
+      {
+        "reference": "history/ok-049",
+        "pad": 32,
+        "score_agrees": true
+      },
+      {
+        "reference": "history/ok-081",
+        "pad": 16,
+        "score_agrees": true
+      },
+      {
+        "reference": "history/ok-081",
+        "pad": 32,
+        "score_agrees": true
+      },
+      {
+        "reference": "history/ok-063",
+        "pad": 16,
+        "score_agrees": true
+      },
+      {
+        "reference": "history/ok-063",
+        "pad": 32,
+        "score_agrees": true
+      }
+    ],
+    "visual_review": [
+      "ng129-top-contexts.jpg",
+      "all89-OK-contexts.jpg",
+      "ng129-selected-OK-diagnostic.jpg"
+    ],
+    "visual_scope": "Assistant inspected images, no new human labels; all89 montage plus enlarged top6 and actual selected fit",
+    "MPT10_OK_directory_images": 90,
+    "reference_self_excluded": 1,
+    "usable_MPT10_OK": 89,
+    "filename_dates": {
+      "OK": "2026-11-02",
+      "ng129": "2026-11-03"
+    },
+    "date_causality": "Dates are provenance only, not proof of cause"
+  },
+  "report": {
+    "status": "passed",
+    "photos": 185,
+    "candidates": 22387,
+    "groups": {
+      "current": {
+        "status": "passed",
+        "photos": 24,
+        "candidates": 4567,
+        "summary": {
+          "total": 24,
+          "completed": 24,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 10,
+          "ng_missed": 2,
+          "ok_false_alarm": 0,
+          "alarm_photos": 12,
+          "alignment_warnings": 12
+        }
+      },
+      "history-KPH33": {
+        "status": "passed",
+        "photos": 61,
+        "candidates": 9433,
+        "summary": {
+          "total": 61,
+          "completed": 61,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 47,
+          "ng_missed": 13,
+          "ok_false_alarm": 1,
+          "alarm_photos": 2,
+          "alignment_warnings": 3
+        }
+      },
+      "history-MPT10": {
+        "status": "passed",
+        "photos": 100,
+        "candidates": 8387,
+        "summary": {
+          "total": 100,
+          "completed": 99,
+          "errors": 0,
+          "reference_self": 1,
+          "ng_total": 10,
+          "ok_total": 89,
+          "ng_missed": 0,
+          "ok_false_alarm": 0,
+          "alarm_photos": 10,
+          "alignment_warnings": 10
+        }
+      }
+    },
+    "scope": "Complete official result report plus all185 new OK-reference shadow records and all89 rankings; all links and images verified"
+  },
+  "limitations": [
+    "Known-case retrospective experiment, not independent generalization validation",
+    "No available tested OK reference meets existing structure gates for ng129",
+    "All suggestions are zero; preservation does not demonstrate improvement",
+    "No new upstream inference this turn; previous validated result files used and hashes verified"
+  ]
+}

@@ -1,0 +1,427 @@
+{
+  "status": "automatic_exclusion_not_ready",
+  "production_changed": false,
+  "production_integration_performed": false,
+  "target_three_normal_confirmation": "user_confirmed_three_candidate_polygons",
+  "source_two_U1_confirmation": "user_confirmed",
+  "manual_mark_count": 101,
+  "previously_hit_positions": 79,
+  "positive_examples_overlapping_U1": 0,
+  "summary": {
+    "status": "completed",
+    "photos": 185,
+    "scope": "Fresh confirmed-local-reference shadow review on validated outputs; no upstream DINO rerun",
+    "official_unchanged": true,
+    "official_answer_hits": 79,
+    "hypothetical_answer_hits": 79,
+    "exclusion_suggestions": 4,
+    "suggestion_photos": [
+      {
+        "id": "history/ng-129",
+        "group": "history",
+        "key": "ng-129",
+        "label": "NG",
+        "official_kept": 10,
+        "hypothetical_kept": 9,
+        "official_exact": true,
+        "suggested_ids": [
+          68
+        ]
+      },
+      {
+        "id": "history/ng-131",
+        "group": "history",
+        "key": "ng-131",
+        "label": "NG",
+        "official_kept": 13,
+        "hypothetical_kept": 12,
+        "official_exact": true,
+        "suggested_ids": [
+          131
+        ]
+      },
+      {
+        "id": "history/ng-133",
+        "group": "history",
+        "key": "ng-133",
+        "label": "NG",
+        "official_kept": 13,
+        "hypothetical_kept": 12,
+        "official_exact": true,
+        "suggested_ids": [
+          131
+        ]
+      },
+      {
+        "id": "history/ng-134",
+        "group": "history",
+        "key": "ng-134",
+        "label": "NG",
+        "official_kept": 13,
+        "hypothetical_kept": 12,
+        "official_exact": true,
+        "suggested_ids": [
+          129
+        ]
+      }
+    ],
+    "current_official_correct": 22,
+    "current_hypothetical_correct": 22,
+    "current_photo_decisions_unchanged": true,
+    "policy_sha256": "50ed927ca5d985d01cc82744f51e64758cc5535f66744ef8b66371ffc72e82cc"
+  },
+  "three_candidates": [
+    {
+      "key": "ng-131",
+      "candidate_id": 131,
+      "bbox": [
+        1360,
+        1361,
+        5,
+        7
+      ],
+      "source_polygon": [
+        [
+          2704.222412109375,
+          2711.489501953125
+        ],
+        [
+          2714.193603515625,
+          2711.598876953125
+        ],
+        [
+          2714.040771484375,
+          2725.558837890625
+        ],
+        [
+          2704.069580078125,
+          2725.449462890625
+        ]
+      ],
+      "minimum_context_correlation": 0.9849245238865036,
+      "remaining_fraction_range": [
+        0.023786300793290138,
+        0.03408927097916603
+      ],
+      "maximum_residual_area": 0,
+      "manual_positive_overlap": false,
+      "nearest_manual_mark_distance_source_px": 354.60266868786715,
+      "target_normal_confirmation": "user_confirmed_existing_fixed_structure_no_loose_screw_or_foreign_object",
+      "visual_observation": "dark edge adjacent to visible white arc; no resolved standalone screw shape; physical absence not certified",
+      "both_references_passed": true
+    },
+    {
+      "key": "ng-133",
+      "candidate_id": 131,
+      "bbox": [
+        1360,
+        1362,
+        5,
+        7
+      ],
+      "source_polygon": [
+        [
+          2705.872802734375,
+          2708.01318359375
+        ],
+        [
+          2715.876708984375,
+          2708.100341796875
+        ],
+        [
+          2715.7548828125,
+          2722.105712890625
+        ],
+        [
+          2705.7509765625,
+          2722.0185546875
+        ]
+      ],
+      "minimum_context_correlation": 0.9838032822989176,
+      "remaining_fraction_range": [
+        0.012791868299245834,
+        0.061470676213502884
+      ],
+      "maximum_residual_area": 0,
+      "manual_positive_overlap": false,
+      "nearest_manual_mark_distance_source_px": 425.2794821694255,
+      "target_normal_confirmation": "user_confirmed_existing_fixed_structure_no_loose_screw_or_foreign_object",
+      "visual_observation": "dark edge adjacent to visible white arc; no resolved standalone screw shape; physical absence not certified",
+      "both_references_passed": true
+    },
+    {
+      "key": "ng-134",
+      "candidate_id": 129,
+      "bbox": [
+        1360,
+        1361,
+        5,
+        7
+      ],
+      "source_polygon": [
+        [
+          2706.04150390625,
+          2708.404296875
+        ],
+        [
+          2716.0498046875,
+          2708.494140625
+        ],
+        [
+          2715.92431640625,
+          2722.505615234375
+        ],
+        [
+          2705.916015625,
+          2722.415771484375
+        ]
+      ],
+      "minimum_context_correlation": 0.9868004918348905,
+      "remaining_fraction_range": [
+        0.0418187752366066,
+        0.049762800335884094
+      ],
+      "maximum_residual_area": 0,
+      "manual_positive_overlap": false,
+      "nearest_manual_mark_distance_source_px": 466.72216991203476,
+      "target_normal_confirmation": "user_confirmed_existing_fixed_structure_no_loose_screw_or_foreign_object",
+      "visual_observation": "dark edge adjacent to visible white arc; no resolved standalone screw shape; physical absence not certified",
+      "both_references_passed": true
+    }
+  ],
+  "audit": {
+    "status": "passed",
+    "all185_source_aligned_result_hashes_unchanged": true,
+    "official_answer_hits": 79,
+    "hypothetical_answer_hits": 79,
+    "current24_candidates_identical_after_hypothetical_exclusions": true,
+    "unknown_3129_3094_official_and_hypothetical_unchanged": true,
+    "location2300": {
+      "candidate_id": 173,
+      "mode": "offline_shadow_only",
+      "recommendation": "retain",
+      "automatic_exclusion_allowed": false,
+      "target_human_normal_confirmed": false,
+      "reason": "independent_object_protected",
+      "core": {
+        "extent": [
+          1392,
+          972,
+          16,
+          15
+        ],
+        "windows": [
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 136,
+            "pad": 8,
+            "threshold": 159.0
+          },
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 137,
+            "pad": 12,
+            "threshold": 160.0
+          },
+          {
+            "box": [
+              1392,
+              972,
+              16,
+              15
+            ],
+            "area": 137,
+            "pad": 20,
+            "threshold": 160.0
+          }
+        ]
+      }
+    },
+    "tests_passed": 6,
+    "production_runtime_policy_sha256": "a895e2580e58c38cefe4d42161da8a8a9e6b14dbea3cfacfc29eec2d13741616",
+    "production_runtime_matches_previous": true,
+    "private_bank_contract_passed": true,
+    "existing_dependencies_SHA_unchanged": true,
+    "official_kept_candidates": 151,
+    "hypothetical_kept_candidates": 147,
+    "visual_review": [
+      "three-candidates-native.png",
+      "prior all-four-suggestions.jpg",
+      "2300-proof.jpg"
+    ],
+    "normal_annotations_scope": "User confirmed source ng128/130 U1 and only three target candidate polygons ng131#131/ng133#131/ng134#129; no whole-image labels"
+  },
+  "report": {
+    "status": "passed",
+    "photos": 185,
+    "candidates": 22387,
+    "groups": {
+      "current": {
+        "status": "passed",
+        "photos": 24,
+        "candidates": 4567,
+        "summary": {
+          "total": 24,
+          "completed": 24,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 10,
+          "ng_missed": 2,
+          "ok_false_alarm": 0,
+          "alarm_photos": 12,
+          "alignment_warnings": 12
+        }
+      },
+      "history-KPH33": {
+        "status": "passed",
+        "photos": 61,
+        "candidates": 9433,
+        "summary": {
+          "total": 61,
+          "completed": 61,
+          "errors": 0,
+          "reference_self": 0,
+          "ng_total": 14,
+          "ok_total": 47,
+          "ng_missed": 13,
+          "ok_false_alarm": 1,
+          "alarm_photos": 2,
+          "alignment_warnings": 3
+        }
+      },
+      "history-MPT10": {
+        "status": "passed",
+        "photos": 100,
+        "candidates": 8387,
+        "summary": {
+          "total": 100,
+          "completed": 99,
+          "errors": 0,
+          "reference_self": 1,
+          "ng_total": 10,
+          "ok_total": 89,
+          "ng_missed": 0,
+          "ok_false_alarm": 0,
+          "alarm_photos": 10,
+          "alignment_warnings": 10
+        }
+      }
+    },
+    "all_images_and_links_verified": true
+  },
+  "target_confirmation": {
+    "user_answer": "三處都只有原有固定結構",
+    "question_scope": "ng-131 #131、ng-133 #131、ng-134 #129 三個紅框內只有原有固定結構、沒有掉落螺絲或異物",
+    "scope": "Only the three candidate polygons; not whole U1 or whole photos",
+    "labels": [
+      {
+        "key": "ng-131",
+        "candidate_id": 131,
+        "aligned_bbox": [
+          1360,
+          1361,
+          5,
+          7
+        ],
+        "source_polygon": [
+          [
+            2704.222412109375,
+            2711.489501953125
+          ],
+          [
+            2714.193603515625,
+            2711.598876953125
+          ],
+          [
+            2714.040771484375,
+            2725.558837890625
+          ],
+          [
+            2704.069580078125,
+            2725.449462890625
+          ]
+        ],
+        "normal_confirmed": true
+      },
+      {
+        "key": "ng-133",
+        "candidate_id": 131,
+        "aligned_bbox": [
+          1360,
+          1362,
+          5,
+          7
+        ],
+        "source_polygon": [
+          [
+            2705.872802734375,
+            2708.01318359375
+          ],
+          [
+            2715.876708984375,
+            2708.100341796875
+          ],
+          [
+            2715.7548828125,
+            2722.105712890625
+          ],
+          [
+            2705.7509765625,
+            2722.0185546875
+          ]
+        ],
+        "normal_confirmed": true
+      },
+      {
+        "key": "ng-134",
+        "candidate_id": 129,
+        "aligned_bbox": [
+          1360,
+          1361,
+          5,
+          7
+        ],
+        "source_polygon": [
+          [
+            2706.04150390625,
+            2708.404296875
+          ],
+          [
+            2716.0498046875,
+            2708.494140625
+          ],
+          [
+            2715.92431640625,
+            2722.505615234375
+          ],
+          [
+            2705.916015625,
+            2722.415771484375
+          ]
+        ],
+        "normal_confirmed": true
+      }
+    ],
+    "reference_pool_changed": false,
+    "production_changed": false,
+    "experiment_outputs_preserved": true
+  },
+  "confirmation_update_checked": {
+    "status": "passed",
+    "changed_appendix_links_verified": true,
+    "image_decodes": true,
+    "full_report_coverage_unchanged": true,
+    "model_and_decisions_unchanged": true
+  }
+}
