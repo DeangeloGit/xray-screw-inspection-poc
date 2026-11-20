@@ -1,0 +1,69 @@
+{
+  "status": "passed",
+  "mode": "saved_quantized_image_contour_audit_not_new_inference",
+  "data_probe": "passed_file_only_no_inference",
+  "supplements": [
+    {
+      "folder": "workspace/handoffs/5r-reference-check-20261113",
+      "files": 294,
+      "passed": true
+    },
+    {
+      "folder": "workspace/handoffs/20261110-kph33-v2/local-isolated-restore",
+      "files": 1756,
+      "passed": true
+    }
+  ],
+  "summary": {
+    "all": {
+      "photos": 185,
+      "observations": 38403,
+      "closed_contour_hypotheses": 2003,
+      "photos_with_closed_contours": 142,
+      "unique_merge_groups": 70
+    },
+    "OK": {
+      "photos": 146,
+      "observations": 23054,
+      "closed_contour_hypotheses": 1173,
+      "photos_with_closed_contours": 104,
+      "unique_merge_groups": 36
+    },
+    "NG": {
+      "photos": 38,
+      "observations": 15349,
+      "closed_contour_hypotheses": 830,
+      "photos_with_closed_contours": 38,
+      "unique_merge_groups": 34
+    },
+    "reference_self": {
+      "photos": 1,
+      "observations": 0,
+      "closed_contour_hypotheses": 0,
+      "photos_with_closed_contours": 0,
+      "unique_merge_groups": 0
+    }
+  },
+  "report_photos": 185,
+  "baseline_candidates": 22387,
+  "observation_cases": 38403,
+  "formal_result_json_unchanged": true,
+  "formal_code_unchanged": true,
+  "new_dino_inference": false,
+  "complete_boundary_verified": false,
+  "synthetic_tests": 4,
+  "synthetic_tests_status": "passed",
+  "links_and_baseline_images_verified": true,
+  "policy_sha256": "c370807abe6fab357202772e807f14764ba5853191278fbe6091f8c66d6644bd",
+  "scripts": {
+    "run.py": "78816c69e5f5c62e4d527120c72feb28ecbca8f8eeb41c21f76a3d08744a1cc8",
+    "report.py": "1f9628f9362e1a8e68351542e0b5554203591390c88765b903caac9471b8effb",
+    "visuals.py": "052f07acefa3008eb23b95e0dca4db2af32fa3c33e60504949e7567e58bc0c0a",
+    "finalize.py": "0fbc937b95894a9f3ba45a403dd5c7f96833560b2431d49599fd26ed4100b716"
+  },
+  "limitations": [
+    "Closed contours are not confirmed complete foreign objects.",
+    "Original 79 hits and batch outcomes are prior results, not new 6R regression.",
+    "3129 and 3094 unconfirmed locations were not used as ground truth."
+  ]
+}

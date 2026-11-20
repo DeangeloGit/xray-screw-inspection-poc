@@ -5,3 +5,8 @@ experiments/dino/live5r_local_service.py text eol=lf
 experiments/dino/live5r_review.py text eol=lf
 experiments/dino/alarm_review5r.py text eol=lf
 experiments/dino/local_object5r.py text eol=lf
+# Keep 6r research policy hashes identical across Windows and Mac.
+experiments/dino/boundary_shadow6r.py text eol=lf
+experiments/dino/joint_boundary6r.py text eol=lf
+experiments/dino/candidate_organizer6r.py text eol=lf
+experiments/dino/target_first6r.py text eol=lf

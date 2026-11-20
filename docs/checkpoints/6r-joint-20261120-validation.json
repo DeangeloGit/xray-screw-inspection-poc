@@ -1,0 +1,287 @@
+{
+  "status": "passed",
+  "photos": 185,
+  "input_cores": 60790,
+  "formal_candidates": 22387,
+  "lost_difference_cores": 38403,
+  "pages": 189,
+  "all_links_anchors": true,
+  "paired_images": 370,
+  "summary": {
+    "all": {
+      "photos": 185,
+      "seeds": 60790,
+      "methods": {
+        "watershed": {
+          "states": {
+            "uncertain_correspondence": 19564,
+            "stable_visible_difference_hypothesis": 15491,
+            "context_or_window_sensitive": 13896,
+            "unstable_or_open_boundary": 11839
+          },
+          "groups": 15209,
+          "merged_groups": 279
+        },
+        "graphcut": {
+          "states": {
+            "uncertain_correspondence": 19564,
+            "stable_visible_difference_hypothesis": 13945,
+            "context_or_window_sensitive": 13553,
+            "unstable_or_open_boundary": 13728
+          },
+          "groups": 13673,
+          "merged_groups": 267
+        }
+      },
+      "dino": {
+        "evaluated": 1314,
+        "diagnostic_keep": 6,
+        "photos_with_diagnostic_keep": 6
+      },
+      "outer_dino": {
+        "evaluated": 825,
+        "diagnostic_keep": 9,
+        "photos_with_diagnostic_keep": 8
+      }
+    },
+    "OK": {
+      "photos": 146,
+      "seeds": 37898,
+      "methods": {
+        "watershed": {
+          "states": {
+            "unstable_or_open_boundary": 7994,
+            "uncertain_correspondence": 10026,
+            "stable_visible_difference_hypothesis": 10723,
+            "context_or_window_sensitive": 9155
+          },
+          "groups": 10550,
+          "merged_groups": 170
+        },
+        "graphcut": {
+          "states": {
+            "unstable_or_open_boundary": 9307,
+            "uncertain_correspondence": 10026,
+            "stable_visible_difference_hypothesis": 9507,
+            "context_or_window_sensitive": 9058
+          },
+          "groups": 9338,
+          "merged_groups": 165
+        }
+      },
+      "dino": {
+        "evaluated": 1007,
+        "diagnostic_keep": 0,
+        "photos_with_diagnostic_keep": 0
+      },
+      "outer_dino": {
+        "evaluated": 592,
+        "diagnostic_keep": 1,
+        "photos_with_diagnostic_keep": 1
+      }
+    },
+    "NG": {
+      "photos": 38,
+      "seeds": 22892,
+      "methods": {
+        "watershed": {
+          "states": {
+            "uncertain_correspondence": 9538,
+            "stable_visible_difference_hypothesis": 4768,
+            "context_or_window_sensitive": 4741,
+            "unstable_or_open_boundary": 3845
+          },
+          "groups": 4659,
+          "merged_groups": 109
+        },
+        "graphcut": {
+          "states": {
+            "uncertain_correspondence": 9538,
+            "stable_visible_difference_hypothesis": 4438,
+            "context_or_window_sensitive": 4495,
+            "unstable_or_open_boundary": 4421
+          },
+          "groups": 4335,
+          "merged_groups": 102
+        }
+      },
+      "dino": {
+        "evaluated": 307,
+        "diagnostic_keep": 6,
+        "photos_with_diagnostic_keep": 6
+      },
+      "outer_dino": {
+        "evaluated": 233,
+        "diagnostic_keep": 8,
+        "photos_with_diagnostic_keep": 7
+      }
+    },
+    "reference_self": {
+      "photos": 1,
+      "seeds": 0,
+      "methods": {
+        "watershed": {
+          "states": {},
+          "groups": 0,
+          "merged_groups": 0
+        },
+        "graphcut": {
+          "states": {},
+          "groups": 0,
+          "merged_groups": 0
+        }
+      },
+      "dino": {
+        "evaluated": 0,
+        "diagnostic_keep": 0,
+        "photos_with_diagnostic_keep": 0
+      },
+      "outer_dino": {
+        "evaluated": 0,
+        "diagnostic_keep": 0,
+        "photos_with_diagnostic_keep": 0
+      }
+    },
+    "manual": {
+      "manual_marks": 101,
+      "original_hits_rechecked": 79,
+      "new_geometry_covers_original_hits": 8,
+      "new_DINO_diagnostic_hits": 8,
+      "original_alarms_unchanged": true,
+      "not_full_formal_inference": true,
+      "joint_gate_counts": [
+        {
+          "states": [
+            "uncertain_correspondence"
+          ],
+          "original_marks": 59
+        },
+        {
+          "states": [
+            "context_or_window_sensitive"
+          ],
+          "original_marks": 6
+        },
+        {
+          "states": [
+            "stable_visible_difference_hypothesis"
+          ],
+          "original_marks": 13
+        },
+        {
+          "states": [
+            "unstable_or_open_boundary"
+          ],
+          "original_marks": 1
+        }
+      ]
+    }
+  },
+  "formal_decisions": "unchanged",
+  "new_dino_mode": "fresh_paired_secondary_bank_diagnostic_not_full_formal_inference",
+  "prerequisites": [
+    {
+      "folder": "workspace/handoffs/5r-reference-check-20261113",
+      "files": 294,
+      "passed": true
+    },
+    {
+      "folder": "workspace/handoffs/20261110-kph33-v2/local-isolated-restore",
+      "files": 1756,
+      "passed": true
+    }
+  ],
+  "probe": "passed_file_only",
+  "formal_code_sha256_unchanged": true,
+  "formal_result_json_sha256_unchanged": true,
+  "synthetic_tests": 14,
+  "synthetic_tests_status": "passed",
+  "scripts": {
+    "audit_keeps.py": "0944b63107a89d0c38a5ae1e2f87bba65948ff63094a7867eac0cbe3461ec55f",
+    "audit_outer_keeps.py": "1e9a419ef036211eec45f09c16148ac3730c2c86e25a5368425711148833d4e4",
+    "check_exact_cache.py": "d9a3a491c37bd599f4d98899ca50cd4e77e0487b980a20a2bf95171cc0a7fc2c",
+    "check_ok_cpu.py": "4c0aa361f72c4acbbbf5c05131e4613ccf15b7b381ddc2239bf33a457a14a4ad",
+    "correspondence_check.py": "d0d5df08d936176fbdc6366f8a7b41754fc1f1d214dbba3c48dc700e3cb4bf09",
+    "dino.py": "26e5738c5b021e1005e6232b471bd937bcceb268da84873d3ea918de6c6abaf8",
+    "dino_outer.py": "65097d0527cbaddd6f2da7574fd860ff9f5517defdbfc167bb20026723f664ab",
+    "dino_outer_gpu.py": "e5a955259c8a0d6fdf192f0b8d76dfb25a78aaf9ef2fa207f054c9503545746a",
+    "dino_outer_gpu_resume.py": "85a7bf9c239685c73cbff501cf88b7f03fcd853f4eb8e64ac4f4ccbff673da42",
+    "dino_outer_v2.py": "50af6e366d5d551e32cd820caacc65c4f98b485ac2f22ecc1aa3f2df437b9b04",
+    "dino_resume.py": "2baea8302fd163e74ee54b15ab748bc32db8c77e9b277d9a39377ba0241be986",
+    "exact_features.py": "311c80015254e8c5347a6840e01e3720523ca838571ef79f60b47280547a6fbc",
+    "finalize.py": "7f529b326bb089b3ff9df7aaa443790e0c6e6c75d087402df9406c6c7ec566a7",
+    "gpu_check.py": "d96e22f7e4976fefcd2c8ba52de8e3835a4b458c6b45dc18ac900eea880fb562",
+    "manual_geometry.py": "54241b0f7f611579df5d91764d56d58624c9f7b7d8bbc6d50ac3ca7f8268c63c",
+    "organize.py": "460a1fc79c236129cd41f02210aa6cb2bb1c9b475c571ab16d6a0938b98bcb0a",
+    "prepare_gpu_outer.py": "ea15f794b5d48fcaaf8594f6c7d14a7a79699ee68cce3cadb81038443b6938fd",
+    "prepare_outer.py": "a88a2284c7d4726c06ec89ecd8712362629f2e5b8454ae7dce0bc20884e9e5ab",
+    "prepare_outer_visuals.py": "13b3dabbfd4d5698c1c4666c7b3de7ff8cf66a973308b6f9efb0724270e0f504",
+    "prepare_resume.py": "003022f6ddd01accce2391953d1068d1a566ae73ac74aac2e129427f912178e3",
+    "preserve_v1.py": "813a21ff81eedf5bc60f9067d78613f20913c15e4d17b460ad1efa8583b161ce",
+    "report.py": "d45060d5e3c5c260528e043f30bfb86b7c3dbe45821f31b039b47e4dd2bfad19",
+    "run.py": "6e9aee30c7c894b556a9cc5290092e219ada9dcfccda85dd0e5a737d245a5a17",
+    "visuals.py": "e53b86e51599abc1b3d6fe89696487a5f423c627a19a825a87b008ba5a472f12"
+  },
+  "policies": {
+    "boundary_shadow6r.py": "c370807abe6fab357202772e807f14764ba5853191278fbe6091f8c66d6644bd",
+    "joint_boundary6r.py": "36fab8313e61b2ba3c835605f50bb688f8fc05d1b309f8c798649a2971a7f227",
+    "candidate_organizer6r.py": "bd5237e390e82fca6e8a3208f558759bd66744c1c680ac34158dfc28ecf69396"
+  },
+  "model": {
+    "main_counts": {
+      "screw": 52,
+      "normal": 90
+    },
+    "secondary_counts": {
+      "screw": 47,
+      "normal": 65
+    },
+    "model_sha256": "f22797eabf810a75e41de68d378541ebea372122b25c4ce3ef25ff618250c20a",
+    "snapshot_identity": "3b05dcff810554e12603737935cdc9a32246dd19584c7220cfc329294081f7cb",
+    "review_bank_sha256": "d7be3d13822680bf35d9e75c42c7000393933ef911a6aa7e020ced1bb61c1f5e",
+    "policy": "existing_47_65_four_view_paired_rule",
+    "formal_actions_changed": false
+  },
+  "outer_model": {
+    "main_counts": {
+      "screw": 52,
+      "normal": 90
+    },
+    "secondary_counts": {
+      "screw": 47,
+      "normal": 65
+    },
+    "execution": {
+      "model_id": "3964 新增螺絲範例（待回歸驗證）（4r 實驗範例庫，未回歸驗證）",
+      "fingerprint": "2e45f5528d2d0299b3a63eeae9dea47733e6c1504afd41b0593ad37e6f4d2ad0",
+      "backend": "dino_onnx",
+      "requested": "4r-example-4a5c7e9ec0634c28a455f304f34bb0bf",
+      "requested_backend": null,
+      "error": null,
+      "mode": "auto_filter",
+      "providers": [
+        "DmlExecutionProvider",
+        "CPUExecutionProvider"
+      ],
+      "execution": "gpu",
+      "gpu_device": "NVIDIA Quadro RTX 3000",
+      "decision_policy": "dino-top3-target-and-reference-v1",
+      "feature_strategy": "contrast-global-local-half-v1"
+    },
+    "model_sha256": "f22797eabf810a75e41de68d378541ebea372122b25c4ce3ef25ff618250c20a",
+    "snapshot_identity": "2e45f5528d2d0299b3a63eeae9dea47733e6c1504afd41b0593ad37e6f4d2ad0",
+    "review_bank_sha256": "d7be3d13822680bf35d9e75c42c7000393933ef911a6aa7e020ced1bb61c1f5e",
+    "policy": "existing_47_65_four_view_paired_rule",
+    "formal_actions_changed": false
+  },
+  "new_full_formal_inference": false,
+  "cpu_gpu_comparison": {
+    "groups": 68,
+    "decision_differences": 0,
+    "maximum_score_difference": 7.748603820800781e-07,
+    "full_CPU_equivalence_not_tested": true
+  },
+  "prior_79_hits_not_new_6r_validation": true,
+  "automatic_exclusion": false,
+  "complete_physical_boundary_verified": false
+}

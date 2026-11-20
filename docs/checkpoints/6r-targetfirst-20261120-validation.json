@@ -1,0 +1,333 @@
+{
+  "status": "passed",
+  "summary": {
+    "photos": 185,
+    "inputs": 60790,
+    "groups": 2495,
+    "manual_original": 79,
+    "geometry_original_covered": 48,
+    "geometry_all_marks": 49,
+    "dino_original_hits": 24,
+    "dino_new_marks": 1,
+    "manual_rows": [
+      {
+        "id": "history/ng-128",
+        "original_hits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10,
+          11
+        ],
+        "hits": [
+          4,
+          5
+        ],
+        "new_hits": [],
+        "retained_original": [
+          4,
+          5
+        ]
+      },
+      {
+        "id": "history/ng-130",
+        "original_hits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10
+        ],
+        "hits": [
+          4,
+          5
+        ],
+        "new_hits": [],
+        "retained_original": [
+          4,
+          5
+        ]
+      },
+      {
+        "id": "history/ng-132",
+        "original_hits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10
+        ],
+        "hits": [
+          2,
+          5
+        ],
+        "new_hits": [],
+        "retained_original": [
+          2,
+          5
+        ]
+      },
+      {
+        "id": "history/ng-134",
+        "original_hits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10
+        ],
+        "hits": [
+          2,
+          4,
+          5
+        ],
+        "new_hits": [],
+        "retained_original": [
+          2,
+          4,
+          5
+        ]
+      },
+      {
+        "id": "history/ng-136",
+        "original_hits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10
+        ],
+        "hits": [
+          2,
+          4,
+          5
+        ],
+        "new_hits": [],
+        "retained_original": [
+          2,
+          4,
+          5
+        ]
+      },
+      {
+        "id": "history/ng-129",
+        "original_hits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          7,
+          10
+        ],
+        "hits": [
+          2,
+          4,
+          5
+        ],
+        "new_hits": [],
+        "retained_original": [
+          2,
+          4,
+          5
+        ]
+      },
+      {
+        "id": "history/ng-131",
+        "original_hits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10
+        ],
+        "hits": [
+          4,
+          5
+        ],
+        "new_hits": [],
+        "retained_original": [
+          4,
+          5
+        ]
+      },
+      {
+        "id": "history/ng-133",
+        "original_hits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10
+        ],
+        "hits": [
+          2,
+          4
+        ],
+        "new_hits": [],
+        "retained_original": [
+          2,
+          4
+        ]
+      },
+      {
+        "id": "history/ng-135",
+        "original_hits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          10
+        ],
+        "hits": [
+          2,
+          4,
+          5
+        ],
+        "new_hits": [],
+        "retained_original": [
+          2,
+          4,
+          5
+        ]
+      },
+      {
+        "id": "history/ng-137",
+        "original_hits": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          10
+        ],
+        "hits": [
+          2,
+          4,
+          5
+        ],
+        "new_hits": [
+          5
+        ],
+        "retained_original": [
+          2,
+          4
+        ]
+      }
+    ],
+    "OK": {
+      "photos": 146,
+      "supported_groups": 3,
+      "photos_with_support": 3
+    },
+    "NG": {
+      "photos": 38,
+      "supported_groups": 55,
+      "photos_with_support": 18
+    },
+    "context_after_generation": {
+      "OK": {
+        "supported_reliable": 2,
+        "supported_uncertain": 1
+      },
+      "NG": {
+        "supported_reliable": 11,
+        "supported_uncertain": 44
+      }
+    }
+  },
+  "pages": 189,
+  "all_links_anchors": true,
+  "paired_images": 370,
+  "formal_code_and_results_unchanged": true,
+  "probe": "passed_file_only",
+  "prerequisites": [
+    {
+      "folder": "workspace/handoffs/5r-reference-check-20261113",
+      "files": 294,
+      "passed": true
+    },
+    {
+      "folder": "workspace/handoffs/20261110-kph33-v2/local-isolated-restore",
+      "files": 1756,
+      "passed": true
+    }
+  ],
+  "model": {
+    "main_counts": {
+      "screw": 52,
+      "normal": 90
+    },
+    "secondary_counts": {
+      "screw": 47,
+      "normal": 65
+    },
+    "execution": {
+      "model_id": "3964 新增螺絲範例（待回歸驗證）（4r 實驗範例庫，未回歸驗證）",
+      "fingerprint": "3b05dcff810554e12603737935cdc9a32246dd19584c7220cfc329294081f7cb",
+      "backend": "dino_onnx",
+      "requested": "4r-example-4a5c7e9ec0634c28a455f304f34bb0bf",
+      "requested_backend": null,
+      "error": null,
+      "mode": "auto_filter",
+      "providers": [
+        "CPUExecutionProvider"
+      ],
+      "execution": "cpu",
+      "gpu_device": null,
+      "decision_policy": "dino-top3-target-and-reference-v1",
+      "feature_strategy": "contrast-global-local-half-v1"
+    },
+    "model_sha256": "f22797eabf810a75e41de68d378541ebea372122b25c4ce3ef25ff618250c20a",
+    "snapshot_identity": "3b05dcff810554e12603737935cdc9a32246dd19584c7220cfc329294081f7cb",
+    "review_bank_sha256": "d7be3d13822680bf35d9e75c42c7000393933ef911a6aa7e020ced1bb61c1f5e",
+    "policy": "existing_47_65_four_view_paired_rule",
+    "formal_actions_changed": false
+  },
+  "inference": {
+    "status": "passed",
+    "groups": 2495,
+    "exact_reference_rejections": 568,
+    "full_paired_reviews": 1927,
+    "all_CPU": true,
+    "gpu_subset": {
+      "groups": 390,
+      "decision_differences": [],
+      "max_margin_difference": 1.4901161193847656e-06,
+      "not_full_equivalence": true
+    },
+    "policies": {
+      "target_first6r.py": "208b002075e0ba8348e8e33d1194ab0620a3c81beca54ddb833b43ee7b700de0",
+      "boundary_shadow6r.py": "c370807abe6fab357202772e807f14764ba5853191278fbe6091f8c66d6644bd",
+      "example_audit_policy.py": "25b4a4c4099bbcd64b0797c11e5200dc65196626e9e18ba97f862129a323618c"
+    },
+    "synthetic_tests": 3
+  },
+  "not_formal_full_inference": true
+}
