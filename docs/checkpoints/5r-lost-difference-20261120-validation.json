@@ -1,0 +1,62 @@
+{
+  "status": "offline_regression_passed_not_ready_for_production",
+  "mode": "offline_reconstruction_not_full_DINO_inference",
+  "photos": 185,
+  "reference_self": 1,
+  "policy_sha256": "0ba53fbe26cffe1bba7293e4c074f1d0eb2c92c86787354c1fc3672ebdf469af",
+  "official_results_unchanged": true,
+  "exact_reconstructed_aligned_images": 185,
+  "original_manual_hits": 79,
+  "lost_hits": 0,
+  "localization_2300_preserved": true,
+  "unconfirmed_3129_3094": "unchanged",
+  "current24": {
+    "correct": 22,
+    "OK_false_alarms": 0,
+    "NG_missed": 2
+  },
+  "observation_counts": {
+    "unexplained_difference": 10082,
+    "explained_by_context_motion": 922,
+    "uncertain_correspondence": 12133,
+    "uncertain_residual": 15266
+  },
+  "OK_observation_counts": {
+    "unexplained_difference": 6697,
+    "explained_by_context_motion": 419,
+    "uncertain_correspondence": 5889,
+    "uncertain_residual": 10049
+  },
+  "OK_photos_with_unexplained_observations": 142,
+  "OK_total": 146,
+  "observations_are_not_confirmed_false_alarms": true,
+  "central_3129": {
+    "seed_box": [
+      1092,
+      766,
+      9,
+      8
+    ],
+    "raw_component_area": 41,
+    "main_surviving_pixels": 0,
+    "context_offsets": [
+      [
+        -2,
+        -1
+      ],
+      [
+        -2,
+        -1
+      ]
+    ],
+    "remaining_components": [
+      68,
+      72
+    ],
+    "stable_complete_object": false,
+    "confirmed_screw": false,
+    "DINO_evaluated": false
+  },
+  "synthetic_tests_passed": 4,
+  "formal_integration": false
+}
